@@ -1,7 +1,7 @@
 import React from 'react';
 import { Menu } from 'antd';
 
-const ActionBar = ({ onActionClick }) => {
+const CertificateActionBar = ({ onActionClick }) => {
   const handleClick = (action) => {
     onActionClick(action);
   };
@@ -17,11 +17,8 @@ const ActionBar = ({ onActionClick }) => {
       <Menu.Item key="reserve" onClick={() => handleClick('reserve')}>
         Reserve
       </Menu.Item>
-      <Menu.Item key="issue" onClick={() => handleClick('issue')}>
-        Issue
-      </Menu.Item>
     </Menu>
   );
 };
 
-export default ActionBar;
+export default CertificateActionBar;

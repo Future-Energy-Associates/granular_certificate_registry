@@ -3,32 +3,72 @@ import { Layout, Menu, Typography } from 'antd';
 import Account from './components/Account';
 import CertificateList from './components/CertificateList';
 import TransferForm from './components/TransferForm';
-import ActionBar from './components/ActionBar';
 import CancelForm from './components/CancelForm';
+import ReserveForm from './components/ReserveForm';
+import IssueForm from './components/IssueForm';
+import CertificateActionBar from './components/CertificateActionBar';
+import RegistryNavBar from './components/RegistryNavBar';
+import DeviceList from './components/DeviceList';
+import DeviceActionBar from './components/DeviceActionBar'
+import DeviceRegisterForm from './components/DeviceRegisterForm';
+import DeviceUnregisterForm from './components/DeviceUnregisterForm';
 
 const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
 
 const App = () => {
-  const [accounts, setAccounts] = useState([
-    { id: 1, name: 'Account 1', certificates: [] },
-    { id: 2, name: 'Account 2', certificates: [] },
+  const [registries, setRegistries] = useState([
+    {
+      id: 1,
+      name: 'Registry 1',
+      accounts: [
+        { id: 1, name: 'Account 1', certificates: [], devices: [{ id: 1, name: 'Device 1' }] },
+        { id: 2, name: 'Account 2', certificates: [], devices: [{ id: 2, name: 'Device 2' }] },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Registry 2',
+      accounts: [
+        { id: 3, name: 'Account 3', certificates: [], devices: [{ id: 3, name: 'Device 3' }] },
+        { id: 4, name: 'Account 4', certificates: [], devices: [{ id: 4, name: 'Device 4'}] },
+      ],
+    },
   ]);
+  const [selectedRegistry, setSelectedRegistry] = useState(registries[0]?.id.toString());
   const [selectedAccount, setSelectedAccount] = useState(null);
-  const [selectedAction, setSelectedAction] = useState('transfer');
+  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [selectedDeviceAction, setSelectedDeviceAction] = useState('issue');
+  const [selectedCertificateAction, setSelectedCertificateAction] = useState('transfer');
+  const [selectedView, setSelectedView] = useState('certificates');
 
   useEffect(() => {
-    if (accounts.length > 0) {
-      setSelectedAccount(accounts[0]);
+    const registry = registries.find((r) => r.id.toString() === selectedRegistry);
+    if (registry && registry.accounts.length > 0) {
+      setSelectedAccount(registry.accounts[0]);
     }
-  }, [accounts]);
+  }, [registries, selectedRegistry]);
+
+  useEffect(() => {
+    if (selectedAccount && selectedAccount.devices.length > 0) {
+      setSelectedDevice(selectedAccount.devices[0]);
+    }
+  }, [selectedAccount]);
+
+  const handleRegistryClick = (registry) => {
+    setSelectedRegistry(registry.id.toString());
+  };
 
   const handleAccountClick = (account) => {
     setSelectedAccount(account);
   };
 
-  const handleActionClick = (action) => {
-    setSelectedAction(action);
+  const handleDeviceClick = (device) => {
+    setSelectedDevice(device);
+  };
+
+  const handleCertificateActionClick = (action) => {
+    setSelectedCertificateAction(action);
   };
 
   const handleTransfer = (fromAccount, toAccount, certificateId) => {
@@ -51,13 +91,60 @@ const App = () => {
     console.log(`Issuing certificate ${certificateId}`);
   };
 
-  const renderActionComponent = () => {
-    switch (selectedAction) {
+  const handleDeviceRegister = (device) => {
+    // Perform the device register logic here
+    console.log(`Registering device ${device}`);
+  };
+
+  const handleDeviceUnregister = (device) => {
+    // Perform the device unregister logic here
+    console.log(`Unregistering device ${device}`);
+  };
+
+  const handleViewClick = (view) => {
+    setSelectedView(view);
+  };
+
+  const handleDeviceActionClick = (action) => {
+    setSelectedDeviceAction(action);
+  };
+
+  const renderSelectedView = () => {
+    switch (selectedView) {
+      case 'certificates':
+        return (
+          <>
+            <br />
+            <CertificateList certificates={selectedAccount.certificates} />
+            <br />
+            <CertificateActionBar onActionClick={handleCertificateActionClick} />
+            <br />
+            {renderCertificateActionComponent()}
+          </>
+        );
+      case 'devices':
+        return (
+          <>
+            <br />
+            <DeviceList devices={selectedAccount.devices} />
+            <br />
+            <DeviceActionBar onActionClick={handleDeviceActionClick} />
+            <br />
+            {renderDeviceActionComponent()}
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderCertificateActionComponent = () => {
+    switch (selectedCertificateAction) {
       case 'transfer':
         return (
           <TransferForm
             onTransfer={handleTransfer}
-            accounts={accounts}
+            accounts={registries.find((r) => r.id.toString() === selectedRegistry)?.accounts}
             selectedAccount={selectedAccount}
           />
         );
@@ -69,39 +156,87 @@ const App = () => {
             />
           );
       case 'reserve':
-        return <div>Reserve Form</div>;
-      case 'issue':
-        return <div>Issue Form</div>;
+        return (
+            <ReserveForm
+              onReserve={handleReserve}
+              selectedAccount={selectedAccount}
+            />
+          );
       default:
         return null;
     }
   };
 
+  const renderDeviceActionComponent = () => {
+    switch (selectedDeviceAction) {
+      case 'issue':
+        return (
+          <IssueForm
+            onIssue={handleIssue}
+            devices={selectedAccount.devices}
+            selectedDevice={selectedDevice}
+            selectedAccount={selectedAccount}
+          />
+        );
+      case 'register':
+        return (
+            <DeviceRegisterForm
+              onDeviceRegister={handleDeviceRegister}
+              selectedAccount={selectedAccount}
+            />
+          );
+      case 'unregister':
+        return (
+            <DeviceUnregisterForm
+              onDeviceUnregister={handleDeviceUnregister}
+              selectedDevice={selectedDevice}
+            />
+          );
+      default:
+        return null;
+    }
+  };
+
+
+
   return (
     <Layout>
-      <Header>
-        <Title level={2} style={{ color: 'white' }}>
+      <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Title level={2} style={{ color: 'white', margin: 0 }}>
           FEA Granular Certificate Registry
         </Title>
       </Header>
+      <RegistryNavBar
+        registries={registries}
+        onRegistryClick={handleRegistryClick}
+        selectedRegistry={selectedRegistry}
+      />
       <Layout>
         <Sider width={200}>
-          <Menu mode="inline" style={{ height: '100%' }} selectedKeys={[selectedAccount?.id.toString()]}>
-            {accounts.map((account) => (
-              <Menu.Item key={account.id} onClick={() => handleAccountClick(account)}>
-                {account.name}
-              </Menu.Item>
-            ))}
+          <Menu
+            mode="inline"
+            style={{ height: '100%' }}
+            selectedKeys={[selectedAccount?.id.toString()]}
+          >
+            {registries
+              .find((r) => r.id.toString() === selectedRegistry)
+              ?.accounts.map((account) => (
+                <Menu.Item key={account.id} onClick={() => handleAccountClick(account)}>
+                  {account.name}
+                </Menu.Item>
+              ))}
           </Menu>
         </Sider>
         <Content style={{ padding: '24px' }}>
           {selectedAccount && (
             <div>
               <Account account={selectedAccount} certificates={selectedAccount.certificates} />
-              <CertificateList certificates={selectedAccount.certificates} />
-              <ActionBar onActionClick={handleActionClick} />
-              {renderActionComponent()}
-            </div>
+              <Menu mode="horizontal" selectedKeys={[selectedView]} onClick={({ key }) => handleViewClick(key)}>
+                <Menu.Item key="certificates">Certificates</Menu.Item>
+                <Menu.Item key="devices">Production Devices</Menu.Item>
+              </Menu>
+              {renderSelectedView()}
+          </div>
           )}
         </Content>
       </Layout>

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Form, Select, Input, Button } from 'antd';
 
-const CancelForm = ({ onCancel, selectedAccount }) => {
+const IssueForm = ({ onIssue, devices, selectedDevice, selectedAccount }) => {
   const [form] = Form.useForm();
 
   const onFinish = (values) => {
-    onCancel(selectedAccount.id, values.certificateId);
+    onIssue(selectedDevice.id, values.certificateId);
     form.resetFields();
   };
 
@@ -13,6 +13,21 @@ const CancelForm = ({ onCancel, selectedAccount }) => {
     <Form form={form} onFinish={onFinish} layout='vertical'>
       <Form.Item label="Account">
         <Input value={selectedAccount.name} disabled />
+      </Form.Item>
+      <Form.Item
+        name="device"
+        label="To Device"
+        rules={[{ required: true, message: 'Please select the device to issue to!' }]}
+      >
+        <Select placeholder="Select device">
+          {devices
+            .filter((device) => device.id !== selectedDevice.id)
+            .map((device) => (
+              <Select.Option key={device.id} value={device.id}>
+                {device.name}
+              </Select.Option>
+            ))}
+        </Select>
       </Form.Item>
       <Form.Item
         name="certificateId"
@@ -23,11 +38,11 @@ const CancelForm = ({ onCancel, selectedAccount }) => {
       </Form.Item>
       <Form.Item>
         <Button type="primary" htmlType="submit">
-          Cancel
+          Issue
         </Button>
       </Form.Item>
     </Form>
   );
 };
 
-export default CancelForm;
+export default IssueForm;

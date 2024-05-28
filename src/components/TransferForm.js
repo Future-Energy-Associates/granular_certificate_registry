@@ -10,7 +10,7 @@ const TransferForm = ({ onTransfer, accounts, selectedAccount }) => {
   };
 
   return (
-    <Form form={form} onFinish={onFinish}>
+    <Form form={form} onFinish={onFinish} layout='vertical'>
       <Form.Item label="From Account">
         <Input value={selectedAccount.name} disabled />
       </Form.Item>

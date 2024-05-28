@@ -1,13 +1,12 @@
 import React from 'react';
 import { List } from 'antd';
 
-const CertificateList = ({ certificates }) => {
+const ProductionDeviceList = ({ devices }) => {
   return (
     <List
       bordered={true}
-      headerBgColor="white"
-      dataSource={certificates}
-      renderItem={(certificate) => <List.Item>{certificate.id}</List.Item>}
+      dataSource={devices}
+      renderItem={(device) => <List.Item>{device.name}</List.Item>}
       style={{ backgroundColor: 'white' }}
       size="large"
       pagination={{
@@ -20,4 +19,4 @@ const CertificateList = ({ certificates }) => {
   );
 };
 
-export default CertificateList;
+export default ProductionDeviceList;

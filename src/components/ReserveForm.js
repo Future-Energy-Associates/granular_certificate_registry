@@ -1,11 +1,11 @@
 import React from 'react';
 import { Form, Select, Input, Button } from 'antd';
 
-const CancelForm = ({ onCancel, selectedAccount }) => {
+const ReserveForm = ({ onReserve, selectedAccount }) => {
   const [form] = Form.useForm();
 
   const onFinish = (values) => {
-    onCancel(selectedAccount.id, values.certificateId);
+    onReserve(selectedAccount.id, values.certificateId);
     form.resetFields();
   };
 
@@ -23,11 +23,11 @@ const CancelForm = ({ onCancel, selectedAccount }) => {
       </Form.Item>
       <Form.Item>
         <Button type="primary" htmlType="submit">
-          Cancel
+          Reserve
         </Button>
       </Form.Item>
     </Form>
   );
 };
 
-export default CancelForm;
+export default ReserveForm;

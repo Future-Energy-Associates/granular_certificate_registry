@@ -170,3 +170,4 @@ cache_all_tariffs.pkl
 .vscode/settings.json
 .aws/config
 .aws/credentials
+node_modules

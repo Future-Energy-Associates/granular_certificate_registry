@@ -1,11 +1,11 @@
 import React from 'react';
 import { Form, Select, Input, Button } from 'antd';
 
-const CancelForm = ({ onCancel, selectedAccount }) => {
+const DeviceRegisterForm = ({ onRegister, selectedAccount }) => {
   const [form] = Form.useForm();
 
   const onFinish = (values) => {
-    onCancel(selectedAccount.id, values.certificateId);
+    onRegister(selectedAccount.id);
     form.resetFields();
   };
 
@@ -15,19 +15,19 @@ const CancelForm = ({ onCancel, selectedAccount }) => {
         <Input value={selectedAccount.name} disabled />
       </Form.Item>
       <Form.Item
-        name="certificateId"
-        label="Certificate ID"
-        rules={[{ required: true, message: 'Please input the certificate ID!' }]}
+        name="deviceId"
+        label="Device ID"
+        rules={[{ required: true, message: 'Please input the device ID!' }]}
       >
-        <Input placeholder="Certificate ID" />
+        <Input placeholder="Device ID" />
       </Form.Item>
       <Form.Item>
         <Button type="primary" htmlType="submit">
-          Cancel
+          Register
         </Button>
       </Form.Item>
     </Form>
   );
 };
 
-export default CancelForm;
+export default DeviceRegisterForm;
