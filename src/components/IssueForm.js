@@ -21,7 +21,6 @@ const IssueForm = ({ onIssue, devices, selectedDevice, selectedAccount }) => {
       >
         <Select placeholder="Select device">
           {devices
-            .filter((device) => device.id !== selectedDevice.id)
             .map((device) => (
               <Select.Option key={device.id} value={device.id}>
                 {device.name}

@@ -13,28 +13,14 @@ import DeviceActionBar from './components/DeviceActionBar'
 import DeviceRegisterForm from './components/DeviceRegisterForm';
 import DeviceUnregisterForm from './components/DeviceUnregisterForm';
 
+import example_registries from './example_data';
+
 const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
 
 const App = () => {
-  const [registries, setRegistries] = useState([
-    {
-      id: 1,
-      name: 'Registry 1',
-      accounts: [
-        { id: 1, name: 'Account 1', certificates: [], devices: [{ id: 1, name: 'Device 1' }] },
-        { id: 2, name: 'Account 2', certificates: [], devices: [{ id: 2, name: 'Device 2' }] },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Registry 2',
-      accounts: [
-        { id: 3, name: 'Account 3', certificates: [], devices: [{ id: 3, name: 'Device 3' }] },
-        { id: 4, name: 'Account 4', certificates: [], devices: [{ id: 4, name: 'Device 4'}] },
-      ],
-    },
-  ]);
+  const [registries, setRegistries] = useState(example_registries);
+
   const [selectedRegistry, setSelectedRegistry] = useState(registries[0]?.id.toString());
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [selectedDevice, setSelectedDevice] = useState(null);
@@ -189,7 +175,7 @@ const App = () => {
         return (
             <DeviceUnregisterForm
               onDeviceUnregister={handleDeviceUnregister}
-              selectedDevice={selectedDevice}
+              devices={selectedAccount.devices}
             />
           );
       default:

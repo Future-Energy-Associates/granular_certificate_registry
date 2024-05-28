@@ -15,11 +15,18 @@ const DeviceRegisterForm = ({ onRegister, selectedAccount }) => {
         <Input value={selectedAccount.name} disabled />
       </Form.Item>
       <Form.Item
-        name="deviceId"
-        label="Device ID"
-        rules={[{ required: true, message: 'Please input the device ID!' }]}
+        name="deviceName"
+        label="Device Name"
+        rules={[{ required: true, message: 'Please input the name of the device.' }]}
       >
-        <Input placeholder="Device ID" />
+        <Input placeholder="Device Name" />
+      </Form.Item>
+      <Form.Item
+        name="capacity"
+        label="Capacity (MW)"
+        rules={[{ required: true, message: 'Please input the capacity of the device.' }]}
+      >
+        <Input placeholder="Capacity" />
       </Form.Item>
       <Form.Item>
         <Button type="primary" htmlType="submit">

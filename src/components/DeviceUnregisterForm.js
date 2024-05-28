@@ -1,11 +1,11 @@
 import React from 'react';
 import { Form, Select, Input, Button } from 'antd';
 
-const DeviceUnregisterForm = ({ onUnregister, selectedDevice }) => {
+const DeviceUnregisterForm = ({ onUnregister, devices }) => {
   const [form] = Form.useForm();
 
   const onFinish = (values) => {
-    onUnregister(selectedDevice.id);
+    onUnregister(devices.id);
     form.resetFields();
   };
 
@@ -16,7 +16,14 @@ const DeviceUnregisterForm = ({ onUnregister, selectedDevice }) => {
         label="Device ID"
         rules={[{ required: true, message: 'Please input the device ID!' }]}
       >
-        <Input placeholder="Device ID" />
+        <Select placeholder="Select device">
+          {devices
+            .map((device) => (
+              <Select.Option key={device.id} value={device.id}>
+                {device.name}
+              </Select.Option>
+            ))}
+        </Select>
       </Form.Item>
       <Form.Item>
         <Button type="primary" htmlType="submit">

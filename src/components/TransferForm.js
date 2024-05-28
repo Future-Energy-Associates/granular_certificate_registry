@@ -30,11 +30,25 @@ const TransferForm = ({ onTransfer, accounts, selectedAccount }) => {
         </Select>
       </Form.Item>
       <Form.Item
-        name="certificateId"
-        label="Certificate ID"
-        rules={[{ required: true, message: 'Please input the certificate ID!' }]}
+        name="issuance_id"
+        label="GC Issuance ID"
+        rules={[{ required: true, message: 'Please input the certificate issuance ID.' }]}
       >
-        <Input placeholder="Certificate ID" />
+        <Input placeholder="GC Issuance ID" />
+      </Form.Item>
+      <Form.Item
+        name="bundle_start_id"
+        label="From Bundle ID"
+        rules={[{ required: true, message: 'Please input the first Bundle ID to select from.' }]}
+      >
+        <Input placeholder="Bunde Start ID" />
+      </Form.Item>
+      <Form.Item
+        name="bundle_end_id"
+        label="To Bundle ID"
+        rules={[{ required: true, message: 'Please input the last Bundle ID to select to.' }]}
+      >
+        <Input placeholder="Bundle End ID" />
       </Form.Item>
       <Form.Item>
         <Button type="primary" htmlType="submit">

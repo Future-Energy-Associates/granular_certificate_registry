@@ -5,7 +5,7 @@ const Account = ({ account, certificates
  }) => {
   return (
     <Card title={`Account: ${account.name}`}>
-      <p>Total MWh: {certificates.length}</p>
+      <p>Number of Certificates: {certificates.length}</p>
       <p>Number of Devices: {account.devices.length}</p>
     </Card>
   );
