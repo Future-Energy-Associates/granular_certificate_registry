@@ -1,0 +1,15 @@
+name: Export issues
+
+on:
+    issues:
+        types: [opened, closed]
+
+jobs:
+    run-sync:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: serban-petrescu/gh-issues-to-sheet@v1
+              with:
+                  sheet-url: https://docs.google.com/spreadsheets/d/1muaMBFcbpOqafjWEB2KV1kYKhIgc_vx-H90DBt2-3MA/edit?gid=826441538#gid=826441538
+                  sheet-creds: ${{ secrets.GSHEET_CREDS }}
+                  delta-update: true
