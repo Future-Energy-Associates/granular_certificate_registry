@@ -154,7 +154,6 @@ app.include_router(organisations.router, prefix="/organisations")
 app.include_router(users.router, prefix="/users")
 app.include_router(accounts.router, prefix="/accounts")
 app.include_router(devices.router, prefix="/devices")
-# app.include_router(miscellaneous.router, prefix="/miscellaneous")
 
 # app.mount("/static", StaticFiles(directory=static_dir_fp), name="static")
 
@@ -174,8 +173,6 @@ templates = Jinja2Templates(directory=f"{static_dir_fp}/templates")
 
 
 # Routes
-
-
 @app.get("/", response_class=HTMLResponse, tags=["Core"])
 async def read_root(request: Request):
     params = {
@@ -207,36 +204,3 @@ async def read_root(request: Request):
 #         title="FastAPI",
 #         swagger_favicon_url="static/favicon.ico",
 #     )
-
-
-# @app.get(
-#     "/mrets-docs",
-#     tags=["Core"],
-#     response_class=HTMLResponse,
-#     description="More details can be found [here](https://mrets.github.io/Operating-Procedures)",
-# )
-# async def swagger_ui_html():
-#     return get_swagger_ui_html(
-#         openapi_url="static/mrets-docs.json",
-#         title="FastAPI",
-#         swagger_favicon_url="static/favicon.ico",
-#     )
-
-
-# @app.get("/flexidao-docs", tags=["Core"], response_class=HTMLResponse)
-# async def swagger_ui_html():
-#     return get_swagger_ui_html(
-#         openapi_url="static/flexidao-docs.json",
-#         title="FastAPI",
-#         swagger_favicon_url="static/favicon.ico",
-#     )
-
-
-# @app.get("/favicon.ico", tags=["Core"], response_class=FileResponse)
-# async def favicon():
-#     return FileResponse(f"{static_dir_fp}/favicon.ico")
-
-
-# @app.get("/robots.txt", tags=["Core"], response_class=FileResponse)
-# async def robots():
-#     return FileResponse(f"{static_dir_fp}/robots.txt")

@@ -5,6 +5,8 @@ An open-source platform to demonstrate the capabilities of a Granular Certificat
 The GC Registry is designed to be downloaded and operated locally either through a Docker container, or through manual package loading for development purposes.
 In addition, a persistent instance will be available on GCP for non-technical users to interact with the front end.
 
+Dependency management is handled through Poetry - on first use, run `poetry install` to initialise the required packages.
+
 ### Technology choices
 
 The main technological choices for the application include:
