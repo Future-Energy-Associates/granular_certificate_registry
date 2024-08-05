@@ -1,21 +1,19 @@
+import os
+
 import yaml
-
-from starlette.middleware.sessions import SessionMiddleware
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-
+from dotenv import load_dotenv
 from energytag.api.routers import (
+    accounts,
+    certificates,
+    devices,
     organisations,
     storage,
     users,
-    accounts,
-    devices,
-    certificates,
 )
-
-import os
-from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 
 # App initialisation
 load_dotenv()

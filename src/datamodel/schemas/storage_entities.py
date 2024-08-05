@@ -1,11 +1,10 @@
 import datetime
 import uuid as uuid_pkg
 from typing import Optional, Union
-from sqlalchemy import ARRAY, Column, String
-
-from sqlmodel import Field
 
 from energytag.datamodel.schemas import items, utils
+from sqlalchemy import ARRAY, Column, String
+from sqlmodel import Field
 
 
 class StorageChargeRecordBase(utils.ActiveRecord):

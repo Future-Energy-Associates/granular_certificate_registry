@@ -1,13 +1,11 @@
-import uuid
 import os
-
-from fastapi import Depends, APIRouter
-from sqlmodel import Session
+import uuid
 
 from energytag.api import utils
 from energytag.api.routers import authentication
-from energytag.datamodel import schemas, db
-
+from energytag.datamodel import db, schemas
+from fastapi import APIRouter, Depends
+from sqlmodel import Session
 
 # Router initialisation
 

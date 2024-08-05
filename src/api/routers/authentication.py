@@ -1,22 +1,17 @@
 import os
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
-
-from sqlmodel import Session, select
 from typing import Optional
 
-from fastapi import Depends, APIRouter, HTTPException, status
+from dotenv import load_dotenv
+from energytag.datamodel import db, schemas
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-
-from starlette.requests import Request
-
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-
-from energytag.datamodel import db, schemas
+from sqlmodel import Session, select
+from starlette.requests import Request
 
 from .. import utils
-
 
 # router initialisation
 
@@ -43,10 +38,10 @@ fake_users_db = {
         "picture": None,
         "hashed_password": "$2b$12$0NepEh/6tXYuc3uCYEuI3.BedxGqWecPrUoFV8SKOYvZ9NWTBCHeK",
         "scopes": None
-    }  
+    }
 }
 
-        
+
 CredentialsException = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail='Could not validate credentials',
@@ -72,27 +67,27 @@ def get_api_user(db, username: str) -> schemas.authentication.SecureAPIUser:
 
 def authenticate_api_user(fake_db, username: str, password: str):
     user = get_api_user(fake_db, username)
-    
+
     if not user:
         return False
-    
+
     if not verify_password(password, user.hashed_password):
         return False
-    
+
     return user
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    
+
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
-    
+
     to_encode.update({'exp': expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    
+
     return encoded_jwt
 
 
@@ -103,34 +98,34 @@ def is_token_blacklisted(oauth_token):
 
         if len(results) > 0:
             raise CredentialsException
-            
-    return 
+
+    return
 
 
 def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
     headers = {}
     is_token_blacklisted(oauth_token)
-    
+
     try:
-        # extracting params in the JWT 
+        # extracting params in the JWT
         payload = jwt.decode(oauth_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         username: str = payload.get('sub')
         expire: str = payload.get('exp')
-        
+
         # checking the expiry date
         current_ts = datetime.now().timestamp()
-        
+
         if (float(expire) - current_ts) < 0:
             with Session(db.db_name_to_client['authentication'].yield_session) as session:
                 session.add(schemas.authentication.TokenBlacklist(token=oauth_token))
                 session.commit()
-                
+
         # checking username exists
         if username is None:
             raise CredentialsException
-            
+
         user = get_api_user(fake_users_db, username=username)
-        
+
     except JWTError:
         raise CredentialsException
 
@@ -139,7 +134,7 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
         headers['refresh'] = 'true'
     else:
         headers['refresh'] = 'false'
-    
+
     return headers
 
 
@@ -152,9 +147,9 @@ def read_api_user(
 ):
     payload = jwt.decode(oauth_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
     username: str = payload.get('sub')
-    
+
     api_user = get_api_user(fake_users_db, username=username)
-    
+
     return utils.format_json_response(api_user, headers, response_model=schemas.authentication.APIUser)
 
 
@@ -164,12 +159,12 @@ def refresh(
 ):
     payload = jwt.decode(oauth_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
     username: str = payload.get('sub')
-    
+
     oauth_token = create_access_token(
-        data={'sub': username}, 
+        data={'sub': username},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    
+
     return {'access_token': oauth_token, 'token_type': 'bearer'}
 
 
@@ -178,15 +173,15 @@ def logout(
     request: Request,
     oauth_token: str = Depends(oauth2_scheme),
     session: Session = Depends(db.db_name_to_client['authentication'].yield_session)
-):  
+):
     is_token_blacklisted(oauth_token)
-    
+
     session.add(schemas.authentication.TokenBlacklist(token=oauth_token))
     session.commit()
-    
+
     if 'user' in request.session.keys():
         request.session.pop('user', None)
-    
+
     return {'access_token': oauth_token, 'token_type': 'revoked'}
 
 
@@ -195,21 +190,21 @@ def token(
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
     user = authenticate_api_user(fake_users_db, form_data.username, form_data.password)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Incorrect username or password',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-        
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     access_token = create_access_token(
-        data={"sub": user.username}, 
+        data={"sub": user.username},
         expires_delta=access_token_expires
     )
-    
+
     return {'access_token': access_token, 'token_type': 'bearer'}
 
 
@@ -226,12 +221,12 @@ def token_params(
             detail='You must specify a username or password',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-        
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     access_token = create_access_token(
-        data={'sub': user.username}, 
+        data={'sub': user.username},
         expires_delta=access_token_expires
     )
-    
+
     return {'access_token': access_token, 'token_type': 'bearer'}

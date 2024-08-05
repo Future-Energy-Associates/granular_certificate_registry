@@ -1,12 +1,11 @@
 import json
 from typing import List, Optional, Union
 
+import sqlmodel
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-
-import sqlmodel
-from sqlmodel import col
 from sqlalchemy import func
+from sqlmodel import col
 
 
 def parse_nans_to_null(

@@ -1,13 +1,13 @@
 # Imports
 import os
-from fastapi import Depends, APIRouter
-from sqlmodel import Session
-from energytag.api import utils
-from energytag.datamodel import db
-from energytag.datamodel.schemas import entities
-from energytag.api.routers import authentication
 import uuid
 
+from energytag.api import utils
+from energytag.api.routers import authentication
+from energytag.datamodel import db
+from energytag.datamodel.schemas import entities
+from fastapi import APIRouter, Depends
+from sqlmodel import Session
 
 environment = os.getenv("ENVIRONMENT")
 

@@ -1,9 +1,7 @@
-from typing import Optional, List
-
-from sqlmodel import SQLModel
-import datetime
+from typing import List, Optional
 
 from energytag.datamodel.schemas import entities, items
+from sqlmodel import SQLModel
 
 
 class RegisteringDeviceWrite(SQLModel):

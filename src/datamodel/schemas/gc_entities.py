@@ -1,15 +1,13 @@
 import datetime
 import uuid as uuid_pkg
-from typing import Optional
 from typing import (
+    Optional,
     Union,
 )
 
-from sqlalchemy import Column
-
-from sqlmodel import Field, String, ARRAY
-
 from energytag.datamodel.schemas import items, utils
+from sqlalchemy import Column
+from sqlmodel import ARRAY, Field, String
 
 
 class GranularCertificateBundleBase(utils.ActiveRecord):

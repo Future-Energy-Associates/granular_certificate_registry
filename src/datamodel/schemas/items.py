@@ -2,7 +2,6 @@ import datetime
 import uuid as uuid_pkg
 from typing import Literal, Optional
 
-
 # Domains
 
 valid_usage_units = Literal["Wh", "kWh", "MWh", "GWh"]

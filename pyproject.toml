@@ -58,7 +58,23 @@ typing-extensions = "^4.12.2"
 uvicorn = "^0.30.5"
 wheel = "^0.44.0"
 starlette = "0.37.2"
+ruff = "^0.5.6"
 
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "W191",  # indentation contains tabs
+    "B904",  # Allow raising exceptions without from e, for HTTPException
+]
 
 [build-system]
 requires = ["poetry-core"]

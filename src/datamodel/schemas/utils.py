@@ -1,5 +1,6 @@
 import uuid as uuid_pkg
 from typing import Union
+
 from fastapi import HTTPException
 from sqlmodel import SQLModel, select
 

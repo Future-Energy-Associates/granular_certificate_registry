@@ -1,22 +1,19 @@
 import datetime
 import uuid as uuid_pkg
-from typing import Optional
 from typing import (
     AbstractSet,
     Any,
     Mapping,
+    Optional,
     Sequence,
     Union,
 )
 
+from energytag.datamodel.schemas import items, utils
 from pydantic.fields import Undefined, UndefinedType
 from pydantic.typing import NoArgAnyCallable
 from sqlalchemy import ARRAY, Column, String
-
 from sqlmodel import Field, Relationship
-
-from energytag.datamodel.schemas import items, utils
-
 
 field_attrs = [
     "default",

@@ -1,13 +1,13 @@
-import os
-import pandas as pd
-import numpy as np
 import importlib
+import os
+from typing import List, Literal, Optional
 
-from tqdm import tqdm
+import numpy as np
+import pandas as pd
 from dotenv import load_dotenv
-from typing import Optional, List, Literal
-from sqlalchemy_utils import database_exists, create_database
-from sqlmodel import SQLModel, Session, create_engine, select
+from sqlalchemy_utils import create_database, database_exists
+from sqlmodel import Session, SQLModel, create_engine, select
+from tqdm import tqdm
 
 # Loading environment variables
 
