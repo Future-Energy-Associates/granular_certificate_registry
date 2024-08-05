@@ -1,0 +1,8 @@
+<html>
+<head>
+    <title>{{ head['title'] }}</title>
+</head>
+<body>{% for item in body %}
+    <{{ item['tag'] }}{% if 'tag_kwargs' in item.keys() %}{% for k, v in item['tag_kwargs'].items() %} {{ k }}={{ v }}{% endfor %}{% endif %}>{{ item['value'] }}</{{ item['tag'] }}>{% endfor %}
+</body>
+</html>

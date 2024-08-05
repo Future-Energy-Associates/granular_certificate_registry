@@ -1,0 +1,4108 @@
+components:
+  schemas:
+    Account:
+      properties:
+        account_id:
+          format: uuid
+          title: Account Id
+          type: string
+        account_name:
+          title: Account Name
+          type: string
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+      required:
+      - account_name
+      - organisation_id
+      title: Account
+      type: object
+    AccountBase:
+      properties:
+        account_name:
+          title: Account Name
+          type: string
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+      required:
+      - account_name
+      - organisation_id
+      title: AccountBase
+      type: object
+    AccountRead:
+      properties:
+        account_id:
+          format: uuid
+          title: Account Id
+          type: string
+        account_name:
+          title: Account Name
+          type: string
+        organisation:
+          $ref: '#/components/schemas/Organisation'
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+        users:
+          items:
+            $ref: '#/components/schemas/User'
+          title: Users
+          type: array
+      required:
+      - account_name
+      - organisation_id
+      - account_id
+      - organisation
+      - users
+      title: AccountRead
+      type: object
+    AccountUpdate:
+      properties:
+        account_id:
+          format: uuid
+          title: Account Id
+          type: string
+        account_name:
+          title: Account Name
+          type: string
+        organisation:
+          $ref: '#/components/schemas/Organisation'
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+        user_id:
+          format: uuid
+          title: User Id
+          type: string
+      required:
+      - organisation_id
+      title: AccountUpdate
+      type: object
+    DeviceBase:
+      properties:
+        account_id:
+          description: The account to which the device is registered, and into which
+            GC Bundles will be issued for energy produced by this Device.
+          format: uuid
+          title: Account Id
+          type: string
+        capacity:
+          title: Capacity
+          type: number
+        device_name:
+          title: Device Name
+          type: string
+        energy_source:
+          title: Energy Source
+          type: string
+        grid:
+          title: Grid
+          type: string
+        location_id:
+          format: uuid
+          title: Location Id
+          type: string
+        operational_date:
+          format: date
+          title: Operational Date
+          type: string
+        peak_demand:
+          title: Peak Demand
+          type: number
+        technology_type:
+          title: Technology Type
+          type: string
+      required:
+      - device_name
+      - grid
+      - energy_source
+      - technology_type
+      - operational_date
+      - capacity
+      - peak_demand
+      - account_id
+      title: DeviceBase
+      type: object
+    DeviceRead:
+      properties:
+        account_id:
+          description: The account to which the device is registered, and into which
+            GC Bundles will be issued for energy produced by this Device.
+          format: uuid
+          title: Account Id
+          type: string
+        capacity:
+          title: Capacity
+          type: number
+        device_id:
+          format: uuid
+          title: Device Id
+          type: string
+        device_name:
+          title: Device Name
+          type: string
+        energy_source:
+          title: Energy Source
+          type: string
+        grid:
+          title: Grid
+          type: string
+        location_id:
+          format: uuid
+          title: Location Id
+          type: string
+        operational_date:
+          format: date
+          title: Operational Date
+          type: string
+        peak_demand:
+          title: Peak Demand
+          type: number
+        technology_type:
+          title: Technology Type
+          type: string
+      required:
+      - device_name
+      - grid
+      - energy_source
+      - technology_type
+      - operational_date
+      - capacity
+      - peak_demand
+      - account_id
+      - device_id
+      title: DeviceRead
+      type: object
+    DeviceUpdate:
+      properties:
+        account:
+          $ref: '#/components/schemas/Account'
+        account_id:
+          description: The account to which the device is registered, and into which
+            GC Bundles will be issued for energy produced by this Device.
+          format: uuid
+          title: Account Id
+          type: string
+        capacity:
+          title: Capacity
+          type: number
+        device_id:
+          format: uuid
+          title: Device Id
+          type: string
+        device_name:
+          title: Device Name
+          type: string
+        energy_source:
+          title: Energy Source
+          type: string
+        grid:
+          title: Grid
+          type: string
+        location_id:
+          format: uuid
+          title: Location Id
+          type: string
+        meter_id:
+          format: uuid
+          title: Meter Id
+          type: string
+        operational_date:
+          format: date
+          title: Operational Date
+          type: string
+        peak_demand:
+          title: Peak Demand
+          type: number
+        technology_type:
+          title: Technology Type
+          type: string
+      required:
+      - account_id
+      title: DeviceUpdate
+      type: object
+    GranularCertificateActionResponse:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        action_response_status:
+          description: Specifies whether the requested action has been accepted or
+            rejected by the registry.
+          title: Action Response Status
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+      required:
+      - source_account_id
+      - source_user_id
+      - action_response_status
+      title: GranularCertificateActionResponse
+      type: object
+    GranularCertificateBundle:
+      description: 'The GC Bundle is the primary unit of issuance and transfer within
+        the EnergyTag standard, and only the Resgistry
+
+        Administrator role can create, update, or withdraw GC Bundles.
+
+
+        Requests to modify attributes including Account location, GC Bundle status,
+        and Bundle splitting received from
+
+        other Account holders should only be applied by the Registry administrator
+        once all necessary validations have been
+
+        performend.
+
+
+        Validations and action execution are to be applied using a single queuing
+        system, with changes made to the GC Bundle
+
+        database applied with full ACID compliance. This ensures that all actions
+        are applied in the order they are received,
+
+        the state of the database is consistent at all times, and any errors can be
+        rectified by reversing linearly through
+
+        the queue.'
+      properties:
+        account_id:
+          description: Each GC Bundle is issued to a single unique production Account
+            that its production Device is individually registered to.
+          format: uuid
+          title: Account Id
+          type: string
+        bundle_id_range_end:
+          description: "The start and end range IDs of GC Bundles may change as they\
+            \ are split and transferred between Accounts,\n                      \
+            \ or partially cancelled."
+          title: Bundle Id Range End
+          type: integer
+        bundle_id_range_start:
+          description: "The individual Granular Certificates within this GC Bundle,\
+            \ each representing a \n                        contant volume of energy,\
+            \ generated within the production start and end time interval, \n    \
+            \                    is issued an ID in a format that can be represented\
+            \ sequentially and in a \n                        clearly ascending manner,\
+            \ displayed on the GC Bundle instance by start and end IDs indicating\
+            \ the minimum\n                        and maximum IDs contained within\
+            \ the Bundle, inclusive of both range end points and all integers\n  \
+            \                      within that range."
+          title: Bundle Id Range Start
+          type: integer
+        bundle_quantity:
+          description: "The quantity of Granular Certificates within this GC Bundle,\
+            \ according to a \n                        standardised energy volume\
+            \ per Granular Certificate, rounded down to the nearest Wh. Equal to \n\
+            \                        (bundle_id_range_end - bundle_id_range_start\
+            \ + 1)."
+          title: Bundle Quantity
+          type: integer
+        certificate_status:
+          description: 'One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked,
+            Reserved.'
+          title: Certificate Status
+          type: string
+        connected_grid_identification:
+          description: A Domain-specific identifier indicating the infrastructure
+            into which the energy has been injected.
+          title: Connected Grid Identification
+          type: string
+        country_of_issuance:
+          description: The Domain under which the Issuing Body of this GC Bundle has
+            authority to issue.
+          title: Country Of Issuance
+          type: string
+        device_capacity:
+          description: The maximum capacity of the production Device in Watts (W).
+          title: Device Capacity
+          type: integer
+        device_id:
+          description: Each GC Bundle is associated with a single production Device.
+          format: uuid
+          title: Device Id
+          type: string
+        device_location:
+          description: The GPS coordinates of the production or Storage Device responsible
+            for releasing the energy represented by the GC Bundle.
+          items:
+          - type: number
+          - type: number
+          maxItems: 2
+          minItems: 2
+          title: Device Location
+          type: array
+        device_name:
+          description: The name of the production Device.
+          title: Device Name
+          type: string
+        device_production_start_date:
+          description: The date on which the production Device began generating energy.
+          format: date
+          title: Device Production Start Date
+          type: string
+        device_technology_type:
+          description: 'The Device''s technology type, for example: Offshore Wind
+            Turbine, Biomass Plant, Fixed Hydro.'
+          title: Device Technology Type
+          type: string
+        device_type:
+          description: Whether the GC Bundle represents energy that has been generated
+            by a production Device or released by a storage unit.
+          title: Device Type
+          type: string
+        discharging_end_datetime:
+          description: The UTC datetime at which the Storage Device ceased discharging
+            energy represented by this SD-GC (inherited from the allocated SDR).
+          format: date-time
+          title: Discharging End Datetime
+          type: string
+        discharging_start_datetime:
+          description: The UTC datetime at which the Storage Device began discharging
+            the energy represented by this SD-GC (inherited from the allocated SDR).
+          format: date-time
+          title: Discharging Start Datetime
+          type: string
+        dissemination_level:
+          description: Specifies whether the energy associated with this GC Bundle
+            was self-consumed or injected into a private or public grid.
+          title: Dissemination Level
+          type: string
+        emissions_factor_production_device:
+          description: May indicate the emissions factor (kgCO2e/MWh) of the production
+            Device at the datetime in which this GC Bundle was issued against.
+          title: Emissions Factor Production Device
+          type: number
+        emissions_factor_source:
+          description: Includes a reference to the calculation methodology of the
+            production Device emissions factor.
+          title: Emissions Factor Source
+          type: string
+        energy_carrier:
+          description: 'The form of energy that the GC Bundle represents, for example:
+            Electricity, Hydrogen, Ammonia. In the current version of the standard
+            (v2), this field is always Electricity.'
+          title: Energy Carrier
+          type: string
+        energy_source:
+          description: 'The fuel type used to generate the energy represented by the
+            GC Bundle, for example: Solar, Wind, Biomass, Nuclear, Coal, Gas, Oil,
+            Hydro.'
+          title: Energy Source
+          type: string
+        expiry_datestamp:
+          description: The date in UTC format (YYYY-MM-DD) indicating the point at
+            which the GC Bundle will be rendered invalid if they have not been cancelled.
+            This expiry period can vary across Domains.
+          format: date
+          title: Expiry Datestamp
+          type: string
+        face_value:
+          description: States the quantity of energy in Watt-hours (Wh) represented
+            by each Granular Certificate within this GC Bundle.
+          title: Face Value
+          type: integer
+        issuance_datestamp:
+          description: The date in UTC format (YYYY-MM-DD) indicating the date on
+            which the Issuing Body delivered the GC Bundle to the production Device's
+            registered Account.
+          format: date
+          title: Issuance Datestamp
+          type: string
+        issuance_id:
+          description: "A unique identifier assigned to the GC Bundle at the time\
+            \ of issuance. \n        If the bundle is split through partial transfer\
+            \ or cancellation, this issuance ID remains unchanged across each child\
+            \ GC Bundle."
+          format: uuid
+          title: Issuance Id
+          type: string
+        issuance_post_energy_carrier_conversion:
+          description: Indicate whether this GC Bundle have been issued following
+            an energy conversion event, for example in a power to hydrogen facility.
+          title: Issuance Post Energy Carrier Conversion
+          type: boolean
+        issuance_purpose:
+          description: 'May contain the purpose of the GC Bundle issuance, for example:
+            Disclosure, Subsidy Support.'
+          title: Issuance Purpose
+          type: string
+        issue_market_zone:
+          description: References the bidding zone and/or market authority and/or
+            price node within which the GC Bundle have been issued.
+          title: Issue Market Zone
+          type: string
+        issuing_body:
+          description: The Issuing Body that has issued this GC Bundle.
+          title: Issuing Body
+          type: string
+        legal_status:
+          description: May contain pertinent information on the Issuing Authority,
+            where relevant.
+          title: Legal Status
+          type: string
+        production_ending_interval:
+          description: The datetime in UTC format indicating the end of the relevant
+            production period.
+          format: date-time
+          title: Production Ending Interval
+          type: string
+        production_starting_interval:
+          description: "The datetime in UTC format indicating the start of the relevant\
+            \ production period. \n                        GC Bundles shall be issued\
+            \ over a maximum production period of one hour, \n                   \
+            \     under the assumption that the certificates represent an even distribution\
+            \ of power generation within that period."
+          format: date-time
+          title: Production Starting Interval
+          type: string
+        quality_scheme_reference:
+          description: May contain any references to quality schemes for which this
+            GC Bundle were issued.
+          title: Quality Scheme Reference
+          type: string
+        registry_configuration:
+          description: "The configuration of the Registry that issued this GC Bundle;\
+            \ either 1, 2, or 3 at the time of writing (Standard v2). Enables tracking\
+            \ of related certificates \n                        to aid auditing and\
+            \ error detection"
+          title: Registry Configuration
+          type: integer
+        sdr_allocation_id:
+          description: The unique ID of the Storage Discharge Record that has been
+            allocated to this GC Bundle.
+          format: uuid
+          title: Sdr Allocation Id
+          type: string
+        storage_device_id:
+          description: The Device ID of the storage Device that released the energy
+            represented by the GC Bundle.
+          format: uuid
+          title: Storage Device Id
+          type: string
+        storage_device_location:
+          description: The GPS coordinates of the storage Device that has discharged
+            the energy represented by this GC Bundle.
+          items:
+          - type: number
+          - type: number
+          maxItems: 2
+          minItems: 2
+          title: Storage Device Location
+          type: array
+        storage_efficiency_factor:
+          description: The efficiency factor of the storage Device that has discharged
+            the energy represented by this GC Bundle.
+          title: Storage Efficiency Factor
+          type: number
+        support_received:
+          description: May contain information on any support received for the generation
+            or investment into the production Device for which this GC Bundle have
+            been issued.
+          title: Support Received
+          type: string
+      required:
+      - certificate_status
+      - account_id
+      - bundle_id_range_start
+      - bundle_id_range_end
+      - bundle_quantity
+      - energy_carrier
+      - energy_source
+      - face_value
+      - issuance_post_energy_carrier_conversion
+      - registry_configuration
+      - device_id
+      - device_name
+      - device_technology_type
+      - device_production_start_date
+      - device_capacity
+      - device_location
+      - device_type
+      - production_starting_interval
+      - production_ending_interval
+      - issuance_datestamp
+      - expiry_datestamp
+      - country_of_issuance
+      - connected_grid_identification
+      - issuing_body
+      - issue_market_zone
+      title: GranularCertificateBundle
+      type: object
+    GranularCertificateBundleBase:
+      description: 'The GC Bundle is the primary unit of issuance and transfer within
+        the EnergyTag standard, and only the Resgistry
+
+        Administrator role can create, update, or withdraw GC Bundles.
+
+
+        Requests to modify attributes including Account location, GC Bundle status,
+        and Bundle splitting received from
+
+        other Account holders should only be applied by the Registry administrator
+        once all necessary validations have been
+
+        performend.
+
+
+        Validations and action execution are to be applied using a single queuing
+        system, with changes made to the GC Bundle
+
+        database applied with full ACID compliance. This ensures that all actions
+        are applied in the order they are received,
+
+        the state of the database is consistent at all times, and any errors can be
+        rectified by reversing linearly through
+
+        the queue.'
+      properties:
+        account_id:
+          description: Each GC Bundle is issued to a single unique production Account
+            that its production Device is individually registered to.
+          format: uuid
+          title: Account Id
+          type: string
+        bundle_id_range_end:
+          description: "The start and end range IDs of GC Bundles may change as they\
+            \ are split and transferred between Accounts,\n                      \
+            \ or partially cancelled."
+          title: Bundle Id Range End
+          type: integer
+        bundle_id_range_start:
+          description: "The individual Granular Certificates within this GC Bundle,\
+            \ each representing a \n                        contant volume of energy,\
+            \ generated within the production start and end time interval, \n    \
+            \                    is issued an ID in a format that can be represented\
+            \ sequentially and in a \n                        clearly ascending manner,\
+            \ displayed on the GC Bundle instance by start and end IDs indicating\
+            \ the minimum\n                        and maximum IDs contained within\
+            \ the Bundle, inclusive of both range end points and all integers\n  \
+            \                      within that range."
+          title: Bundle Id Range Start
+          type: integer
+        bundle_quantity:
+          description: "The quantity of Granular Certificates within this GC Bundle,\
+            \ according to a \n                        standardised energy volume\
+            \ per Granular Certificate, rounded down to the nearest Wh. Equal to \n\
+            \                        (bundle_id_range_end - bundle_id_range_start\
+            \ + 1)."
+          title: Bundle Quantity
+          type: integer
+        certificate_status:
+          description: 'One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked,
+            Reserved.'
+          title: Certificate Status
+          type: string
+        connected_grid_identification:
+          description: A Domain-specific identifier indicating the infrastructure
+            into which the energy has been injected.
+          title: Connected Grid Identification
+          type: string
+        country_of_issuance:
+          description: The Domain under which the Issuing Body of this GC Bundle has
+            authority to issue.
+          title: Country Of Issuance
+          type: string
+        device_capacity:
+          description: The maximum capacity of the production Device in Watts (W).
+          title: Device Capacity
+          type: integer
+        device_id:
+          description: Each GC Bundle is associated with a single production Device.
+          format: uuid
+          title: Device Id
+          type: string
+        device_location:
+          description: The GPS coordinates of the production or Storage Device responsible
+            for releasing the energy represented by the GC Bundle.
+          items:
+          - type: number
+          - type: number
+          maxItems: 2
+          minItems: 2
+          title: Device Location
+          type: array
+        device_name:
+          description: The name of the production Device.
+          title: Device Name
+          type: string
+        device_production_start_date:
+          description: The date on which the production Device began generating energy.
+          format: date
+          title: Device Production Start Date
+          type: string
+        device_technology_type:
+          description: 'The Device''s technology type, for example: Offshore Wind
+            Turbine, Biomass Plant, Fixed Hydro.'
+          title: Device Technology Type
+          type: string
+        device_type:
+          description: Whether the GC Bundle represents energy that has been generated
+            by a production Device or released by a storage unit.
+          title: Device Type
+          type: string
+        discharging_end_datetime:
+          description: The UTC datetime at which the Storage Device ceased discharging
+            energy represented by this SD-GC (inherited from the allocated SDR).
+          format: date-time
+          title: Discharging End Datetime
+          type: string
+        discharging_start_datetime:
+          description: The UTC datetime at which the Storage Device began discharging
+            the energy represented by this SD-GC (inherited from the allocated SDR).
+          format: date-time
+          title: Discharging Start Datetime
+          type: string
+        dissemination_level:
+          description: Specifies whether the energy associated with this GC Bundle
+            was self-consumed or injected into a private or public grid.
+          title: Dissemination Level
+          type: string
+        emissions_factor_production_device:
+          description: May indicate the emissions factor (kgCO2e/MWh) of the production
+            Device at the datetime in which this GC Bundle was issued against.
+          title: Emissions Factor Production Device
+          type: number
+        emissions_factor_source:
+          description: Includes a reference to the calculation methodology of the
+            production Device emissions factor.
+          title: Emissions Factor Source
+          type: string
+        energy_carrier:
+          description: 'The form of energy that the GC Bundle represents, for example:
+            Electricity, Hydrogen, Ammonia. In the current version of the standard
+            (v2), this field is always Electricity.'
+          title: Energy Carrier
+          type: string
+        energy_source:
+          description: 'The fuel type used to generate the energy represented by the
+            GC Bundle, for example: Solar, Wind, Biomass, Nuclear, Coal, Gas, Oil,
+            Hydro.'
+          title: Energy Source
+          type: string
+        expiry_datestamp:
+          description: The date in UTC format (YYYY-MM-DD) indicating the point at
+            which the GC Bundle will be rendered invalid if they have not been cancelled.
+            This expiry period can vary across Domains.
+          format: date
+          title: Expiry Datestamp
+          type: string
+        face_value:
+          description: States the quantity of energy in Watt-hours (Wh) represented
+            by each Granular Certificate within this GC Bundle.
+          title: Face Value
+          type: integer
+        issuance_datestamp:
+          description: The date in UTC format (YYYY-MM-DD) indicating the date on
+            which the Issuing Body delivered the GC Bundle to the production Device's
+            registered Account.
+          format: date
+          title: Issuance Datestamp
+          type: string
+        issuance_post_energy_carrier_conversion:
+          description: Indicate whether this GC Bundle have been issued following
+            an energy conversion event, for example in a power to hydrogen facility.
+          title: Issuance Post Energy Carrier Conversion
+          type: boolean
+        issuance_purpose:
+          description: 'May contain the purpose of the GC Bundle issuance, for example:
+            Disclosure, Subsidy Support.'
+          title: Issuance Purpose
+          type: string
+        issue_market_zone:
+          description: References the bidding zone and/or market authority and/or
+            price node within which the GC Bundle have been issued.
+          title: Issue Market Zone
+          type: string
+        issuing_body:
+          description: The Issuing Body that has issued this GC Bundle.
+          title: Issuing Body
+          type: string
+        legal_status:
+          description: May contain pertinent information on the Issuing Authority,
+            where relevant.
+          title: Legal Status
+          type: string
+        production_ending_interval:
+          description: The datetime in UTC format indicating the end of the relevant
+            production period.
+          format: date-time
+          title: Production Ending Interval
+          type: string
+        production_starting_interval:
+          description: "The datetime in UTC format indicating the start of the relevant\
+            \ production period. \n                        GC Bundles shall be issued\
+            \ over a maximum production period of one hour, \n                   \
+            \     under the assumption that the certificates represent an even distribution\
+            \ of power generation within that period."
+          format: date-time
+          title: Production Starting Interval
+          type: string
+        quality_scheme_reference:
+          description: May contain any references to quality schemes for which this
+            GC Bundle were issued.
+          title: Quality Scheme Reference
+          type: string
+        registry_configuration:
+          description: "The configuration of the Registry that issued this GC Bundle;\
+            \ either 1, 2, or 3 at the time of writing (Standard v2). Enables tracking\
+            \ of related certificates \n                        to aid auditing and\
+            \ error detection"
+          title: Registry Configuration
+          type: integer
+        sdr_allocation_id:
+          description: The unique ID of the Storage Discharge Record that has been
+            allocated to this GC Bundle.
+          format: uuid
+          title: Sdr Allocation Id
+          type: string
+        storage_device_id:
+          description: The Device ID of the storage Device that released the energy
+            represented by the GC Bundle.
+          format: uuid
+          title: Storage Device Id
+          type: string
+        storage_device_location:
+          description: The GPS coordinates of the storage Device that has discharged
+            the energy represented by this GC Bundle.
+          items:
+          - type: number
+          - type: number
+          maxItems: 2
+          minItems: 2
+          title: Storage Device Location
+          type: array
+        storage_efficiency_factor:
+          description: The efficiency factor of the storage Device that has discharged
+            the energy represented by this GC Bundle.
+          title: Storage Efficiency Factor
+          type: number
+        support_received:
+          description: May contain information on any support received for the generation
+            or investment into the production Device for which this GC Bundle have
+            been issued.
+          title: Support Received
+          type: string
+      required:
+      - certificate_status
+      - account_id
+      - bundle_id_range_start
+      - bundle_id_range_end
+      - bundle_quantity
+      - energy_carrier
+      - energy_source
+      - face_value
+      - issuance_post_energy_carrier_conversion
+      - registry_configuration
+      - device_id
+      - device_name
+      - device_technology_type
+      - device_production_start_date
+      - device_capacity
+      - device_location
+      - device_type
+      - production_starting_interval
+      - production_ending_interval
+      - issuance_datestamp
+      - expiry_datestamp
+      - country_of_issuance
+      - connected_grid_identification
+      - issuing_body
+      - issue_market_zone
+      title: GranularCertificateBundleBase
+      type: object
+    GranularCertificateCancellation:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        beneficiary:
+          description: The Beneficiary entity that may make a claim on the attributes
+            of the cancelled GC Bundles. If not specified, the Account holder is treated
+            as the Beneficiary.
+          title: Beneficiary
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+      required:
+      - source_account_id
+      - source_user_id
+      title: GranularCertificateCancellation
+      type: object
+    GranularCertificateClaim:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+      required:
+      - source_account_id
+      - source_user_id
+      title: GranularCertificateClaim
+      type: object
+    GranularCertificateQuery:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+      required:
+      - source_account_id
+      - source_user_id
+      title: GranularCertificateQuery
+      type: object
+    GranularCertificateQueryResponse:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        action_response_status:
+          description: Specifies whether the requested action has been accepted or
+            rejected by the registry.
+          title: Action Response Status
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        filtered_certificate_bundles:
+          items:
+            $ref: '#/components/schemas/GranularCertificateBundle'
+          title: Filtered Certificate Bundles
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+      required:
+      - source_account_id
+      - source_user_id
+      - action_response_status
+      title: GranularCertificateQueryResponse
+      type: object
+    GranularCertificateRecurringCancellation:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        beneficiary:
+          description: The Beneficiary entity that may make a claim on the attributes
+            of the cancelled GC Bundles. If not specified, the Account holder is treated
+            as the Beneficiary.
+          title: Beneficiary
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        initial_cancellation_datetime:
+          description: The UTC datetime of the first cancellation that is to be completed
+          format: date-time
+          title: Initial Cancellation Datetime
+          type: string
+        number_of_recurring_cancellations:
+          description: Including the first transfer, the number of recurring cancellations
+            to perform before halting the recurring aorder.
+          title: Number Of Recurring Cancellations
+          type: integer
+        recurring_cancellation_period_quantity:
+          description: The nuber of units of time (specified by the units field) between
+            each cancellation event.
+          title: Recurring Cancellation Period Quantity
+          type: integer
+        recurring_cancellation_period_units:
+          description: 'The unit of time that described by the recurring_cancellation_period_quantity
+            field, for example: ''days'', ''weeks'', ''months'', ''years''.'
+          title: Recurring Cancellation Period Units
+          type: string
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+      required:
+      - source_account_id
+      - source_user_id
+      - initial_cancellation_datetime
+      title: GranularCertificateRecurringCancellation
+      type: object
+    GranularCertificateRecurringTransfer:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        initial_transfer_datetime:
+          description: The UTC datetime of the first transfer that is to be completed.
+          format: date-time
+          title: Initial Transfer Datetime
+          type: string
+        number_of_recurring_transfers:
+          description: Including the first transfer, the number of recurring transfers
+            to perform before halting the recurring order.
+          title: Number Of Recurring Transfers
+          type: integer
+        recurring_transfer_period_quantity:
+          description: The nuber of units of time (specified by the units field) between
+            each transfer of GC Bundles.
+          title: Recurring Transfer Period Quantity
+          type: integer
+        recurring_transfer_period_units:
+          description: 'The unit of time described by the recurring_transfer_period_quantity
+            field, for example: ''days'', ''weeks'', ''months'', ''years''.'
+          title: Recurring Transfer Period Units
+          type: string
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+        target_account_id:
+          description: For (recurring) transfers, the Account ID into which the GC
+            Bundles are to be transferred to.
+          format: uuid
+          title: Target Account Id
+          type: string
+      required:
+      - source_account_id
+      - source_user_id
+      - initial_transfer_datetime
+      title: GranularCertificateRecurringTransfer
+      type: object
+    GranularCertificateReservation:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+        target_registry:
+          description: "Under Configuration 2, a GC Bundle may be reserved for transfer\
+            \ to a separate registry. This operation is irreversible - once\n    \
+            \                   a GC Bundle is reserved, it cannot be unreserved or\
+            \ transfered. Logic for how GC Bundles are mapped onto the target regsitry's\n\
+            \                       certificate issuance system is left to the discretion\
+            \ of the target registry operator."
+          title: Target Registry
+          type: string
+      required:
+      - source_account_id
+      - source_user_id
+      title: GranularCertificateReservation
+      type: object
+    GranularCertificateTransfer:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+        target_account_id:
+          description: For (recurring) transfers, the Account ID into which the GC
+            Bundles are to be transferred to.
+          format: uuid
+          title: Target Account Id
+          type: string
+      required:
+      - source_account_id
+      - source_user_id
+      title: GranularCertificateTransfer
+      type: object
+    GranularCertificateUpdateMutables:
+      properties:
+        account_id:
+          description: Update the associated Account of a GC Bundle.
+          format: uuid
+          title: Account Id
+          type: string
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Update the status of a GC Bundle.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+      required:
+      - source_account_id
+      - source_user_id
+      title: GranularCertificateUpdateMutables
+      type: object
+    GranularCertificateWithdraw:
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        certificate_period_end:
+          description: The UTC datetime up to which GC Bundles within the specified
+            Account are to be filtered.
+          format: date-time
+          title: Certificate Period End
+          type: string
+        certificate_period_start:
+          description: The UTC datetime from which to filter GC Bundles within the
+            specified Account.
+          format: date-time
+          title: Certificate Period Start
+          type: string
+        certificate_quantity:
+          description: "Overrides GC Bundle range start and end IDs, if specified.\
+            \ \n        Of the GC Bundles identified, return the total number of certificates\
+            \ to action on, \n        splitting GC Bundles from the start of the range\
+            \ where necessary."
+          title: Certificate Quantity
+          type: integer
+        certificate_status:
+          description: Filter on the status of the GC Bundles.
+          title: Certificate Status
+          type: string
+        device_id:
+          description: Filter GC Bundles associated with the specified production
+            device.
+          format: uuid
+          title: Device Id
+          type: string
+        energy_source:
+          description: Filter GC Bundles based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Energy Source
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_certificate_bundle_id_range_end:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range End
+          type: integer
+        source_certificate_bundle_id_range_start:
+          description: If an issuance ID is specified, returns a GC Bundle containing
+            all certificates between and inclusive of the range start and end IDs
+            provided.
+          title: Source Certificate Bundle Id Range Start
+          type: integer
+        source_certificate_issuance_id:
+          description: The specific GC Bundle(s) onto which the action will be performed.
+            Returns all GC Bundles with the specified issuance ID.
+          format: uuid
+          title: Source Certificate Issuance Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+      required:
+      - source_account_id
+      - source_user_id
+      title: GranularCertificateWithdraw
+      type: object
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    Organisation:
+      properties:
+        address:
+          title: Address
+          type: string
+        business_id:
+          title: Business Id
+          type: integer
+        name:
+          title: Name
+          type: string
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+        primary_contact:
+          title: Primary Contact
+          type: string
+        website:
+          title: Website
+          type: string
+      required:
+      - name
+      - business_id
+      - primary_contact
+      title: Organisation
+      type: object
+    OrganisationBase:
+      properties:
+        address:
+          title: Address
+          type: string
+        business_id:
+          title: Business Id
+          type: integer
+        name:
+          title: Name
+          type: string
+        primary_contact:
+          title: Primary Contact
+          type: string
+        website:
+          title: Website
+          type: string
+      required:
+      - name
+      - business_id
+      - primary_contact
+      title: OrganisationBase
+      type: object
+    OrganisationRead:
+      properties:
+        address:
+          title: Address
+          type: string
+        business_id:
+          title: Business Id
+          type: integer
+        name:
+          title: Name
+          type: string
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+        primary_contact:
+          title: Primary Contact
+          type: string
+        website:
+          title: Website
+          type: string
+      required:
+      - name
+      - business_id
+      - primary_contact
+      - organisation_id
+      title: OrganisationRead
+      type: object
+    OrganisationUpdate:
+      properties:
+        address:
+          title: Address
+          type: string
+        business_id:
+          title: Business Id
+          type: integer
+        name:
+          title: Name
+          type: string
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+        primary_contact:
+          title: Primary Contact
+          type: string
+        website:
+          title: Website
+          type: string
+      title: OrganisationUpdate
+      type: object
+    SCRQueryResponse:
+      description: 'A record of a User''s request to the registry to perform an action
+        on an SCR/SDR.
+
+        The registry must ensure that the User has the necessary authority to perform
+        the requested action, and that the action is performed
+
+        in accordance with the EnergyTag Standard and the registry''s own policies
+        and procedures.'
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        action_response_status:
+          description: Specifies whether the requested action has been accepted or
+            rejected by the registry.
+          title: Action Response Status
+          type: string
+        charging_period_end:
+          description: The UTC datetime up to which records within the specified Account
+            are to be filtered.
+          format: date-time
+          title: Charging Period End
+          type: string
+        charging_period_start:
+          description: The UTC datetime from which to filter records within the specified
+            Account.
+          format: date-time
+          title: Charging Period Start
+          type: string
+        filtered_scrs:
+          items:
+            $ref: '#/components/schemas/StorageChargeRecord'
+          title: Filtered Scrs
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_allocation_id:
+          description: The specific SCRs/SDRs onto which the action will be performed.
+            Returns all records with the specified allocation ID.
+          format: uuid
+          title: Source Allocation Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+        storage_device_id:
+          description: Filter records associated with the specified production device.
+          format: uuid
+          title: Storage Device Id
+          type: string
+        storage_energy_source:
+          description: Filter records based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Storage Energy Source
+          type: array
+      required:
+      - action_response_status
+      - source_account_id
+      - source_user_id
+      title: SCRQueryResponse
+      type: object
+    SDRQueryResponse:
+      description: 'A record of a User''s request to the registry to perform an action
+        on an SCR/SDR.
+
+        The registry must ensure that the User has the necessary authority to perform
+        the requested action, and that the action is performed
+
+        in accordance with the EnergyTag Standard and the registry''s own policies
+        and procedures.'
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        action_response_status:
+          description: Specifies whether the requested action has been accepted or
+            rejected by the registry.
+          title: Action Response Status
+          type: string
+        charging_period_end:
+          description: The UTC datetime up to which records within the specified Account
+            are to be filtered.
+          format: date-time
+          title: Charging Period End
+          type: string
+        charging_period_start:
+          description: The UTC datetime from which to filter records within the specified
+            Account.
+          format: date-time
+          title: Charging Period Start
+          type: string
+        filtered_sdrs:
+          items:
+            $ref: '#/components/schemas/StorageDischargeRecord'
+          title: Filtered Sdrs
+          type: array
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_allocation_id:
+          description: The specific SCRs/SDRs onto which the action will be performed.
+            Returns all records with the specified allocation ID.
+          format: uuid
+          title: Source Allocation Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+        storage_device_id:
+          description: Filter records associated with the specified production device.
+          format: uuid
+          title: Storage Device Id
+          type: string
+        storage_energy_source:
+          description: Filter records based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Storage Energy Source
+          type: array
+      required:
+      - action_response_status
+      - source_account_id
+      - source_user_id
+      title: SDRQueryResponse
+      type: object
+    StorageAction:
+      description: A record of a User's request to the registry to query SCRs/SDRs
+        within a specified Account.
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        action_response_status:
+          description: Specifies whether the requested action has been accepted or
+            rejected by the registry.
+          title: Action Response Status
+          type: string
+        charging_period_end:
+          description: The UTC datetime up to which records within the specified Account
+            are to be filtered.
+          format: date-time
+          title: Charging Period End
+          type: string
+        charging_period_start:
+          description: The UTC datetime from which to filter records within the specified
+            Account.
+          format: date-time
+          title: Charging Period Start
+          type: string
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_allocation_id:
+          description: The specific SCRs/SDRs onto which the action will be performed.
+            Returns all records with the specified allocation ID.
+          format: uuid
+          title: Source Allocation Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+        storage_device_id:
+          description: Filter records associated with the specified production device.
+          format: uuid
+          title: Storage Device Id
+          type: string
+        storage_energy_source:
+          description: Filter records based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Storage Energy Source
+          type: array
+      required:
+      - action_response_status
+      - source_account_id
+      - source_user_id
+      title: StorageAction
+      type: object
+    StorageActionResponse:
+      description: 'A record of a User''s request to the registry to perform an action
+        on an SCR/SDR.
+
+        The registry must ensure that the User has the necessary authority to perform
+        the requested action, and that the action is performed
+
+        in accordance with the EnergyTag Standard and the registry''s own policies
+        and procedures.'
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        action_response_status:
+          description: Specifies whether the requested action has been accepted or
+            rejected by the registry.
+          title: Action Response Status
+          type: string
+        charging_period_end:
+          description: The UTC datetime up to which records within the specified Account
+            are to be filtered.
+          format: date-time
+          title: Charging Period End
+          type: string
+        charging_period_start:
+          description: The UTC datetime from which to filter records within the specified
+            Account.
+          format: date-time
+          title: Charging Period Start
+          type: string
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_allocation_id:
+          description: The specific SCRs/SDRs onto which the action will be performed.
+            Returns all records with the specified allocation ID.
+          format: uuid
+          title: Source Allocation Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+        storage_device_id:
+          description: Filter records associated with the specified production device.
+          format: uuid
+          title: Storage Device Id
+          type: string
+        storage_energy_source:
+          description: Filter records based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Storage Energy Source
+          type: array
+      required:
+      - action_response_status
+      - source_account_id
+      - source_user_id
+      title: StorageActionResponse
+      type: object
+    StorageActionUpdateMutables:
+      description: A record of a User's request to the registry to query SCRs/SDRs
+        within a specified Account.
+      properties:
+        action_completed_datetime:
+          description: The UTC datetime at which the registry confirmed to the User
+            that their submitted action had either been successfully completed or
+            rejected.
+          format: date-time
+          title: Action Completed Datetime
+          type: string
+        action_id:
+          description: A unique ID assigned to this action.
+          format: uuid
+          title: Action Id
+          type: string
+        action_request_datetime:
+          description: The UTC datetime at which the User submitted the action to
+            the registry.
+          format: date-time
+          title: Action Request Datetime
+          type: string
+        action_response_status:
+          description: Specifies whether the requested action has been accepted or
+            rejected by the registry.
+          title: Action Response Status
+          type: string
+        charging_period_end:
+          description: The UTC datetime up to which records within the specified Account
+            are to be filtered.
+          format: date-time
+          title: Charging Period End
+          type: string
+        charging_period_start:
+          description: The UTC datetime from which to filter records within the specified
+            Account.
+          format: date-time
+          title: Charging Period Start
+          type: string
+        source_account_id:
+          description: The Account ID of the Account within which the action shall
+            occur or originate from.
+          format: uuid
+          title: Source Account Id
+          type: string
+        source_allocation_id:
+          description: The specific SCRs/SDRs onto which the action will be performed.
+            Returns all records with the specified allocation ID.
+          format: uuid
+          title: Source Allocation Id
+          type: string
+        source_user_id:
+          description: The User that is performing the action, and can be verified
+            as having the sufficient authority to perform the requested action on
+            the Account specified.
+          format: uuid
+          title: Source User Id
+          type: string
+        sparse_filter_list:
+          additionalProperties:
+            format: date-time
+            type: string
+          description: Overrides all other search criteria. Provide a list of Device
+            ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime
+            specified.
+          title: Sparse Filter List
+          type: object
+        storage_device_id:
+          description: Filter records associated with the specified production device.
+          format: uuid
+          title: Storage Device Id
+          type: string
+        storage_energy_source:
+          description: Filter records based on the fuel type used by the production
+            Device.
+          items:
+            type: string
+          title: Storage Energy Source
+          type: array
+      required:
+      - action_response_status
+      - source_account_id
+      - source_user_id
+      title: StorageActionUpdateMutables
+      type: object
+    StorageChargeRecord:
+      properties:
+        account_id:
+          description: Each SCR is issued to a single unique production Account that
+            its Storage Device is individually registered to.
+          format: uuid
+          title: Account Id
+          type: string
+        charging_end_datetime:
+          description: The UTC datetime at which the Storage Device ceased charging
+            energy.
+          format: date-time
+          title: Charging End Datetime
+          type: string
+        charging_energy:
+          description: The quantity of energy in Watt-hours (Wh) that the Storage
+            Device has been charged with.
+          title: Charging Energy
+          type: integer
+        charging_energy_source:
+          description: "The energy source from which the Storage Device was charged,\
+            \ matching the energy source of the GC Bundles \n                    \
+            \   that were cancelled and allocated to the Storage Device."
+          title: Charging Energy Source
+          type: string
+        charging_start_datetime:
+          description: The UTC datetime at which the Storage Device began charging
+            energy.
+          format: date-time
+          title: Charging Start Datetime
+          type: string
+        device_id:
+          description: The Device ID of the Storage Device that is being charged.
+          format: uuid
+          title: Device Id
+          type: string
+        gc_bundle_id_range_end:
+          description: The end range ID of the GC Bundle that was cancelled and allocated
+            to this SCR.
+          title: Gc Bundle Id Range End
+          type: integer
+        gc_bundle_id_range_start:
+          description: The start range ID of the GC Bundle that was cancelled and
+            allocated to this SCR.
+          title: Gc Bundle Id Range Start
+          type: integer
+        gc_issuance_id:
+          description: The unique issuance ID of the GC Bundle that was cancelled
+            and allocated to this SCR.
+          format: uuid
+          title: Gc Issuance Id
+          type: string
+        scr_allocation_id:
+          description: The unique ID of the Storage Charge Record that allocated the
+            energy of the Storage Device to this SDR.
+          format: uuid
+          title: Scr Allocation Id
+          type: string
+        scr_geographic_matching_method:
+          description: Which type of geographic matching, as described in the EnergyTag
+            GC Matching Standard, has been applied to allocated this SCR.
+          title: Scr Geographic Matching Method
+          type: string
+        sdr_allocation_id:
+          description: When allocated, the unique ID of the Storage Discharge Record
+            that has been allocated to this SCR. If blank, no SDR has been allocated
+            to this SCR.
+          format: uuid
+          title: Sdr Allocation Id
+          type: string
+      required:
+      - charging_start_datetime
+      - charging_end_datetime
+      - charging_energy
+      - charging_energy_source
+      - gc_issuance_id
+      - gc_bundle_id_range_start
+      - gc_bundle_id_range_end
+      - scr_geographic_matching_method
+      - scr_allocation_id
+      - account_id
+      - device_id
+      title: StorageChargeRecord
+      type: object
+    StorageChargeRecordBase:
+      properties:
+        charging_end_datetime:
+          description: The UTC datetime at which the Storage Device ceased charging
+            energy.
+          format: date-time
+          title: Charging End Datetime
+          type: string
+        charging_energy:
+          description: The quantity of energy in Watt-hours (Wh) that the Storage
+            Device has been charged with.
+          title: Charging Energy
+          type: integer
+        charging_energy_source:
+          description: "The energy source from which the Storage Device was charged,\
+            \ matching the energy source of the GC Bundles \n                    \
+            \   that were cancelled and allocated to the Storage Device."
+          title: Charging Energy Source
+          type: string
+        charging_start_datetime:
+          description: The UTC datetime at which the Storage Device began charging
+            energy.
+          format: date-time
+          title: Charging Start Datetime
+          type: string
+        gc_bundle_id_range_end:
+          description: The end range ID of the GC Bundle that was cancelled and allocated
+            to this SCR.
+          title: Gc Bundle Id Range End
+          type: integer
+        gc_bundle_id_range_start:
+          description: The start range ID of the GC Bundle that was cancelled and
+            allocated to this SCR.
+          title: Gc Bundle Id Range Start
+          type: integer
+        gc_issuance_id:
+          description: The unique issuance ID of the GC Bundle that was cancelled
+            and allocated to this SCR.
+          format: uuid
+          title: Gc Issuance Id
+          type: string
+        scr_geographic_matching_method:
+          description: Which type of geographic matching, as described in the EnergyTag
+            GC Matching Standard, has been applied to allocated this SCR.
+          title: Scr Geographic Matching Method
+          type: string
+        sdr_allocation_id:
+          description: When allocated, the unique ID of the Storage Discharge Record
+            that has been allocated to this SCR. If blank, no SDR has been allocated
+            to this SCR.
+          format: uuid
+          title: Sdr Allocation Id
+          type: string
+      required:
+      - charging_start_datetime
+      - charging_end_datetime
+      - charging_energy
+      - charging_energy_source
+      - gc_issuance_id
+      - gc_bundle_id_range_start
+      - gc_bundle_id_range_end
+      - scr_geographic_matching_method
+      title: StorageChargeRecordBase
+      type: object
+    StorageDischargeRecord:
+      properties:
+        account_id:
+          description: Each SDR is issued to a single unique production Account that
+            its Storage Device is individually registered to.
+          format: uuid
+          title: Account Id
+          type: string
+        charging_energy_source:
+          description: "The energy source from which the Storage Device was charged,\
+            \ matching the energy source of the GC Bundles \n                    \
+            \   that were cancelled and allocated to the Storage Device."
+          title: Charging Energy Source
+          type: string
+        device_id:
+          description: The Device ID of the Storage Device that is being charged.
+          format: uuid
+          title: Device Id
+          type: string
+        discharge_energy:
+          description: The quantity of energy in Watt-hours (Wh) that the Storage
+            Device has discharged.
+          title: Discharge Energy
+          type: number
+        discharging_end_datetime:
+          description: The UTC datetime at which the Storage Device ceased discharging
+            energy.
+          format: date-time
+          title: Discharging End Datetime
+          type: string
+        discharging_start_datetime:
+          description: The UTC datetime at which the Storage Device began discharging
+            energy.
+          format: date-time
+          title: Discharging Start Datetime
+          type: string
+        efficiency_factor_interval_end:
+          description: The UTC datetime to which the Storage Device calculates its
+            effective efficiency factor for this SDR.
+          format: date-time
+          title: Efficiency Factor Interval End
+          type: string
+        efficiency_factor_interval_start:
+          description: "The UTC datetime from which the Storage Device calculates\
+            \ its effective efficiency factor for this SDR, based on total input and\n\
+            \                       output energy over the interval specified. This\
+            \ field describes only the method proposed in the EnergyTag Standard,\
+            \ and is not mandatory."
+          format: date-time
+          title: Efficiency Factor Interval Start
+          type: string
+        efficiency_factor_methodology:
+          description: The method by which the energy storage losses of the Storage
+            Device were calculated.
+          title: Efficiency Factor Methodology
+          type: string
+        scr_allocation_id:
+          description: The unique ID of the Storage Charge Record that allocated the
+            energy charged into this Storage Device (adjusted for losses) to this
+            SDR.
+          format: uuid
+          title: Scr Allocation Id
+          type: string
+        scr_allocation_methodology:
+          description: 'The method by which the energy of the Storage Device was allocated
+            to this SDR, for example: FIFO, LIFO, weighted average, or Storage Operator''s
+            discretion.'
+          title: Scr Allocation Methodology
+          type: string
+        sdr_allocation_id:
+          description: The unique ID of this Storage Discharge Record.
+          format: uuid
+          title: Sdr Allocation Id
+          type: string
+      required:
+      - discharging_start_datetime
+      - discharging_end_datetime
+      - discharge_energy
+      - charging_energy_source
+      - scr_allocation_methodology
+      - efficiency_factor_methodology
+      - sdr_allocation_id
+      - device_id
+      - account_id
+      - scr_allocation_id
+      title: StorageDischargeRecord
+      type: object
+    StorageDischargeRecordBase:
+      properties:
+        charging_energy_source:
+          description: "The energy source from which the Storage Device was charged,\
+            \ matching the energy source of the GC Bundles \n                    \
+            \   that were cancelled and allocated to the Storage Device."
+          title: Charging Energy Source
+          type: string
+        discharge_energy:
+          description: The quantity of energy in Watt-hours (Wh) that the Storage
+            Device has discharged.
+          title: Discharge Energy
+          type: number
+        discharging_end_datetime:
+          description: The UTC datetime at which the Storage Device ceased discharging
+            energy.
+          format: date-time
+          title: Discharging End Datetime
+          type: string
+        discharging_start_datetime:
+          description: The UTC datetime at which the Storage Device began discharging
+            energy.
+          format: date-time
+          title: Discharging Start Datetime
+          type: string
+        efficiency_factor_interval_end:
+          description: The UTC datetime to which the Storage Device calculates its
+            effective efficiency factor for this SDR.
+          format: date-time
+          title: Efficiency Factor Interval End
+          type: string
+        efficiency_factor_interval_start:
+          description: "The UTC datetime from which the Storage Device calculates\
+            \ its effective efficiency factor for this SDR, based on total input and\n\
+            \                       output energy over the interval specified. This\
+            \ field describes only the method proposed in the EnergyTag Standard,\
+            \ and is not mandatory."
+          format: date-time
+          title: Efficiency Factor Interval Start
+          type: string
+        efficiency_factor_methodology:
+          description: The method by which the energy storage losses of the Storage
+            Device were calculated.
+          title: Efficiency Factor Methodology
+          type: string
+        scr_allocation_methodology:
+          description: 'The method by which the energy of the Storage Device was allocated
+            to this SDR, for example: FIFO, LIFO, weighted average, or Storage Operator''s
+            discretion.'
+          title: Scr Allocation Methodology
+          type: string
+      required:
+      - discharging_start_datetime
+      - discharging_end_datetime
+      - discharge_energy
+      - charging_energy_source
+      - scr_allocation_methodology
+      - efficiency_factor_methodology
+      title: StorageDischargeRecordBase
+      type: object
+    User:
+      properties:
+        name:
+          title: Name
+          type: string
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+        primary_contact:
+          title: Primary Contact
+          type: string
+        role:
+          description: "The roles of the User with the registry. A single User can\
+            \ be assigned multiple roles\n                       by the Registry Administrator\
+            \ (which is itself a User for the purposes of managing allowable\n   \
+            \                    actions), including: 'GC Issuer', 'Production Registrar',\
+            \ 'Measurement Body', and 'Account Holder'.\n                       The\
+            \ roles are used to determine the actions that the User is allowed to\
+            \ perform within the registry,\n                       according to the\
+            \ EnergyTag Standard."
+          items:
+            type: string
+          title: Role
+          type: array
+        user_id:
+          format: uuid
+          title: User Id
+          type: string
+      required:
+      - name
+      - primary_contact
+      - organisation_id
+      - role
+      title: User
+      type: object
+    UserBase:
+      properties:
+        name:
+          title: Name
+          type: string
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+        primary_contact:
+          title: Primary Contact
+          type: string
+        role:
+          description: "The roles of the User with the registry. A single User can\
+            \ be assigned multiple roles\n                       by the Registry Administrator\
+            \ (which is itself a User for the purposes of managing allowable\n   \
+            \                    actions), including: 'GC Issuer', 'Production Registrar',\
+            \ 'Measurement Body', and 'Account Holder'.\n                       The\
+            \ roles are used to determine the actions that the User is allowed to\
+            \ perform within the registry,\n                       according to the\
+            \ EnergyTag Standard."
+          items:
+            type: string
+          title: Role
+          type: array
+      required:
+      - name
+      - primary_contact
+      - organisation_id
+      - role
+      title: UserBase
+      type: object
+    UserRead:
+      properties:
+        name:
+          title: Name
+          type: string
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+        primary_contact:
+          title: Primary Contact
+          type: string
+        role:
+          description: "The roles of the User with the registry. A single User can\
+            \ be assigned multiple roles\n                       by the Registry Administrator\
+            \ (which is itself a User for the purposes of managing allowable\n   \
+            \                    actions), including: 'GC Issuer', 'Production Registrar',\
+            \ 'Measurement Body', and 'Account Holder'.\n                       The\
+            \ roles are used to determine the actions that the User is allowed to\
+            \ perform within the registry,\n                       according to the\
+            \ EnergyTag Standard."
+          items:
+            type: string
+          title: Role
+          type: array
+        user_id:
+          format: uuid
+          title: User Id
+          type: string
+      required:
+      - name
+      - primary_contact
+      - organisation_id
+      - role
+      - user_id
+      title: UserRead
+      type: object
+    UserUpdate:
+      properties:
+        account_id:
+          format: uuid
+          title: Account Id
+          type: string
+        name:
+          title: Name
+          type: string
+        organisation_id:
+          format: uuid
+          title: Organisation Id
+          type: string
+        primary_contact:
+          title: Primary Contact
+          type: string
+        role:
+          description: "The roles of the User with the registry. A single User can\
+            \ be assigned multiple roles\n                       by the Registry Administrator\
+            \ (which is itself a User for the purposes of managing allowable\n   \
+            \                    actions), including: 'GC Issuer', 'Production Registrar',\
+            \ 'Measurement Body', and 'Account Holder'.\n                       The\
+            \ roles are used to determine the actions that the User is allowed to\
+            \ perform within the registry,\n                       according to the\
+            \ EnergyTag Standard."
+          items:
+            type: string
+          title: Role
+          type: array
+        user_id:
+          format: uuid
+          title: User Id
+          type: string
+      required:
+      - organisation_id
+      - role
+      title: UserUpdate
+      type: object
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
+  securitySchemes:
+    OAuth2PasswordBearer:
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: token
+      type: oauth2
+info:
+  contact:
+    email: connor@futureenergy.associates
+    name: Please direct feedback to
+  description: "\nThis document outlines the EnergyTag API Specification to accompany\
+    \ Version 2 of \nthe EnergyTag Standard.\nThe functionality outlined within each\
+    \ API interaction represents the recommended \nminimum required detail necessary\
+    \ to implement a consistent Granular Certificate \n(GC) registry system. \nWithin\
+    \ the Certificates section, the definition of GCs as specified in the Create \n\
+    Certificate POST request, alongside the filtering parameters required to instigate\
+    \ \nquery, transfer, and cancellation requests, will form core components of the\
+    \ standard \nand impact the functionality of the registry the greatest. Subsequent\
+    \ sections \ndescribing Organisation, User, Account, and Device management are\
+    \ **recommendations \nonly** and do not form part of the standard, although terminology\
+    \ used therein is \nreferenced in the certificate definitions. They are included\
+    \ in the database class \ndiagram for the sake of completeness in representing\
+    \ the relationships between the \ncertificate and action definitions; the fields\
+    \ implemented for these tables are \nleft to the discretion of the registry operator.\
+    \ \n<br>\n\nWhere Universally Unique Identifiers (UUIDs) have been used, these\
+    \ can be replaced with \nany consistent and unique identification mechanism preferred\
+    \ by the registry; for \nexample, concatenations of datetime and Device ID). It\
+    \ is recommended that GC Bundle \nIDs remain represented as integers, or an initial\
+    \ string concatenated with an integer, \nthat can be both uniquely referenced\
+    \ and unambiguously incremented to simplify the \nGC Bundle subdivision process.\n\
+    <br>\n \nEach API call defined below is to be interpreted as an instance of an\
+    \ object that is \nstored by the registry upon receipt by a User, and can be updated\
+    \ as it moves from \nreceived, through pending, to resolved within a transaction\
+    \ log uniquely identified\nby an action ID. With this in mind, fields such as\
+    \ `action_completed_datetime` are \nnot to be interpreted as attributes supplied\
+    \ by the User, but fields that are \npopulated and updated by the registry as\
+    \ the request is processed. \nThis approach allows any and all actions to be queried\
+    \ and traced, with relevant \nUser access rights left to the discretion of the\
+    \ registry operator. \n<br>\n\n[Click here](https://pasteboard.co/KHFQcxYCoRPL.png)\
+    \ to view the GC model class diagram \nfor this specification, [here](https://pasteboard.co/KHFQcxYCoRPL.png)\
+    \ for the Storage class diagram and\n[click here](https://pasteboard.co/KIRLh9VKr2KO.png)\
+    \ to \nview a graphical example of a GC Bundle issuance, transfer, and cancellation\
+    \ that \nillustrates the principles of the GC Bundle subdivision and management\
+    \ processes.\n\n"
+  title: Energy Tag API Specification
+  version: '2.0'
+openapi: 3.1.0
+paths:
+  /accounts/account:
+    post:
+      operationId: create_account_accounts_account_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountBase'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Create Account
+      tags:
+      - Accounts
+  /accounts/account/{account_id}:
+    delete:
+      operationId: delete_account_accounts_account__account_id__delete
+      parameters:
+      - in: path
+        name: account_id
+        required: true
+        schema:
+          format: uuid
+          title: Account Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Delete Account
+      tags:
+      - Accounts
+    get:
+      operationId: read_account_accounts_account__account_id__get
+      parameters:
+      - in: path
+        name: account_id
+        required: true
+        schema:
+          format: uuid
+          title: Account Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Read Account
+      tags:
+      - Accounts
+    patch:
+      operationId: update_account_accounts_account__account_id__patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdate'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Update Account
+      tags:
+      - Accounts
+  /certificates/certificates/cancel:
+    post:
+      description: Cancel a fixed number of certificates matched to the given filter
+        parameters within the specified Account.
+      operationId: certificate_bundle_cancellation_certificates_certificates_cancel_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateCancellation'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Certificate Bundle Cancellation
+      tags:
+      - Certificates
+  /certificates/certificates/claim:
+    post:
+      description: 'Claim a fixed number of cancelled certificates matching the provided
+        search criteria within a given Account,
+
+        if the User is specified as the Beneficiary of those cancelled GCs. For more
+        information on the claim process,
+
+        please see page 15 of the EnergyTag GC Scheme Standard document.'
+      operationId: certificate_bundle_claim_certificates_certificates_claim_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateClaim'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Certificate Bundle Claim
+      tags:
+      - Certificates
+  /certificates/certificates/create:
+    post:
+      description: Create a GC Bundle with the specified properties.
+      operationId: create_certificate_bundle_certificates_certificates_create_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateBundleBase'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateBundle'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Create Certificate Bundle
+      tags:
+      - Certificates
+  /certificates/certificates/query:
+    get:
+      description: Return all certificates from the specified Account that match the
+        provided search criteria.
+      operationId: query_certificate_bundles_certificates_certificates_query_get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateQuery'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateQueryResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Query Certificate Bundles
+      tags:
+      - Certificates
+  /certificates/certificates/recurring_cancel:
+    post:
+      description: Set up a protocol that cancels a fixed number of certificates matching
+        the provided search criteria within a given Account once per time period.
+      operationId: certificate_bundle_recurring_cancellation_certificates_certificates_recurring_cancel_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateRecurringCancellation'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Certificate Bundle Recurring Cancellation
+      tags:
+      - Certificates
+  /certificates/certificates/recurring_transfer:
+    post:
+      description: Set up a protocol that transfers a fixed number of certificates
+        matching the provided search criteria to a given target Account once per time
+        period.
+      operationId: certificate_bundle_recurring_transfer_certificates_certificates_recurring_transfer_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateRecurringTransfer'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Certificate Bundle Recurring Transfer
+      tags:
+      - Certificates
+  /certificates/certificates/reseve:
+    post:
+      description: Label a fixed number of certificates as Reserved from the specified
+        Account matching the provided search criteria.
+      operationId: certificate_bundle_reserve_certificates_certificates_reseve_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateReservation'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Certificate Bundle Reserve
+      tags:
+      - Certificates
+  /certificates/certificates/transfer:
+    post:
+      description: Transfer a fixed number of certificates matched to the given filter
+        parameters to the specified target Account.
+      operationId: certificate_bundle_transfer_certificates_certificates_transfer_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateTransfer'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Certificate Bundle Transfer
+      tags:
+      - Certificates
+  /certificates/certificates/update_mutables:
+    patch:
+      description: Update the mutable aspects (associated Account ID, status) of a
+        given certificate bundle.
+      operationId: update_certificate_mutables_certificates_certificates_update_mutables_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateUpdateMutables'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Update Certificate Mutables
+      tags:
+      - Certificates
+  /certificates/certificates/withdraw:
+    post:
+      description: (Issuing Body only) - Withdraw a fixed number of certificates from
+        the specified Account matching the provided search criteria.
+      operationId: certificate_bundle_withdraw_certificates_certificates_withdraw_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateWithdraw'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Certificate Bundle Withdraw
+      tags:
+      - Certificates
+  /devices/device:
+    post:
+      operationId: create_device_devices_device_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceBase'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Create Device
+      tags:
+      - Devices
+  /devices/device/{device_id}:
+    delete:
+      operationId: delete_device_devices_device__device_id__delete
+      parameters:
+      - in: path
+        name: device_id
+        required: true
+        schema:
+          format: uuid
+          title: Device Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Delete Device
+      tags:
+      - Devices
+    get:
+      operationId: read_device_devices_device__device_id__get
+      parameters:
+      - in: path
+        name: device_id
+        required: true
+        schema:
+          format: uuid
+          title: Device Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Read Device
+      tags:
+      - Devices
+    patch:
+      operationId: update_device_devices_device__device_id__patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceUpdate'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Update Device
+      tags:
+      - Devices
+  /organisations/organisation:
+    post:
+      operationId: create_organisation_organisations_organisation_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganisationBase'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganisationRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Create Organisation
+      tags:
+      - Organisations
+  /organisations/organisation/{organisation_id}:
+    delete:
+      operationId: delete_organisation_organisations_organisation__organisation_id__delete
+      parameters:
+      - in: path
+        name: organisation_id
+        required: true
+        schema:
+          format: uuid
+          title: Organisation Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganisationRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Delete Organisation
+      tags:
+      - Organisations
+    get:
+      operationId: read_organisation_organisations_organisation__organisation_id__get
+      parameters:
+      - in: path
+        name: organisation_id
+        required: true
+        schema:
+          format: uuid
+          title: Organisation Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganisationRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Read Organisation
+      tags:
+      - Organisations
+    patch:
+      operationId: update_organisation_organisations_organisation__organisation_id__patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganisationUpdate'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganisationRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Update Organisation
+      tags:
+      - Organisations
+  /storage/storage/create_scr:
+    post:
+      description: Create a Storage Charge Record with the specified properties.
+      operationId: create_SCR_storage_storage_create_scr_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageChargeRecordBase'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageChargeRecord'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Create Scr
+      tags:
+      - Storage
+  /storage/storage/create_sdr:
+    post:
+      description: Create a Storage Discharge Record with the specified properties.
+      operationId: Create_SDR_storage_storage_create_sdr_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageDischargeRecordBase'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageDischargeRecord'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Create Sdr
+      tags:
+      - Storage
+  /storage/storage/issue_sdgc:
+    post:
+      description: 'A GC Bundle that has been issued following the verification of
+        a cancelled GC Bundle and the proper allocation of a pair
+
+        of Storage Charge and Discharge Records. The GC Bundle is issued to the Account
+        of the Storage Device, and is identical to
+
+        a GC Bundle issued to a production Device albeit with additional storage-specific
+        attributes as described in the Standard.
+
+
+        These bundles can be queried using the same GC Bundle query endpoint as regular
+        GC Bundles, but with the additional option to filter
+
+        by the storage_device_id and the discharging_start_datetime, which is inherited
+        from the allocated SDR.'
+      operationId: issue_SDGC_storage_storage_issue_sdgc_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GranularCertificateBundleBase'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GranularCertificateBundle'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Issue Sdgc
+      tags:
+      - Storage
+  /storage/storage/query_scr:
+    get:
+      description: Return all SCRs from the specified Account that match the provided
+        search criteria.
+      operationId: query_SCR_storage_storage_query_scr_get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageAction'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SCRQueryResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Query Scr
+      tags:
+      - Storage
+  /storage/storage/query_sdr:
+    get:
+      description: Return all SDRs from the specified Account that match the provided
+        search criteria.
+      operationId: query_SDR_storage_storage_query_sdr_get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageAction'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDRQueryResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Query Sdr
+      tags:
+      - Storage
+  /storage/storage/update_mutables:
+    patch:
+      description: Update the mutable aspects (associated Account ID, status) of a
+        given certificate bundle.
+      operationId: update_certificate_mutables_storage_storage_update_mutables_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageActionUpdateMutables'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Update Certificate Mutables
+      tags:
+      - Storage
+  /storage/storage/withdraw_scr:
+    post:
+      description: (Issuing Body only) - Withdraw a fixed number of SCRs from the
+        specified Account matching the provided search criteria.
+      operationId: SCR_withdraw_storage_storage_withdraw_scr_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageAction'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Scr Withdraw
+      tags:
+      - Storage
+  /storage/storage/withdraw_sdr:
+    post:
+      description: (Issuing Body only) - Withdraw a fixed number of SDRs from the
+        specified Account matching the provided search criteria.
+      operationId: SDR_withdraw_storage_storage_withdraw_sdr_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageAction'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageActionResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Sdr Withdraw
+      tags:
+      - Storage
+  /users/user:
+    post:
+      operationId: create_user_users_user_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserBase'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Create User
+      tags:
+      - Users
+  /users/user/{user_id}:
+    delete:
+      operationId: delete_user_users_user__user_id__delete
+      parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema:
+          format: uuid
+          title: User Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Delete User
+      tags:
+      - Users
+    get:
+      operationId: read_user_users_user__user_id__get
+      parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema:
+          format: uuid
+          title: User Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Read User
+      tags:
+      - Users
+    patch:
+      operationId: update_user_users_user__user_id__patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security:
+      - OAuth2PasswordBearer: []
+      summary: Update User
+      tags:
+      - Users
+tags:
+- description: "GC lifecycle management functionality. Filtering of GC Bundles for\
+    \ action implementation and queries \nshould be flexible for the end user and\
+    \ accommodate any combination of search parameters below for a specific Account:\
+    \ \n<br>\n- **Certificate Issuance ID** - Returns all GC Bundles with the specified\
+    \ Issuance ID. Implicitly limited to single Device and time period.\n\n- **Bundle\
+    \ ID Range** - If Issuance ID is provided, returns a GC Bundle with certificate\
+    \ IDs inclusive of and between the integer GC Bundle ID range specified.\n\n-\
+    \ **Issuance Time Period** - Returns all GC Bundles issued for generation that\
+    \ occured within the specified time period. If no Device is provided, result can\
+    \ include GC Bundles from multiple Devices.\n\n- **Energy Source** - Returns all\
+    \ GC Bundles issued for generation derived from the specified energy source.\n\
+    \n- **Production Device ID** - Returns all GC Bundles issued to the specified\
+    \ production Device.\n"
+  name: Certificates
+- description: "The Storage Charge Record (SCR) is a record of the energy charged\
+    \ into a Storage Device from the grid or directly from another energy source.\n\
+    All charging events must be recorded in an SCR following verification of metering\
+    \ reports from the storage unit.\nOnce recorded, an SCR can be allocated to a\
+    \ cancelled GC bundle issued in the same time period as the charging interval,\n\
+    retaining the attributes of the GCs representing the energy charged. The Registry\
+    \ must ensure that a\nprocess is in place to verify that the energy charged into\
+    \ the Storage Device is not double-counted or mismatched to the wrong\nnumber\
+    \ of cancelled GC Bundles, and that the cancelled GC Bundles were issued within\
+    \ the charging interval indicated in the SCR.\n<br>\n\nA suggested approach to\
+    \ applying this requirement is to enforce a one-to-one relationship between SCRs\
+    \ and the cancelled GC Bundles,\nallowing the full set of GC Bundle attributes\
+    \ to be referenced from the SCR and the subsequent SDR/SD-GC Bundle as a\nsingle\
+    \ dependent chain without needing any aggregation or weighting algorithms. A disadvantage\
+    \ of this approach is that only a single \ncontiguous range of GC Bundle IDs can\
+    \ be allocated to each SCR, which in practice may lead to a large number of SCRs\
+    \ created due to \nmultiple non-contiguous GC Bundles being allocated in the same\
+    \ charging interval. More details can be found in the White Paper.\n<br>\n\nThe\
+    \ Storage Discharge Record (SDR) is a record of the energy discharged by a Storage\
+    \ Device into the grid.\nIt is issued following the verification of a cancelled\
+    \ GC Bundle, a matching allocated SCR, and the proper allocation\nof Storage Losses\
+    \ incurred during the charge interval. It is recommended that the methodology\
+    \ with which Storage Device \noperators are permitted to allocate SDRs to SCRs,\
+    \ whether LIFO, FIFO, a weighted average, or operator's discretion, is\nfixed\
+    \ such that operators cannot change the methodology in a way that would allow\
+    \ them to manipulate the allocation of SDRs.\n<br>\n\nTo comply with the Standard,\
+    \ the Registry must provide a process to view the attributes of the underlying\
+    \ GC Bundles that\nhave been cancelled leading to the issuance of the SCR allocated\
+    \ to this SDR, by following the chain of one-to-one foreign\nkeys from the SDR\
+    \ to the SCR, and from the SCR to the cancelled GC Bundles.\n<br>\n\nThe method\
+    \ for calulating the storage loss is not mandated, but the Registry must ensure\
+    \ that the method used is transparent and\nclearly documented for auditing purposes.\
+    \ The method proposed in this API Specification followed the suggested methodology\
+    \ in the\nEnergyTag Standard, which is to calculate the storage losses as the\
+    \ difference between the total input and output energy\nof the Storage Device\
+    \ over a specified interval period (which shall not exceed 6 months for the initial\
+    \ efficiency factor\ncalculated from the start-up date of the Storage Device),\
+    \ implicitly including parasitic losses."
+  name: Storage
+- description: Top-level entities that manage multiple Users and Accounts.
+  name: Organisations
+- description: Individuals affiliated with an Organisation that can manage zero or
+    more Accounts.
+  name: Users
+- description: "Accounts receive GC Bundles issued from zero or more Devices, and\
+    \ can transfer them to other Accounts.\n                        Can be managed\
+    \ by one or more Users with sufficient access privileges."
+  name: Accounts
+- description: Production or consumption units against which GC Bundles can be either
+    issued or cancelled.
+  name: Devices
