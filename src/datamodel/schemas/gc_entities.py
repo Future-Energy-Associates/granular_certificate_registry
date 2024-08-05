@@ -5,7 +5,7 @@ from typing import (
     Union,
 )
 
-from energytag.datamodel.schemas import items, utils
+from datamodel.schemas import items, utils
 from sqlalchemy import Column
 from sqlmodel import ARRAY, Field, String
 
@@ -33,9 +33,9 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
         description="Each GC Bundle is issued to a single unique production Account that its production Device is individually registered to.",
     )
     bundle_id_range_start: int = Field(
-        description="""The individual Granular Certificates within this GC Bundle, each representing a 
-                        contant volume of energy, generated within the production start and end time interval, 
-                        is issued an ID in a format that can be represented sequentially and in a 
+        description="""The individual Granular Certificates within this GC Bundle, each representing a
+                        contant volume of energy, generated within the production start and end time interval,
+                        is issued an ID in a format that can be represented sequentially and in a
                         clearly ascending manner, displayed on the GC Bundle instance by start and end IDs indicating the minimum
                         and maximum IDs contained within the Bundle, inclusive of both range end points and all integers
                         within that range.""",
@@ -47,8 +47,8 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
         primary_key=True,
     )
     bundle_quantity: int = Field(
-        description="""The quantity of Granular Certificates within this GC Bundle, according to a 
-                        standardised energy volume per Granular Certificate, rounded down to the nearest Wh. Equal to 
+        description="""The quantity of Granular Certificates within this GC Bundle, according to a
+                        standardised energy volume per Granular Certificate, rounded down to the nearest Wh. Equal to
                         (bundle_id_range_end - bundle_id_range_start + 1)."""
     )
 
@@ -66,7 +66,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
         description="Indicate whether this GC Bundle have been issued following an energy conversion event, for example in a power to hydrogen facility.",
     )
     registry_configuration: int = Field(
-        description="""The configuration of the Registry that issued this GC Bundle; either 1, 2, or 3 at the time of writing (Standard v2). Enables tracking of related certificates 
+        description="""The configuration of the Registry that issued this GC Bundle; either 1, 2, or 3 at the time of writing (Standard v2). Enables tracking of related certificates
                         to aid auditing and error detection""",
     )
 
@@ -95,8 +95,8 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
 
     ### Temporal Characteristics ###
     production_starting_interval: datetime.datetime = Field(
-        description="""The datetime in UTC format indicating the start of the relevant production period. 
-                        GC Bundles shall be issued over a maximum production period of one hour, 
+        description="""The datetime in UTC format indicating the start of the relevant production period.
+                        GC Bundles shall be issued over a maximum production period of one hour,
                         under the assumption that the certificates represent an even distribution of power generation within that period.""",
     )
     production_ending_interval: datetime.datetime = Field(
@@ -181,7 +181,7 @@ class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
     issuance_id: uuid_pkg.UUID = Field(
         primary_key=True,
         default_factory=uuid_pkg.uuid4,
-        description="""A unique identifier assigned to the GC Bundle at the time of issuance. 
+        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
         If the bundle is split through partial transfer or cancellation, this issuance ID remains unchanged across each child GC Bundle.""",
     )
 
@@ -223,8 +223,8 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         description="The UTC datetime up to which GC Bundles within the specified Account are to be filtered."
     )
     certificate_quantity: Optional[int] = Field(
-        description="""Overrides GC Bundle range start and end IDs, if specified. 
-        Of the GC Bundles identified, return the total number of certificates to action on, 
+        description="""Overrides GC Bundle range start and end IDs, if specified.
+        Of the GC Bundles identified, return the total number of certificates to action on,
         splitting GC Bundles from the start of the range where necessary.""",
     )
     device_id: Optional[uuid_pkg.UUID] = Field(

@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from energytag.datamodel.schemas import entities, items
+from datamodel.schemas import entities, items
 from sqlmodel import SQLModel
 
 

@@ -2,10 +2,10 @@
 import os
 import uuid
 
-from energytag.api import utils
-from energytag.api.routers import authentication
-from energytag.datamodel import db
-from energytag.datamodel.schemas import entities
+from api import utils
+from api.routers import authentication
+from datamodel import db
+from datamodel.schemas import entities
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
@@ -21,6 +21,7 @@ def process_uuid(uuid_: uuid.UUID):
         uuid_ = str(uuid_).replace("-", "")
 
     return uuid_
+
 
 # Image
 @router.post("/image", response_model=entities.ImageRead)

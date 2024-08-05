@@ -2,13 +2,12 @@ import datetime
 import uuid as uuid_pkg
 from typing import Optional, Union
 
-from energytag.datamodel.schemas import items, utils
+from datamodel.schemas import items, utils
 from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field
 
 
 class StorageChargeRecordBase(utils.ActiveRecord):
-
     charging_start_datetime: datetime.datetime = Field(
         description="The UTC datetime at which the Storage Device began charging energy.",
     )
@@ -19,7 +18,7 @@ class StorageChargeRecordBase(utils.ActiveRecord):
         description="The quantity of energy in Watt-hours (Wh) that the Storage Device has been charged with.",
     )
     charging_energy_source: str = Field(
-        description="""The energy source from which the Storage Device was charged, matching the energy source of the GC Bundles 
+        description="""The energy source from which the Storage Device was charged, matching the energy source of the GC Bundles
                        that were cancelled and allocated to the Storage Device.""",
     )
     gc_issuance_id: uuid_pkg.UUID = Field(
@@ -41,7 +40,6 @@ class StorageChargeRecordBase(utils.ActiveRecord):
 
 
 class StorageChargeRecord(StorageChargeRecordBase, table=True):
-
     scr_allocation_id: uuid_pkg.UUID = Field(
         description="The unique ID of the Storage Charge Record that allocated the energy of the Storage Device to this SDR.",
         primary_key=True,
@@ -57,7 +55,6 @@ class StorageChargeRecord(StorageChargeRecordBase, table=True):
 
 
 class StorageDischargeRecordBase(utils.ActiveRecord):
-
     discharging_start_datetime: datetime.datetime = Field(
         description="The UTC datetime at which the Storage Device began discharging energy.",
     )
@@ -68,7 +65,7 @@ class StorageDischargeRecordBase(utils.ActiveRecord):
         description="The quantity of energy in Watt-hours (Wh) that the Storage Device has discharged.",
     )
     charging_energy_source: str = Field(
-        description="""The energy source from which the Storage Device was charged, matching the energy source of the GC Bundles 
+        description="""The energy source from which the Storage Device was charged, matching the energy source of the GC Bundles
                        that were cancelled and allocated to the Storage Device.""",
     )
     scr_allocation_methodology: str = Field(
@@ -87,7 +84,6 @@ class StorageDischargeRecordBase(utils.ActiveRecord):
 
 
 class StorageDischargeRecord(StorageDischargeRecordBase, table=True):
-
     sdr_allocation_id: uuid_pkg.UUID = Field(
         description="The unique ID of this Storage Discharge Record.",
         primary_key=True,

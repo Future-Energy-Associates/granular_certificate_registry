@@ -1,1 +1,1 @@
-from energytag.api.routers import authentication, production
+from api.routers import authentication, production  # noqa

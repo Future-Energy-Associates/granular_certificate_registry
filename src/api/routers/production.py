@@ -1,9 +1,9 @@
 import os
 import uuid
 
-from energytag.api import utils
-from energytag.api.routers import authentication
-from energytag.datamodel import db, schemas
+from api import utils
+from api.routers import authentication
+from datamodel import db, schemas
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
@@ -78,4 +78,3 @@ def register_device(
         headers=headers,
         response_model=schemas.api.RegisteringDeviceWrite,
     )
-

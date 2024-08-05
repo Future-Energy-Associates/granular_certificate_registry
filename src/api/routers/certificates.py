@@ -2,10 +2,10 @@
 import os
 import uuid
 
-from energytag.api import utils
-from energytag.api.routers import authentication
-from energytag.datamodel import db
-from energytag.datamodel.schemas import gc_entities
+from api import utils
+from api.routers import authentication
+from datamodel import db
+from datamodel.schemas import gc_entities
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 

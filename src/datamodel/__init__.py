@@ -1,1 +1,1 @@
-from energytag.datamodel import db, schemas
+from datamodel import db, schemas  # noqa

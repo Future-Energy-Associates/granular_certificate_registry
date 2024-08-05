@@ -9,7 +9,7 @@ from typing import (
     Union,
 )
 
-from energytag.datamodel.schemas import items, utils
+from datamodel.schemas import items, utils
 from pydantic.fields import Undefined, UndefinedType
 from pydantic.typing import NoArgAnyCallable
 from sqlalchemy import ARRAY, Column, String
@@ -79,7 +79,7 @@ def item_field(
     sa_column_args: Union[Sequence[Any], UndefinedType] = Undefined,
     sa_column_kwargs: Union[Mapping[str, Any], UndefinedType] = Undefined,
     schema_extra: Optional[dict[str, Any]] = None,
-    **kwargs
+    **kwargs,
 ):
     # Everything apart from the item is optional
     # First do a hasattr pass and add if so
