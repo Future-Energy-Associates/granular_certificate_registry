@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  energytag:
+    build:
+      context: ./
+      dockerfile: "Dockerfile"
+    volumes:
+      - "./:/energytag"
+    ports:
+      - "80:80"
+volumes:
+  energytag:
