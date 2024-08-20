@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "gc-registry"
+name = "gc_registry"
 version = "0.1.0"
 description = "FEA Granular Certificate Demonstration Registry Platform"
 authors = ["Connor Galbraith <connor@futureenergy.associates>"]
@@ -7,7 +7,7 @@ license = "Apache 2.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<4"
 anyio = "^4.4.0"
 atomicwrites = "^1.4.1"
 attrs = "^24.1.0"
@@ -59,6 +59,7 @@ uvicorn = "^0.30.5"
 wheel = "^0.44.0"
 starlette = "0.37.2"
 ruff = "^0.5.6"
+psycopg2 = "^2.9.9"
 
 [tool.ruff.lint]
 select = [
