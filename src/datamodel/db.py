@@ -12,17 +12,16 @@ from tqdm import tqdm
 # Loading environment variables
 
 load_dotenv()
-DB_USER = os.environ["DB_USER"]
-DB_PSWD = os.environ["DB_PSWD"]
-DB_URL = os.environ["DB_URL"]
-DB_PORT = os.environ["DB_PORT"]
-DB_TEST_FP = os.environ["DB_TEST_FP"]
-ENVIRONMENT = os.environ["ENVIRONMENT"]
+DB_USER = os.getenv("POSTGRES_USER")
+DB_PSWD = os.getenv("POSTGRES_PASSWORD")
+DB_URL_WRITE = os.getenv("DATABASE_URL_WRITE")
+DB_URL_READ = os.getenv("DATABASE_URL_READ")
+DB_PORT = os.getenv("DATABASE_PORT")
+DB_TEST_FP = os.getenv("DB_TEST_FP")
+ENVIRONMENT = os.getenv("ENVIRONMENT")
 
 
 # Defining utility functions and classes
-
-
 def schema_path_to_class(schema_path):
     *module_path, schema_class_name = schema_path.split(".")
     schema_class = getattr(
@@ -199,16 +198,16 @@ class DButils:
 
 # initialising all the DButil clients
 
-db_names = ["authentication", "production"]
+db_names = [("read", DB_URL_READ), ("write", DB_URL_WRITE)]
 
 db_name_to_client = {
     db_name: DButils(
         db_username=DB_USER,
         db_password=DB_PSWD,
-        db_url=DB_URL,
-        db_port=int(DB_PORT),
+        db_url=db_url,
+        db_port=DB_PORT,
         db_test_fp=DB_TEST_FP,
         db_name=db_name,
     )
-    for db_name in db_names
+    for db_name, db_url in db_names
 }

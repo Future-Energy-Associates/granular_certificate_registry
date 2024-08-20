@@ -1,10 +1,11 @@
 import datetime
 import uuid as uuid_pkg
-from typing import Optional, Union
+from typing import List, Optional, Union
 
-from datamodel.schemas import items, utils
 from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field
+
+from src.datamodel.schemas import utils
 
 
 class StorageChargeRecordBase(utils.ActiveRecord):
@@ -44,11 +45,11 @@ class StorageChargeRecord(StorageChargeRecordBase, table=True):
         description="The unique ID of the Storage Charge Record that allocated the energy of the Storage Device to this SDR.",
         primary_key=True,
     )
-    account_id: items.ForeignAccountId = Field(
+    account_id: str = Field(
         foreign_key="account.account_id",
         description="Each SCR is issued to a single unique production Account that its Storage Device is individually registered to.",
     )
-    device_id: items.ForeignDeviceId = Field(
+    device_id: str = Field(
         foreign_key="device.device_id",
         description="The Device ID of the Storage Device that is being charged.",
     )
@@ -88,11 +89,11 @@ class StorageDischargeRecord(StorageDischargeRecordBase, table=True):
         description="The unique ID of this Storage Discharge Record.",
         primary_key=True,
     )
-    device_id: items.ForeignDeviceId = Field(
+    device_id: str = Field(
         foreign_key="device.device_id",
         description="The Device ID of the Storage Device that is being charged.",
     )
-    account_id: items.ForeignAccountId = Field(
+    account_id: str = Field(
         foreign_key="account.account_id",
         description="Each SDR is issued to a single unique production Account that its Storage Device is individually registered to.",
     )
@@ -126,11 +127,11 @@ class StorageActionBase(utils.ActiveRecord):
         description="The specific SCRs/SDRs onto which the action will be performed. Returns all records with the specified allocation ID."
     )
     action_request_datetime: datetime.datetime = Field(
-        default_factory=datetime.datetime.utcnow(),
+        default_factory=datetime.datetime.now,
         description="The UTC datetime at which the User submitted the action to the registry.",
     )
     action_completed_datetime: Optional[datetime.datetime] = Field(
-        default_factory=datetime.datetime.utcnow,
+        default_factory=datetime.datetime.now,
         description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
     )
     charging_period_start: Optional[datetime.datetime] = Field(
@@ -142,14 +143,14 @@ class StorageActionBase(utils.ActiveRecord):
     storage_device_id: Optional[uuid_pkg.UUID] = Field(
         description="Filter records associated with the specified production device."
     )
-    storage_energy_source: Optional[list[str]] = Field(
+    storage_energy_source: Optional[str] = Field(
         description="Filter records based on the fuel type used by the production Device.",
-        sa_column=Column(ARRAY(String())),
     )
-    sparse_filter_list: Optional[dict[uuid_pkg.UUID, datetime.datetime]] = Field(
-        description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
-        sa_column=Column(ARRAY(String())),
-    )
+    # TODO this also breaks pydantic validation, need to revisit
+    # sparse_filter_list: Optional[dict[uuid_pkg.UUID, datetime.datetime]] = Field(
+    #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
+    #     sa_column=Column(ARRAY(String())),
+    # )
 
 
 class StorageActionResponse(StorageActionBase):

@@ -2,12 +2,13 @@
 import os
 import uuid
 
-from api import utils
-from api.routers import authentication
-from datamodel import db
-from datamodel.schemas import entities
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
+
+from src.api import utils
+from src.api.routers import authentication
+from src.datamodel import db
+from src.datamodel.schemas import entities
 
 environment = os.getenv("ENVIRONMENT")
 
@@ -30,7 +31,7 @@ def process_uuid(uuid_: uuid.UUID):
 def create_user(
     user: entities.UserBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_user = entities.User.create(user, session)
 
@@ -43,7 +44,7 @@ def create_user(
 def read_user(
     user_id: uuid.UUID,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_user = entities.User.by_id(process_uuid(user_id), session)
 
@@ -56,7 +57,7 @@ def read_user(
 def update_user(
     user: entities.UserUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_user = entities.User.by_id(process_uuid(user.user_id), session)
     db_user.update(user, session)
@@ -70,7 +71,7 @@ def update_user(
 def delete_user(
     user_id: uuid.UUID,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_user = entities.User.by_id(user_id, session)
     db_user.delete(session)

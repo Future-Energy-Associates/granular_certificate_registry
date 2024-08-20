@@ -2,12 +2,13 @@
 import os
 import uuid
 
-from api import utils
-from api.routers import authentication
-from datamodel import db
-from datamodel.schemas import entities
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
+
+from src.api import utils
+from src.api.routers import authentication
+from src.datamodel import db
+from src.datamodel.schemas import entities
 
 environment = os.getenv("ENVIRONMENT")
 
@@ -30,7 +31,7 @@ def process_uuid(uuid_: uuid.UUID):
 def create_device(
     device: entities.DeviceBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_device = entities.Device.create(device, session)
 
@@ -43,7 +44,7 @@ def create_device(
 def read_device(
     device_id: uuid.UUID,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_device = entities.Device.by_id(process_uuid(device_id), session)
 
@@ -56,7 +57,7 @@ def read_device(
 def update_device(
     device: entities.DeviceUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_device = entities.Device.by_id(process_uuid(device.device_id), session)
     db_device.update(device, session)
@@ -70,7 +71,7 @@ def update_device(
 def delete_device(
     device_id: uuid.UUID,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_device = entities.Device.by_id(device_id, session)
     db_device.delete(session)

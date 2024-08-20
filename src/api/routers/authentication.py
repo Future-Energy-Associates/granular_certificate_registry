@@ -2,7 +2,6 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional
 
-from datamodel import db, schemas
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -10,6 +9,14 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
 from starlette.requests import Request
+
+from src.datamodel import db
+from src.datamodel.schemas.authentication import (
+    APIUser,
+    SecureAPIUser,
+    Token,
+    TokenBlacklist,
+)
 
 from .. import utils
 
@@ -22,10 +29,10 @@ router = APIRouter(tags=["Authentication"])
 
 load_dotenv()
 
-JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
-JWT_ALGORITHM = os.environ["JWT_ALGORITHM"]
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"])
-REFRESH_WARNING_MINS = int(os.environ["REFRESH_WARNING_MINS"])
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+REFRESH_WARNING_MINS = int(os.getenv("REFRESH_WARNING_MINS"))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -60,10 +67,10 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def get_api_user(db, username: str) -> schemas.authentication.SecureAPIUser:
+def get_api_user(db, username: str) -> SecureAPIUser:
     if username in db:
         user_dict = db[username]
-        return schemas.authentication.SecureAPIUser(**user_dict)
+        return SecureAPIUser(**user_dict)
 
 
 def authenticate_api_user(fake_db, username: str, password: str):
@@ -94,9 +101,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 def is_token_blacklisted(oauth_token):
     with Session(db.db_name_to_client["authentication"].engine) as session:
-        statement = select(schemas.authentication.TokenBlacklist).where(
-            schemas.authentication.TokenBlacklist.token == oauth_token
-        )
+        statement = select(TokenBlacklist).where(TokenBlacklist.token == oauth_token)
         results = session.exec(statement).all()
 
         if len(results) > 0:
@@ -122,7 +127,7 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
             with Session(
                 db.db_name_to_client["authentication"].yield_session
             ) as session:
-                session.add(schemas.authentication.TokenBlacklist(token=oauth_token))
+                session.add(TokenBlacklist(token=oauth_token))
                 session.commit()
 
         # checking username exists
@@ -146,7 +151,7 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
 # Routes
 
 
-@router.get("/user", response_model=schemas.authentication.APIUser)
+@router.get("/user", response_model=APIUser)
 def read_api_user(
     headers: dict = Depends(validate_user_and_get_headers),
     oauth_token: str = Depends(oauth2_scheme),
@@ -156,12 +161,10 @@ def read_api_user(
 
     api_user = get_api_user(fake_users_db, username=username)
 
-    return utils.format_json_response(
-        api_user, headers, response_model=schemas.authentication.APIUser
-    )
+    return utils.format_json_response(api_user, headers, response_model=APIUser)
 
 
-@router.get("/refresh", response_model=schemas.authentication.Token)
+@router.get("/refresh", response_model=Token)
 def refresh(oauth_token: str = Depends(oauth2_scheme)):
     payload = jwt.decode(oauth_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
     username: str = payload.get("sub")
@@ -174,15 +177,15 @@ def refresh(oauth_token: str = Depends(oauth2_scheme)):
     return {"access_token": oauth_token, "token_type": "bearer"}
 
 
-@router.get("/logout", response_model=schemas.authentication.Token)
+@router.get("/logout", response_model=Token)
 def logout(
     request: Request,
     oauth_token: str = Depends(oauth2_scheme),
-    session: Session = Depends(db.db_name_to_client["authentication"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     is_token_blacklisted(oauth_token)
 
-    session.add(schemas.authentication.TokenBlacklist(token=oauth_token))
+    session.add(TokenBlacklist(token=oauth_token))
     session.commit()
 
     if "user" in request.session.keys():
@@ -191,7 +194,7 @@ def logout(
     return {"access_token": oauth_token, "token_type": "revoked"}
 
 
-@router.post("/token", response_model=schemas.authentication.Token)
+@router.post("/token", response_model=Token)
 def token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_api_user(fake_users_db, form_data.username, form_data.password)
 
@@ -211,7 +214,7 @@ def token(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post("/token-params", response_model=schemas.authentication.Token)
+@router.post("/token-params", response_model=Token)
 def token_params(
     username: Optional[str] = None,
     password: Optional[str] = None,

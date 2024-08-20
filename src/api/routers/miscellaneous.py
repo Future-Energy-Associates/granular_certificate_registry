@@ -2,12 +2,13 @@
 import os
 import uuid
 
-from api import utils
-from api.routers import authentication
-from datamodel import db
-from datamodel.schemas import entities
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
+
+from src.api import utils
+from src.api.routers import authentication
+from src.datamodel import db
+from src.datamodel.schemas import entities
 
 environment = os.getenv("ENVIRONMENT")
 
@@ -28,7 +29,7 @@ def process_uuid(uuid_: uuid.UUID):
 def create_measurementreport(
     measurementreport: entities.MeasurementReportBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = entities.MeasurementReport.create(measurementreport, session)
 
@@ -44,7 +45,7 @@ def create_measurementreport(
 def read_measurementreport(
     measurement_report_id: uuid.UUID,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = entities.MeasurementReport.by_id(
         process_uuid(measurement_report_id), session
@@ -62,7 +63,7 @@ def read_measurementreport(
 def update_measurementreport(
     measurementreport: entities.MeasurementReportUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = entities.MeasurementReport.by_id(
         process_uuid(measurementreport.measurement_report_id), session
@@ -81,7 +82,7 @@ def update_measurementreport(
 def delete_measurementreport(
     measurement_report_id: uuid.UUID,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = entities.MeasurementReport.by_id(
         measurement_report_id, session

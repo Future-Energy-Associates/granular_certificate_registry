@@ -1,13 +1,11 @@
 import datetime
 import uuid as uuid_pkg
-from typing import (
-    Optional,
-    Union,
-)
+from typing import List, Optional, Tuple, Union
 
-from datamodel.schemas import items, utils
 from sqlalchemy import Column
-from sqlmodel import ARRAY, Field, String
+from sqlmodel import ARRAY, JSON, Field, String
+
+from src.datamodel.schemas import utils
 
 
 class GranularCertificateBundleBase(utils.ActiveRecord):
@@ -28,7 +26,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     certificate_status: str = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
     )
-    account_id: items.ForeignAccountId = Field(
+    account_id: str = Field(
         foreign_key="account.account_id",
         description="Each GC Bundle is issued to a single unique production Account that its production Device is individually registered to.",
     )
@@ -71,7 +69,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     )
 
     ### Production Device Characteristics ###
-    device_id: items.ForeignDeviceId = Field(
+    device_id: str = Field(
         foreign_key="device.device_id",
         description="Each GC Bundle is associated with a single production Device.",
     )
@@ -110,7 +108,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     )
 
     ### Storage Characteristics ###
-    storage_device_id: Optional[items.ForeignDeviceId] = Field(
+    storage_device_id: Optional[str] = Field(
         foreign_key="device.device_id",
         description="The Device ID of the storage Device that released the energy represented by the GC Bundle.",
     )
@@ -209,11 +207,11 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         description="If an issuance ID is specified, returns a GC Bundle containing all certificates between and inclusive of the range start and end IDs provided.",
     )
     action_request_datetime: datetime.datetime = Field(
-        default_factory=datetime.datetime.utcnow(),
+        default_factory=datetime.datetime.now,
         description="The UTC datetime at which the User submitted the action to the registry.",
     )
     action_completed_datetime: datetime.datetime = Field(
-        default_factory=datetime.datetime.utcnow,
+        default_factory=datetime.datetime.now,
         description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
     )
     certificate_period_start: Optional[datetime.datetime] = Field(
@@ -230,17 +228,17 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     device_id: Optional[uuid_pkg.UUID] = Field(
         description="Filter GC Bundles associated with the specified production device."
     )
-    energy_source: Optional[list[str]] = Field(
+    energy_source: Optional[str] = Field(
         description="Filter GC Bundles based on the fuel type used by the production Device.",
-        sa_column=Column(ARRAY(String())),
     )
     certificate_status: Optional[str] = Field(
         description="""Filter on the status of the GC Bundles."""
     )
-    sparse_filter_list: Optional[dict[uuid_pkg.UUID, datetime.datetime]] = Field(
-        description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
-        sa_column=Column(ARRAY(String())),
-    )
+    # TODO this currently can't pass Pydantic validation, need to revisit
+    # sparse_filter_list: Optional[Tuple[str, str]] = Field(
+    #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
+    #     sa_column=Column(ARRAY(String(), String())),
+    # )
 
 
 class GranularCertificateTransfer(GranularCertificateActionBase, table=True):
@@ -328,7 +326,7 @@ class GranularCertificateQuery(GranularCertificateActionBase, table=True):
 
 
 class GranularCertificateQueryResponse(GranularCertificateActionResponse):
-    filtered_certificate_bundles: Union[list[GranularCertificateBundle], None]
+    filtered_certificate_bundles: Union[List[GranularCertificateBundle], None]
 
 
 class GranularCertificateUpdateMutables(GranularCertificateActionBase, table=True):

@@ -1,7 +1,13 @@
 import os
 
 import yaml
-from api.routers import (
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
+
+from .routers import (
     accounts,
     certificates,
     devices,
@@ -9,11 +15,6 @@ from api.routers import (
     storage,
     users,
 )
-from dotenv import load_dotenv
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from starlette.middleware.sessions import SessionMiddleware
 
 # App initialisation
 load_dotenv()
@@ -159,13 +160,6 @@ app.include_router(devices.router, prefix="/devices")
 # @app.on_event("startup")
 # def save_openapi_json():
 openapi_data = app.openapi()
-
-with open(
-    "C:/Users/cagal/Documents/business/fea/energytag/energytag_api_spec/energytag/api/static/openapi.yaml",
-    "w",
-) as f:
-    yaml.dump(openapi_data, f)
-
 
 templates = Jinja2Templates(directory=f"{static_dir_fp}/templates")
 

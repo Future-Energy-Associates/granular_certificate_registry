@@ -3,17 +3,17 @@ import uuid as uuid_pkg
 from typing import (
     AbstractSet,
     Any,
+    List,
     Mapping,
     Optional,
     Sequence,
     Union,
 )
 
-from datamodel.schemas import items, utils
-from pydantic.fields import Undefined, UndefinedType
-from pydantic.typing import NoArgAnyCallable
 from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship
+
+from src.datamodel.schemas import utils
 
 field_attrs = [
     "default",
@@ -47,9 +47,9 @@ field_attrs = [
 
 def item_field(
     item,
-    default: Any = Undefined,
+    default: Any = None,
     *args,
-    default_factory: Optional[NoArgAnyCallable] = None,
+    default_factory: Optional[Any] = None,
     alias: Optional[str] = None,
     title: Optional[str] = None,
     description: Optional[str] = None,
@@ -73,11 +73,11 @@ def item_field(
     regex: Optional[str] = None,
     primary_key: bool = False,
     foreign_key: Optional[Any] = None,
-    nullable: Union[bool, UndefinedType] = Undefined,
-    index: Union[bool, UndefinedType] = Undefined,
-    sa_column: Union[Column, UndefinedType] = Undefined,  # type: ignore
-    sa_column_args: Union[Sequence[Any], UndefinedType] = Undefined,
-    sa_column_kwargs: Union[Mapping[str, Any], UndefinedType] = Undefined,
+    nullable: Union[bool, Any] = None,
+    index: Union[bool, Any] = None,
+    sa_column: Union[Column, Any] = None,  # type: ignore
+    sa_column_args: Union[Sequence[Any], Any] = None,
+    sa_column_kwargs: Union[Mapping[str, Any], Any] = None,
     schema_extra: Optional[dict[str, Any]] = None,
     **kwargs,
 ):
@@ -151,7 +151,7 @@ class UserAccountLink(utils.ActiveRecord, table=True):
 class UserBase(utils.ActiveRecord):
     name: str
     primary_contact: str
-    role: list[str] = Field(
+    role: List[str] = Field(
         description="""The roles of the User with the registry. A single User can be assigned multiple roles
                        by the Registry Administrator (which is itself a User for the purposes of managing allowable
                        actions), including: 'GC Issuer', 'Production Registrar', 'Measurement Body', and 'Trading User',
@@ -159,14 +159,16 @@ class UserBase(utils.ActiveRecord):
                        to perform within the registry, according to the EnergyTag Standard.""",
         sa_column=Column(ARRAY(String())),
     )
-    organisation_id: items.ForeignOrganisationId = Field(
-        foreign_key="organisation.organisation_id"
-    )
+    organisation_id: str = Field(foreign_key="organisation.organisation_id")
 
 
 class User(UserBase, table=True):
     user_id: uuid_pkg.UUID = Field(primary_key=True, default_factory=uuid_pkg.uuid4)
-    accounts: list["Account"] = Relationship(
+    account_ids: Optional[List[str]] = Field(
+        description="The accounts to which the user is registered.",
+        sa_column=Column(ARRAY(String())),
+    )
+    accounts: Optional[list["Account"]] = Relationship(
         back_populates="users", link_model=UserAccountLink
     )
 
@@ -223,7 +225,7 @@ class DeviceBase(utils.ActiveRecord):
     capacity: float
     peak_demand: float
     location: str
-    account_id: items.ForeignAccountId = Field(
+    account_id: str = Field(
         description="The account to which the device is registered, and into which GC Bundles will be issued for energy produced by this Device.",
         foreign_key="account.account_id",
     )
@@ -257,15 +259,10 @@ class DeviceUpdate(DeviceBase):
 
 # Measurement Report
 class MeasurementReportBase(utils.ActiveRecord):
-    device_id: items.ForeignDeviceId = item_field(items.ForeignDeviceId)
-    interval_start_datetime: items.IntervalStartDatetime = item_field(
-        items.IntervalStartDatetime
-    )
-    interval_end_datetime: items.IntervalEndDatetime = item_field(
-        items.IntervalEndDatetime
-    )
-    interval_usage: items.IntervalUsage = item_field(
-        items.IntervalUsage,
+    device_id: uuid_pkg.UUID
+    interval_start_datetime: datetime.datetime
+    interval_end_datetime: datetime.datetime
+    interval_usage: int = Field(
         description="The quantity of energy consumed, produced, or stored in Wh by the device during the specified interval.",
     )
     gross_net_indicator: str = Field(
@@ -285,5 +282,5 @@ class MeasurementReportRead(MeasurementReportBase):
 
 class MeasurementReportUpdate(MeasurementReportBase):
     measurement_report_id: Optional[uuid_pkg.UUID]
-    interval_start_datetime: Optional[items.IntervalStartDatetime]
-    interval_end_datetime: Optional[items.IntervalEndDatetime]
+    interval_start_datetime: Optional[datetime.datetime]
+    interval_end_datetime: Optional[datetime.datetime]

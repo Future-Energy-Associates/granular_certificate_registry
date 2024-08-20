@@ -1,13 +1,9 @@
 import datetime
-import uuid as uuid_pkg
-from typing import Literal, Optional
-
-from src.datamodel.schemas.entities import Account, Device, Organisation, User
+from typing import Literal
 
 # Domains
 
 valid_usage_units = Literal["Wh", "kWh", "MWh", "GWh"]
-# grids = Literal["GB"]
 gc_issue_device_types = Literal["production", "storage"]
 energy_carriers = Literal["electricity", "natural_gas", "hydrogen", "ammonia"]
 energy_sources = Literal["coal", "gas", "hydro", "hydro", "wind", "solar", "nuclear"]
@@ -22,36 +18,6 @@ cancellation_cascade_orders = Literal["age", "price"]
 
 
 # Items
-
-
-class ForeignDeviceId(uuid_pkg.UUID):
-    default: Optional[uuid_pkg.UUID] = None
-    title: str = "Unique Device ID"
-    description: str = ""
-    foreign_key: "Device.device_id"
-
-
-class ForeignOrganisationId(uuid_pkg.UUID):
-    default: Optional[uuid_pkg.UUID] = None
-    title: str = "Unique Organisation ID"
-    description: str = ""
-    foreign_key: "Organisation.organisation_id"
-
-
-class ForeignUserId(uuid_pkg.UUID):
-    default: Optional[uuid_pkg.UUID] = None
-    title: str = "Unique User ID"
-    description: str = ""
-    foreign_key: "User.user_id"
-
-
-class ForeignAccountId(uuid_pkg.UUID):
-    default: Optional[uuid_pkg.UUID] = None
-    title: str = "Unique Account ID"
-    description: str = ""
-    foreign_key: "Account.account_id"
-
-
 class IntervalStartDatetime(datetime.datetime):
     default: str = "2022-01-01 00:00"
     title: str = "Interval Start Datetime"
