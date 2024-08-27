@@ -12,13 +12,6 @@ from tqdm import tqdm
 # Loading environment variables
 
 load_dotenv()
-DB_USER = os.getenv("POSTGRES_USER")
-DB_PSWD = os.getenv("POSTGRES_PASSWORD")
-DB_URL_WRITE = os.getenv("DATABASE_URL_WRITE")
-DB_URL_READ = os.getenv("DATABASE_URL_READ")
-DB_PORT = os.getenv("DATABASE_PORT")
-DB_TEST_FP = os.getenv("DB_TEST_FP")
-ENVIRONMENT = os.getenv("ENVIRONMENT")
 
 
 # Defining utility functions and classes
@@ -49,6 +42,7 @@ class DButils:
         db_port: Optional[int] = None,
         db_name: Optional[str] = None,
         db_test_fp: Optional[str] = None,
+        env: Optional[str] = "STAGE",
     ):
         self._db_username = db_username
         self._db_password = db_password
@@ -57,12 +51,12 @@ class DButils:
         self._db_name = db_name
         self._db_test_fp = db_test_fp
 
-        if ENVIRONMENT == "PROD":
+        if env == "PROD":
             self.connection_str = (
                 f"postgresql://{self._db_username}:{self._db_password}@{self._db_url}:"
                 f"{self._db_port}/{self._db_name}"
             )
-        elif ENVIRONMENT == "STAGE":
+        elif env == "STAGE":
             self.connection_str = f"sqlite:///{self._db_test_fp}"
         else:
             raise ValueError("`ENVIRONMENT` must be one of: `PROD` or `STAGE`")
@@ -198,16 +192,20 @@ class DButils:
 
 # initialising all the DButil clients
 
-db_names = [("read", DB_URL_READ), ("write", DB_URL_WRITE)]
+db_names = [
+    ("read", os.getenv("DATABASE_URL_READ")),
+    ("write", os.getenv("DATABASE_URL_WRITE")),
+]
 
 db_name_to_client = {
     db_name: DButils(
-        db_username=DB_USER,
-        db_password=DB_PSWD,
         db_url=db_url,
-        db_port=DB_PORT,
-        db_test_fp=DB_TEST_FP,
         db_name=db_name,
+        db_username=os.getenv("POSTGRES_USER"),
+        db_password=os.getenv("POSTGRES_PASSWORD"),
+        db_port=os.getenv("DATABASE_PORT"),
+        db_test_fp=os.getenv("DB_TEST_FP"),
+        env=os.getenv("ENVIRONMENT"),
     )
     for db_name, db_url in db_names
 }
