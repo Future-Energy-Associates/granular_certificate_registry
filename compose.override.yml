@@ -1,0 +1,42 @@
+services:
+  gc_registry:
+    restart: "${RESTART-no}"
+    environment:
+      - TC_HOST=host.docker.internal
+    volumes:
+      - ./:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "./:/gc_registry"
+    build:
+      context: .
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-true}
+    command: uvicorn --reload --host 0.0.0.0 --port 8000 --log-level debug "tariff_tribe.main:app"
+    env_file:
+      - .env
+    depends_on:
+      - db_write
+      - db_read
+
+  db_write:
+    image: postgres:13
+    volumes:
+      - postgres_data_write:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=gc_registry
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+
+  db_read:
+    image: postgres:13
+    volumes:
+      - postgres_data_read:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=gc_registry
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+
+volumes:
+  gc_registry:
+  postgres_data_write:
+  postgres_data_read:
