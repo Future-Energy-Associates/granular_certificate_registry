@@ -1,8 +1,7 @@
 import datetime
 import uuid as uuid_pkg
-from typing import List, Optional, Union
+from typing import Optional, Union
 
-from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field
 
 from src.datamodel.schemas import utils

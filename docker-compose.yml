@@ -29,16 +29,11 @@ services:
     image: postgres:13
     volumes:
       - postgres_data_write:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=gc_registry
 
   db_read:
     image: postgres:13
     volumes:
       - postgres_data_read:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=gc_registry
-
 
 volumes:
   gc_registry:
