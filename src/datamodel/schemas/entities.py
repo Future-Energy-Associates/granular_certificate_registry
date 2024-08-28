@@ -159,12 +159,12 @@ class UserBase(utils.ActiveRecord):
                        to perform within the registry, according to the EnergyTag Standard.""",
         sa_column=Column(ARRAY(String())),
     )
-    organisation_id: str = Field(foreign_key="organisation.organisation_id")
+    organisation_id: uuid_pkg.UUID = Field(foreign_key="organisation.organisation_id")
 
 
 class User(UserBase, table=True):
     user_id: uuid_pkg.UUID = Field(primary_key=True, default_factory=uuid_pkg.uuid4)
-    account_ids: Optional[List[str]] = Field(
+    account_ids: Optional[List[uuid_pkg.UUID]] = Field(
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
     )
@@ -225,7 +225,7 @@ class DeviceBase(utils.ActiveRecord):
     capacity: float
     peak_demand: float
     location: str
-    account_id: str = Field(
+    account_id: uuid_pkg.UUID = Field(
         description="The account to which the device is registered, and into which GC Bundles will be issued for energy produced by this Device.",
         foreign_key="account.account_id",
     )

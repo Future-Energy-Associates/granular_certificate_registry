@@ -146,12 +146,12 @@ def SDR_withdraw(
     status_code=200,
 )
 def update_certificate_mutables(
-    certificate_bundle_action: storage_entities.StorageActionUpdateMutables,
+    certificate_bundle_action: storage_entities.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Update the mutable aspects (associated Account ID, status) of a given certificate bundle."""
-    storage_action = storage_entities.StorageActionUpdateMutables.create(
+    storage_action = storage_entities.StorageAction.create(
         certificate_bundle_action, session
     )
 

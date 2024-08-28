@@ -15,18 +15,18 @@ class TokenBlacklistWrite(TokenBlacklistBase):
     token: str
 
 
-class Token(SQLModel, table=True):
+class Token(SQLModel):
     access_token: str
     token_type: str
 
 
 class APIUser(SQLModel):
-    username: str
+    username: str = Field(primary_key=True)
     name: str
     email: Optional[str] = None
     picture: Optional[str] = None
     scopes: Optional[str] = None
 
 
-class SecureAPIUser(APIUser):
+class SecureAPIUser(APIUser, table=True):
     hashed_password: Optional[str] = None

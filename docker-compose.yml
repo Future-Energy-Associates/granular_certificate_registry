@@ -11,6 +11,8 @@ services:
       - DATABASE_URL_WRITE=db_write
       - DATABASE_URL_READ=db_read
       - DATABASE_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
       - DB_TEST_FP=None
       - ENVIRONMENT=PROD
       - JWT_SECRET_KEY=secret_key
@@ -29,8 +31,6 @@ services:
       - postgres_data_write:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=gc_registry
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
 
   db_read:
     image: postgres:13
@@ -38,8 +38,7 @@ services:
       - postgres_data_read:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=gc_registry
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+
 
 volumes:
   gc_registry:
