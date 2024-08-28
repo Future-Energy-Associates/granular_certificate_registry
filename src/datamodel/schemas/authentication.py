@@ -15,7 +15,7 @@ class TokenBlacklistWrite(TokenBlacklistBase):
     token: str
 
 
-class Token(SQLModel):
+class Token(SQLModel, table=True):
     access_token: str
     token_type: str
 

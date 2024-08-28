@@ -9,6 +9,8 @@ from sqlalchemy_utils import create_database, database_exists
 from sqlmodel import Session, SQLModel, create_engine, select
 from tqdm import tqdm
 
+from src.config import schema_paths_read, schema_paths_write
+
 # Loading environment variables
 
 load_dotenv()
@@ -192,13 +194,15 @@ class DButils:
 
 # initialising all the DButil clients
 
-db_names = [
-    ("read", os.getenv("DATABASE_URL_READ")),
-    ("write", os.getenv("DATABASE_URL_WRITE")),
+db_mapping = [
+    ("read", os.getenv("DATABASE_URL_READ"), schema_paths_read),
+    ("write", os.getenv("DATABASE_URL_WRITE"), schema_paths_write),
 ]
 
-db_name_to_client = {
-    db_name: DButils(
+db_name_to_client = {}
+
+for db_name, db_url, schema_paths in db_mapping:
+    db_client = DButils(
         db_url=db_url,
         db_name=db_name,
         db_username=os.getenv("POSTGRES_USER"),
@@ -207,5 +211,5 @@ db_name_to_client = {
         db_test_fp=os.getenv("DB_TEST_FP"),
         env=os.getenv("ENVIRONMENT"),
     )
-    for db_name, db_url in db_names
-}
+    db_name_to_client[db_name] = db_client
+    db_client.initiate_db_tables(schema_paths)
