@@ -42,6 +42,7 @@ COPY ./.env /code/.env
 COPY ./frontend /code/frontend
 COPY ./src/tests /code/tests
 COPY ./README.md /code/README.md
+COPY ./Makefile /code/Makefile
 
 # Set the command to run the application
 CMD ["/root/.local/bin/poetry", "run", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "80"]
