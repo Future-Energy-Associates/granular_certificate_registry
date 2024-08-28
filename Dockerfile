@@ -10,13 +10,17 @@ RUN apt update && apt install -y \
     python3.11 \
     python3.11-dev \
     python3.11-venv \
+    python3-pip \
     build-essential \
     libpq-dev \
     gcc \ 
     musl-dev
 
 # Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python3.11 && \
+    cd /usr/local/bin && \
+    ln -s /opt/poetry/bin/poetry && \
+    poetry config virtualenvs.create false
 
 # Set the working directory
 WORKDIR /code
@@ -25,9 +29,9 @@ WORKDIR /code
 COPY ./pyproject.toml ./poetry.lock* /code/
 
 # Install dependencies using Poetry
-# Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --only main ; fi"
+
 
 # Copy the rest of the application code
 COPY ./setup.py /code/setup.py
@@ -35,14 +39,8 @@ COPY ./src /code/src
 COPY ./.env /code/.env
 COPY ./frontend /code/frontend
 COPY ./node_modules /code/node_modules
-COPY ./src/api/tests /code/src/api/tests
+COPY ./src/tests /code/tests
 COPY ./README.md /code/README.md
-
-# Install the package in editable mode
-RUN /root/.local/bin/poetry install
-
-# # Install src files locally with pip
-# RUN python3 -m pip install -e /code
 
 # Set the command to run the application
 CMD ["/root/.local/bin/poetry", "run", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "80"]

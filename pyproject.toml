@@ -54,16 +54,16 @@ sqlalchemy2-stubs = "^0.0.2a38"
 sqlmodel = "^0.0.21"
 tomli = "^2.0.1"
 tqdm = "^4.66.5"
-typing-extensions = "^4.12.2"
 uvicorn = "^0.30.5"
 wheel = "^0.44.0"
 starlette = "0.37.2"
-ruff = "^0.5.6"
 psycopg2 = "^2.9.9"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.2"
 pytest-cov = "^5.0.0"
+ruff = "^0.5.6"
+typing-extensions = "^4.12.2"
 
 [tool.ruff.lint]
 select = [

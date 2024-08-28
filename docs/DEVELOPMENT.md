@@ -44,7 +44,7 @@ Make sure your feature branch is up-to-date with the `dev` branch and run `make 
 
 #### 2. Change the database models
 
-Edit the [models.py](../tariff_tribe/models.py) file to reflect the changes you
+Edit the [models.py](../src/datamodel/schemas) file to reflect the changes you
 want to make to the schema.
 
 #### 3. Generate the migration code
@@ -138,7 +138,7 @@ To trigger a major, minor or patch version update, you need simply issue a commi
 
 The version is updated, a new git tag is created and a new GitHub release is made along with a changelog update.
 
-Manual versioning is of course still possible - but can be a bit brittle. The version strings in `tariff_tribe/__init__.py` & `pyproject.toml`, the git tag and changelog all need to reference the same version.
+Manual versioning is of course still possible - but can be a bit brittle. The version strings in `gc_registry/__init__.py` & `pyproject.toml`, the git tag and changelog all need to reference the same version.
 
 ## Continuous Integration (CI)
 
