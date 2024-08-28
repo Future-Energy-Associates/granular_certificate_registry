@@ -16,6 +16,8 @@ RUN apt update && apt install -y \
     gcc \ 
     musl-dev
 
+RUN apt-get install -y curl make && rm -rf /var/lib/apt/lists/*
+
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python3.11 && \
     cd /usr/local/bin && \
