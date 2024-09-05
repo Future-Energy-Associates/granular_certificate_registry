@@ -10,8 +10,8 @@ from passlib.context import CryptContext
 from sqlmodel import Session, select
 from starlette.requests import Request
 
-from src.datamodel import db
-from src.datamodel.schemas.authentication import (
+from src import db
+from src.schemas.authentication import (
     APIUser,
     SecureAPIUser,
     Token,

@@ -7,21 +7,11 @@ from sqlmodel import Session
 
 from src.api import utils
 from src.api.routers import authentication
-from src.datamodel import db
-from src.datamodel.schemas import entities
-
-environment = os.getenv("ENVIRONMENT")
-
+from src import db
+from src.schemas import entities
 
 # Router initialisation
 router = APIRouter(tags=["Miscellaneous"])
-
-
-def process_uuid(uuid_: uuid.UUID):
-    if environment == "STAGE":
-        uuid_ = str(uuid_).replace("-", "")
-
-    return uuid_
 
 
 # # MeasurementReport
@@ -48,7 +38,7 @@ def read_measurementreport(
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = entities.MeasurementReport.by_id(
-        process_uuid(measurement_report_id), session
+        utils.process_uuid(measurement_report_id), session
     )
 
     return utils.format_json_response(
@@ -66,7 +56,7 @@ def update_measurementreport(
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = entities.MeasurementReport.by_id(
-        process_uuid(measurementreport.measurement_report_id), session
+        utils.process_uuid(measurementreport.measurement_report_id), session
     )
     db_measurementreport.update(measurementreport, session)
 

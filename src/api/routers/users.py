@@ -1,5 +1,4 @@
 # Imports
-import os
 import uuid
 
 from fastapi import APIRouter, Depends
@@ -7,22 +6,11 @@ from sqlmodel import Session
 
 from src.api import utils
 from src.api.routers import authentication
-from src.datamodel import db
-from src.datamodel.schemas import entities
-
-environment = os.getenv("ENVIRONMENT")
-
+from src import db
+from src.schemas import entities
 
 # Router initialisation
 router = APIRouter(tags=["Users"])
-
-
-def process_uuid(uuid_: uuid.UUID):
-    if environment == "STAGE":
-        uuid_ = str(uuid_).replace("-", "")
-
-    return uuid_
-
 
 ### User ###
 
@@ -46,7 +34,7 @@ def read_user(
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_user = entities.User.by_id(process_uuid(user_id), session)
+    db_user = entities.User.by_id(utils.process_uuid(user_id), session)
 
     return utils.format_json_response(
         db_user, headers, response_model=entities.UserRead
@@ -59,7 +47,7 @@ def update_user(
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_user = entities.User.by_id(process_uuid(user.user_id), session)
+    db_user = entities.User.by_id(utils.process_uuid(user.user_id), session)
     db_user.update(user, session)
 
     return utils.format_json_response(

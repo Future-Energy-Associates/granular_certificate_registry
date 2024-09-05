@@ -1,4 +1,6 @@
 import json
+import os
+import uuid
 from typing import List, Optional, Union
 
 import sqlmodel
@@ -6,6 +8,13 @@ from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlmodel import col
+
+
+def process_uuid(uuid_: uuid.UUID):
+    if os.getenv("ENVIRONMENT") == "STAGE":
+        uuid_ = str(uuid_).replace("-", "")
+
+    return uuid_
 
 
 def parse_nans_to_null(json_str: str, replace_nan: bool = True):

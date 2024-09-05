@@ -7,21 +7,11 @@ from sqlmodel import Session
 
 from src.api import utils
 from src.api.routers import authentication
-from src.datamodel import db
-from src.datamodel.schemas import entities
-
-environment = os.getenv("ENVIRONMENT")
-
+from src import db
+from src.schemas import entities
 
 # Router initialisation
 router = APIRouter(tags=["Organisations"])
-
-
-def process_uuid(uuid_: uuid.UUID):
-    if environment == "STAGE":
-        uuid_ = str(uuid_).replace("-", "")
-
-    return uuid_
 
 
 # organisation
@@ -45,7 +35,7 @@ def read_organisation(
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_organisation = entities.Organisation.by_id(
-        process_uuid(organisation_id), session
+        utils.process_uuid(organisation_id), session
     )
 
     return utils.format_json_response(
@@ -62,7 +52,7 @@ def update_organisation(
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_organisation = entities.Organisation.by_id(
-        process_uuid(organisation.organisation_id), session
+        utils.process_uuid(organisation.organisation_id), session
     )
     db_organisation.update(organisation, session)
 
