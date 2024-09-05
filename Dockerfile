@@ -40,8 +40,5 @@ COPY ./README.md /code/README.md
 # Install the package in editable mode
 RUN /root/.local/bin/poetry install
 
-# # Install src files locally with pip
-# RUN python3 -m pip install -e /code
-
 # Set the command to run the application
 CMD ["/root/.local/bin/poetry", "run", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "80"]
