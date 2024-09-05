@@ -40,3 +40,4 @@ COPY ./.env /code/.env
 COPY ./frontend /code/frontend
 COPY ./tests /code/tests
 COPY ./README.md /code/README.md
+COPY ./Makefile /code/Makefile
