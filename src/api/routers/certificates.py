@@ -1,13 +1,14 @@
 # Imports
 import os
-from fastapi import Depends, APIRouter
-from sqlmodel import Session
-from energytag.api import utils
-from energytag.datamodel import db
-from energytag.datamodel.schemas import gc_entities
-from energytag.api.routers import authentication
 import uuid
 
+from fastapi import APIRouter, Depends
+from sqlmodel import Session
+
+from src.api import utils
+from src.api.routers import authentication
+from src.datamodel import db
+from src.datamodel.schemas import gc_entities
 
 environment = os.getenv("ENVIRONMENT")
 
@@ -31,7 +32,7 @@ def process_uuid(uuid_: uuid.UUID):
 def create_certificate_bundle(
     certificate_bundle: gc_entities.GranularCertificateBundleBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Create a GC Bundle with the specified properties."""
     db_certificate_bundle = gc_entities.GranularCertificateBundle.create(
@@ -51,12 +52,12 @@ def create_certificate_bundle(
     status_code=202,
 )
 def certificate_bundle_transfer(
-    certificate_bundle_action: gc_entities.GranularCertificateTransfer,
+    certificate_bundle_action: gc_entities.GranularCertificateAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
-    db_certificate_action = gc_entities.GranularCertificateTransfer.create(
+    db_certificate_action = gc_entities.GranularCertificateAction.create(
         certificate_bundle_action, session
     )
 
@@ -73,12 +74,12 @@ def certificate_bundle_transfer(
     status_code=202,
 )
 def query_certificate_bundles(
-    certificate_bundle_query: gc_entities.GranularCertificateQuery,
+    certificate_bundle_query: gc_entities.GranularCertificateAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""
-    db_certificate_action = gc_entities.GranularCertificateQuery.create(
+    db_certificate_action = gc_entities.GranularCertificateAction.create(
         certificate_bundle_query, session
     )
 
@@ -95,12 +96,12 @@ def query_certificate_bundles(
     status_code=202,
 )
 def certificate_bundle_recurring_transfer(
-    certificate_bundle_action: gc_entities.GranularCertificateRecurringTransfer,
+    certificate_bundle_action: gc_entities.GranularCertificateAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Set up a protocol that transfers a fixed number of certificates matching the provided search criteria to a given target Account once per time period."""
-    db_certificate_action = gc_entities.GranularCertificateRecurringTransfer.create(
+    db_certificate_action = gc_entities.GranularCertificateAction.create(
         certificate_bundle_action, session
     )
 
@@ -117,12 +118,12 @@ def certificate_bundle_recurring_transfer(
     status_code=202,
 )
 def certificate_bundle_cancellation(
-    certificate_bundle_action: gc_entities.GranularCertificateCancellation,
+    certificate_bundle_action: gc_entities.GranularCertificateAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Cancel a fixed number of certificates matched to the given filter parameters within the specified Account."""
-    db_certificate_action = gc_entities.GranularCertificateCancellation.create(
+    db_certificate_action = gc_entities.GranularCertificateAction.create(
         certificate_bundle_action, session
     )
 
@@ -139,12 +140,12 @@ def certificate_bundle_cancellation(
     status_code=202,
 )
 def certificate_bundle_recurring_cancellation(
-    certificate_bundle_action: gc_entities.GranularCertificateRecurringCancellation,
+    certificate_bundle_action: gc_entities.GranularCertificateAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Set up a protocol that cancels a fixed number of certificates matching the provided search criteria within a given Account once per time period."""
-    db_certificate_action = gc_entities.GranularCertificateRecurringCancellation.create(
+    db_certificate_action = gc_entities.GranularCertificateAction.create(
         certificate_bundle_action, session
     )
 
@@ -161,14 +162,14 @@ def certificate_bundle_recurring_cancellation(
     status_code=202,
 )
 def certificate_bundle_claim(
-    certificate_bundle_action: gc_entities.GranularCertificateClaim,
+    certificate_bundle_action: gc_entities.GranularCertificateAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Claim a fixed number of cancelled certificates matching the provided search criteria within a given Account,
     if the User is specified as the Beneficiary of those cancelled GCs. For more information on the claim process,
     please see page 15 of the EnergyTag GC Scheme Standard document."""
-    db_certificate_action = gc_entities.GranularCertificateClaim.create(
+    db_certificate_action = gc_entities.GranularCertificateAction.create(
         certificate_bundle_action, session
     )
 
@@ -185,12 +186,12 @@ def certificate_bundle_claim(
     status_code=202,
 )
 def certificate_bundle_withdraw(
-    certificate_bundle_action: gc_entities.GranularCertificateWithdraw,
+    certificate_bundle_action: gc_entities.GranularCertificateAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of certificates from the specified Account matching the provided search criteria."""
-    db_certificate_action = gc_entities.GranularCertificateWithdraw.create(
+    db_certificate_action = gc_entities.GranularCertificateAction.create(
         certificate_bundle_action, session
     )
 
@@ -207,12 +208,12 @@ def certificate_bundle_withdraw(
     status_code=201,
 )
 def update_certificate_mutables(
-    certificate_bundle_action: gc_entities.GranularCertificateUpdateMutables,
+    certificate_bundle_action: gc_entities.GranularCertificateAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Update the mutable aspects (associated Account ID, status) of a given certificate bundle."""
-    db_certificate_action = gc_entities.GranularCertificateUpdateMutables.create(
+    db_certificate_action = gc_entities.GranularCertificateAction.create(
         certificate_bundle_action, session
     )
 
@@ -232,12 +233,12 @@ def update_certificate_mutables(
     status_code=202,
 )
 def certificate_bundle_reserve(
-    certificate_bundle_action: gc_entities.GranularCertificateReservation,
+    certificate_bundle_action: gc_entities.GranularCertificateAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Label a fixed number of certificates as Reserved from the specified Account matching the provided search criteria."""
-    db_certificate_action = gc_entities.GranularCertificateReservation.create(
+    db_certificate_action = gc_entities.GranularCertificateAction.create(
         certificate_bundle_action, session
     )
 

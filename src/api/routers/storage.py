@@ -1,11 +1,13 @@
 # Imports
 import os
-from fastapi import Depends, APIRouter
+
+from fastapi import APIRouter, Depends
 from sqlmodel import Session
-from energytag.api import utils
-from energytag.datamodel import db
-from energytag.datamodel.schemas import gc_entities, storage_entities
-from energytag.api.routers import authentication
+
+from src.api import utils
+from src.api.routers import authentication
+from src.datamodel import db
+from src.datamodel.schemas import gc_entities, storage_entities
 
 environment = os.getenv("ENVIRONMENT")
 
@@ -24,7 +26,7 @@ router = APIRouter(tags=["Storage"])
 def create_SCR(
     scr: storage_entities.StorageChargeRecordBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Create a Storage Charge Record with the specified properties."""
     db_scr = storage_entities.StorageChargeRecord.create(scr, session)
@@ -44,7 +46,7 @@ def create_SCR(
 def query_SCR(
     scr_query: storage_entities.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Return all SCRs from the specified Account that match the provided search criteria."""
     scr_action = storage_entities.StorageAction.create(scr_query, session)
@@ -66,7 +68,7 @@ def query_SCR(
 def create_SDR(
     sdr: storage_entities.StorageDischargeRecordBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Create a Storage Discharge Record with the specified properties."""
     db_sdr = storage_entities.StorageDischargeRecord.create(sdr, session)
@@ -86,7 +88,7 @@ def create_SDR(
 def query_SDR(
     sdr_query: storage_entities.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Return all SDRs from the specified Account that match the provided search criteria."""
     sdr_action = storage_entities.StorageAction.create(sdr_query, session)
@@ -106,7 +108,7 @@ def query_SDR(
 def SCR_withdraw(
     storage_action: storage_entities.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SCRs from the specified Account matching the provided search criteria."""
     scr_action = storage_entities.StorageAction.create(storage_action, session)
@@ -126,7 +128,7 @@ def SCR_withdraw(
 def SDR_withdraw(
     storage_action: storage_entities.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SDRs from the specified Account matching the provided search criteria."""
     sdr_action = storage_entities.StorageAction.create(storage_action, session)
@@ -144,12 +146,12 @@ def SDR_withdraw(
     status_code=200,
 )
 def update_certificate_mutables(
-    certificate_bundle_action: storage_entities.StorageActionUpdateMutables,
+    certificate_bundle_action: storage_entities.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Update the mutable aspects (associated Account ID, status) of a given certificate bundle."""
-    storage_action = storage_entities.StorageActionUpdateMutables.create(
+    storage_action = storage_entities.StorageAction.create(
         certificate_bundle_action, session
     )
 
@@ -168,7 +170,7 @@ def update_certificate_mutables(
 def issue_SDGC(
     sdgc: gc_entities.GranularCertificateBundleBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """A GC Bundle that has been issued following the verification of a cancelled GC Bundle and the proper allocation of a pair
     of Storage Charge and Discharge Records. The GC Bundle is issued to the Account of the Storage Device, and is identical to

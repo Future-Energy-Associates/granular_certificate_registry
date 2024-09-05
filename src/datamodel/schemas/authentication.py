@@ -1,5 +1,6 @@
-from sqlmodel import Field, SQLModel
 from typing import Optional
+
+from sqlmodel import Field, SQLModel
 
 
 class TokenBlacklistBase(SQLModel):
@@ -20,12 +21,12 @@ class Token(SQLModel):
 
 
 class APIUser(SQLModel):
-    username: str
+    username: str = Field(primary_key=True)
     name: str
     email: Optional[str] = None
     picture: Optional[str] = None
     scopes: Optional[str] = None
 
 
-class SecureAPIUser(APIUser):
+class SecureAPIUser(APIUser, table=True):
     hashed_password: Optional[str] = None

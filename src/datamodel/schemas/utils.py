@@ -1,5 +1,6 @@
 import uuid as uuid_pkg
 from typing import Union
+
 from fastapi import HTTPException
 from sqlmodel import SQLModel, select
 
@@ -7,7 +8,7 @@ from sqlmodel import SQLModel, select
 def get_valid_uuid():
     proposed_uuid = uuid_pkg.uuid4()
 
-    while str(proposed_uuid)[0] == '0':
+    while str(proposed_uuid)[0] == "0":
         proposed_uuid = uuid_pkg.uuid4()
 
     return proposed_uuid
@@ -18,7 +19,9 @@ class ActiveRecord(SQLModel):
     def by_id(cls, id_: int, session):
         obj = session.get(cls, id_)
         if obj is None:
-            raise HTTPException(status_code=404, detail=f"{cls.__name__} with id {id_} not found")
+            raise HTTPException(
+                status_code=404, detail=f"{cls.__name__} with id {id_} not found"
+            )
         return obj
 
     @classmethod
@@ -32,7 +35,7 @@ class ActiveRecord(SQLModel):
         elif isinstance(source, dict):
             obj = cls.parse_obj(source)
         else:
-            raise ValueError(f'The input type {type(source)} can not be processed')
+            raise ValueError(f"The input type {type(source)} can not be processed")
 
         session.add(obj)
         session.commit()

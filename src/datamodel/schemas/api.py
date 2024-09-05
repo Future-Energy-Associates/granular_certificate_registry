@@ -1,9 +1,8 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from sqlmodel import SQLModel
-import datetime
 
-from energytag.datamodel.schemas import entities, items
+from src.datamodel.schemas import entities, items
 
 
 class RegisteringDeviceWrite(SQLModel):
@@ -17,8 +16,7 @@ class RegisteringDeviceWrite(SQLModel):
     energy_source: items.energy_sources
     technology_type: items.technology_types
     operational_date: items.OperationalDate
-    subsidy_support: Optional[List[entities.SubsidySupportBase]]
-    images: Optional[List[entities.ImageBase]]
+    subsidy_support: Optional[str]
     capacity: items.Capacity
     peak_demand: items.PeakDemand
 

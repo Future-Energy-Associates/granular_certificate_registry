@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup env vars
+        run: cp .env.example .env
+
+      - name: CI specific env vars
+        run: |
+            touch .env.ci
+            echo "${{ secrets.CI_ENV_VARS }}" > .env.ci
+
+      - name: Build Docker container
+        run: docker compose build
+
+      - name: Run CI tasks
+        run: docker compose -f compose.yml -f compose.ci.yml run -i -T --rm gc_registry make ci
+
+      - name: Store coverage files
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov
+

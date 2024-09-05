@@ -1,20 +1,12 @@
-from setuptools import setup
-
-
-def get_required_packages(fp: str = "requirements.txt"):
-    with open(fp) as f:
-        required = f.read().splitlines()
-
-    return required
-
+from setuptools import find_packages, setup
 
 setup(
     name="gc_registry",
     version="0.0.1",
-    python_requires=">=3.10",
+    python_requires=">=3.11,<4",
     description="FEA EnergyTag Granular Certificate Demonstration Registry Platform",
     author="Connor Galbraith",
     author_email="connor@futureenergy.associates",
-    packages=["energytag"],
-    install_requires=get_required_packages(),
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
 )

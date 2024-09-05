@@ -1,13 +1,12 @@
-import uuid
 import os
+import uuid
 
-from fastapi import Depends, APIRouter
+from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from energytag.api import utils
-from energytag.api.routers import authentication
-from energytag.datamodel import schemas, db
-
+from src.api import utils
+from src.api.routers import authentication
+from src.datamodel import db, schemas
 
 # Router initialisation
 
@@ -26,7 +25,7 @@ def process_uuid(uuid_: uuid.UUID):
 def register_device(
     registering_device: schemas.api.RegisteringDeviceWrite,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["production"].yield_session),
+    session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     device_id = uuid.uuid4()
 
@@ -38,17 +37,6 @@ def register_device(
 
     _ = schemas.entities.Account.create(registering_device.account, session)
     account_id = _.account_id
-
-    if registering_device.subsidy_support is not None:
-        for subsidy_support in registering_device.subsidy_support:
-            _ = schemas.entities.SubsidySupport.create(subsidy_support, session)
-
-    if registering_device.images is not None:
-        for image in registering_device.images:
-            _ = schemas.entities.Meter.create(image, session)
-
-    # for auxiliary_unit in registering_device.auxiliary_units:
-    #     _ = schemas.entities.Meter.create(auxiliary_unit, session)
 
     # Constructing the device table object
     device_ = {
@@ -80,4 +68,3 @@ def register_device(
         headers=headers,
         response_model=schemas.api.RegisteringDeviceWrite,
     )
-
