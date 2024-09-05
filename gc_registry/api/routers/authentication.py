@@ -122,9 +122,7 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
         current_ts = datetime.now().timestamp()
 
         if (float(expire) - current_ts) < 0:
-            with Session(
-                db.db_name_to_client["authentication"].yield_session()
-            ) as session:
+            with Session(db.db_name_to_client["authentication"].engine) as session:
                 session.add(TokenBlacklist(token=oauth_token))
                 session.commit()
 
