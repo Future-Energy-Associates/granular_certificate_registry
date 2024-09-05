@@ -69,66 +69,6 @@ class DButils:
         with Session(self.engine) as session:
             yield session
 
-    def load_table_as_df(
-        self,
-        schema_path="dbutils.schemas.messages.MessageMetadata",
-        use_pandas=False,
-        pd_select_statement: str = "SELECT *",
-        offset: int = 0,
-        limit: int = 500,
-        sort_col: Optional[str] = None,
-        sort_dir: Optional[Literal["asc", "desc"]] = None,
-        dt_col: Optional[str] = None,  # assumed to be a unix timestamp
-    ):
-        if use_pandas:
-            table_name = schema_path.split(".")[-1].lower()
-            df = pd.read_sql(
-                sql=f"{pd_select_statement} FROM {table_name};", con=self.connection_str
-            )
-
-        else:
-            schema_class = schema_path_to_class(schema_path)
-            select_statement = select(schema_class)
-
-            if sort_col is not None:
-                if sort_dir is not None:
-                    select_statement = select_statement.order_by(
-                        getattr(getattr(schema_class, sort_col), sort_dir)()
-                    )
-                else:
-                    select_statement = select_statement.order_by(
-                        getattr(schema_class, sort_col)
-                    )
-
-            with Session(self.engine) as session:
-                results = session.exec(
-                    select_statement.offset(offset).limit(limit)
-                ).all()
-
-            df = pd.DataFrame.from_records(
-                [schema_class.from_orm(elem).dict() for elem in results]
-            )
-
-        if dt_col is not None:
-            assert (
-                dt_col in df.columns
-            ), f"{dt_col} is not one of the columns contained within the table"
-            df[dt_col] = pd.to_datetime(df[dt_col], unit="s")
-
-        return df
-
-    def get_table_row(self, col_name: str, value: str, schema_path: str):
-        schema_class = schema_path_to_class(schema_path)
-
-        with Session(self.engine) as session:
-            statement = select(schema_class).where(
-                getattr(schema_class, col_name) == value
-            )
-            results = session.exec(statement)
-            result = results.first()  # should assert there's only one
-
-        return result
-
     def initiate_db_tables(self, schema_paths: list = None) -> None:
         if schema_paths is None:
             schema_paths = []
@@ -147,52 +87,8 @@ class DButils:
 
         return None
 
-    def save_rows(self, schema_path: str, rows: List[dict]):
-        with Session(self.engine) as session:
-            schema_class = schema_path_to_class(schema_path)
 
-            for single_row_data in tqdm(rows, desc="saving rows"):
-                row_entry = schema_class(**single_row_data)
-                session.add(row_entry)
-
-            session.commit()
-
-    def save_dfs(self, schema_path_to_df_fp: dict):
-        with Session(self.engine) as session:
-            for schema_path, df_fp in schema_path_to_df_fp.items():
-                if isinstance(df_fp, str):
-                    df = pd.read_csv(df_fp)
-                elif isinstance(df_fp, pd.DataFrame):
-                    df = df_fp
-                else:
-                    raise ValueError(
-                        "The values within the `schema_to_df_fp` object must be strings representing the filepaths to "
-                        "CSVs or Pandas DataFrame objects"
-                    )
-
-                if isinstance(schema_path, str):
-                    schema = schema_path_to_class(schema_path)
-                else:
-                    raise ValueError("Expected `schema_path` to be a string")
-
-                for row_data in tqdm(
-                    df_to_records_without_nulls(df), desc=schema_path.split(".")[-1]
-                ):
-                    try:
-                        row_obj = schema(**row_data)
-                        session.add(row_obj)
-                    except:  # noqa: E722
-                        pp_row_data = "\n".join(
-                            [f"{k}: {v}" for k, v in row_data.items()]
-                        )
-                        raise ValueError(
-                            f"Failed to process {schema_path} for entry:\n{pp_row_data}"
-                        )
-
-            session.commit()
-
-
-# initialising all the DButil clients
+# Initialising the DButil clients
 
 db_mapping = [
     ("read", os.getenv("DATABASE_URL_READ"), schema_paths_read),
