@@ -38,6 +38,5 @@ COPY ./setup.py /code/setup.py
 COPY ./src /code/src
 COPY ./.env /code/.env
 COPY ./frontend /code/frontend
-COPY ./node_modules /code/node_modules
 COPY ./tests /code/tests
 COPY ./README.md /code/README.md
