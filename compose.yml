@@ -1,0 +1,10 @@
+services:
+  gc_registry:
+    build:
+      context: ./
+      dockerfile: "Dockerfile"
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    ports:
+      - "80:80"
+          

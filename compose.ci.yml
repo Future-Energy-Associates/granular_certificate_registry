@@ -1,0 +1,16 @@
+services:
+  api:
+    restart: no
+    env_file:
+      - .env
+      - .env.ci
+    environment:
+      - TC_HOST=host.docker.internal
+    build:
+      context: .
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-true}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - host.docker.internal:host-gateway

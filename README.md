@@ -28,4 +28,16 @@ Development tools:
 - Versioning: [Python Semantic release](https://python-semantic-release.readthedocs.io/en/latest/)
 - Deployment: [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 
+## Further documentation
+
+| I want to know about...              |                                  |
+|--------------------------------------|----------------------------------|
+| [Development](docs/DEVELOPMENT.md)   | Linting, formatting, testing etc |
+| [Deployment](docs/DEPLOYMENT.md)     | General deployment docs          |
+| [Contributing](docs/CONTRIBUTING.md) | Our processes for contributors   |
+| [Change Log](./CHANGELOG.md)         | Log of code changes              |
+
+
+
+
 
