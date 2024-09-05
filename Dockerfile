@@ -17,7 +17,11 @@ RUN apt update && apt install -y \
     musl-dev
 
 # Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
+# RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python3 && \
+cd /usr/local/bin && \
+ln -s /opt/poetry/bin/poetry && \
+poetry config virtualenvs.create false
 
 # Set the working directory
 WORKDIR /code
@@ -26,7 +30,9 @@ WORKDIR /code
 COPY ./pyproject.toml ./poetry.lock* /code/
 
 # Install dependencies using Poetry
-RUN /root/.local/bin/poetry install --no-root
+# RUN /root/.local/bin/poetry install --no-root
+ARG INSTALL_DEV=false
+RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --only main ; fi"
 
 # Copy the rest of the application code
 COPY ./setup.py /code/setup.py
@@ -38,7 +44,7 @@ COPY ./tests /code/tests
 COPY ./README.md /code/README.md
 
 # Install the package in editable mode
-RUN /root/.local/bin/poetry install
+# RUN /root/.local/bin/poetry install
 
 # Set the command to run the application
 CMD ["/root/.local/bin/poetry", "run", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "80"]

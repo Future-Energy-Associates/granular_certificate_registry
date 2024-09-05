@@ -7,4 +7,3 @@ services:
         INSTALL_DEV: ${INSTALL_DEV-false}
     ports:
       - "80:80"
-          
