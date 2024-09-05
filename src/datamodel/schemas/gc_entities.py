@@ -270,9 +270,9 @@ class GranularCertificateActionBase(utils.ActiveRecord):
 
 
 class GranularCertificateAction(GranularCertificateActionBase, table=True):
-    action_id: uuid_pkg.UUID = Field(
+    action_id: int = Field(
         primary_key=True,
-        default_factory=uuid_pkg.uuid4,
+        default=None,
         description="A unique ID assigned to this action.",
     )
 

@@ -158,9 +158,9 @@ class StorageActionResponse(StorageActionBase):
     in accordance with the EnergyTag Standard and the registry's own policies and procedures.
     """
 
-    action_id: uuid_pkg.UUID = Field(
+    action_id: int = Field(
         primary_key=True,
-        default_factory=uuid_pkg.uuid4,
+        default=None,
         description="A unique ID assigned to this action.",
     )
 
@@ -168,9 +168,9 @@ class StorageActionResponse(StorageActionBase):
 class StorageAction(StorageActionBase, table=True):
     """A record of a User's request to the registry to query SCRs/SDRs within a specified Account."""
 
-    action_id: uuid_pkg.UUID = Field(
+    action_id: int = Field(
         primary_key=True,
-        default_factory=uuid_pkg.uuid4,
+        default=None,
         description="A unique ID assigned to this action.",
     )
 
