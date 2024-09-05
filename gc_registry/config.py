@@ -1,0 +1,31 @@
+schema_paths_read = [
+    "gc_registry.datamodel.schemas.authentication.TokenBlacklist",
+    "gc_registry.datamodel.schemas.authentication.SecureAPIUser",
+    "gc_registry.datamodel.schemas.entities.Account",
+    "gc_registry.datamodel.schemas.entities.Device",
+    "gc_registry.datamodel.schemas.entities.Organisation",
+    "gc_registry.datamodel.schemas.entities.UserAccountLink",
+    "gc_registry.datamodel.schemas.entities.User",
+    "gc_registry.datamodel.schemas.entities.MeasurementReport",
+    "gc_registry.datamodel.schemas.gc_entities.GranularCertificateBundle",
+    "gc_registry.datamodel.schemas.gc_entities.GranularCertificateAction",
+    "gc_registry.datamodel.schemas.storage_entities.StorageChargeRecord",
+    "gc_registry.datamodel.schemas.storage_entities.StorageDischargeRecord",
+    "gc_registry.datamodel.schemas.storage_entities.StorageAction",
+]
+
+schema_paths_write = [
+    "gc_registry.datamodel.schemas.authentication.TokenBlacklist",
+    "gc_registry.datamodel.schemas.authentication.SecureAPIUser",
+    "gc_registry.datamodel.schemas.entities.Account",
+    "gc_registry.datamodel.schemas.entities.Device",
+    "gc_registry.datamodel.schemas.entities.Organisation",
+    "gc_registry.datamodel.schemas.entities.UserAccountLink",
+    "gc_registry.datamodel.schemas.entities.User",
+    "gc_registry.datamodel.schemas.entities.MeasurementReport",
+    "gc_registry.datamodel.schemas.gc_entities.GranularCertificateBundle",
+    "gc_registry.datamodel.schemas.gc_entities.GranularCertificateAction",
+    "gc_registry.datamodel.schemas.storage_entities.StorageChargeRecord",
+    "gc_registry.datamodel.schemas.storage_entities.StorageDischargeRecord",
+    "gc_registry.datamodel.schemas.storage_entities.StorageAction",
+]

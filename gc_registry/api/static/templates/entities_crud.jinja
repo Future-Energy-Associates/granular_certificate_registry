@@ -9,12 +9,6 @@ environment = os.getenv('ENVIRONMENT')
 router = APIRouter(tags=['Entities'])
 
 
-def process_uuid(uuid_: uuid.UUID):
-    if environment == 'STAGE':
-        uuid_ = str(uuid_).replace('-', '')
-
-    return uuid_
-
 
 {% for table_spec in tables_spec %}# {{ table_spec['schema_name'] }}
 @router.post('/{{ table_spec['schema_name'].lower() }}', response_model={{ schema_module_str }}.{{ table_spec['schema_name'] }}Read)

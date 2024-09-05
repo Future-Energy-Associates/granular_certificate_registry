@@ -1,27 +1,19 @@
 # Imports
 import os
-import uuid
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from src.api import utils
-from src.api.routers import authentication
-from src.datamodel import db
-from src.datamodel.schemas import entities
+from gc_registry.api import utils
+from gc_registry.api.routers import authentication
+from gc_registry.datamodel import db
+from gc_registry.datamodel.schemas import entities
 
 environment = os.getenv("ENVIRONMENT")
 
 
 # Router initialisation
 router = APIRouter(tags=["Users"])
-
-
-def process_uuid(uuid_: uuid.UUID):
-    if environment == "STAGE":
-        uuid_ = str(uuid_).replace("-", "")
-
-    return uuid_
 
 
 ### User ###
@@ -42,11 +34,11 @@ def create_user(
 
 @router.get("/user/{user_id}", response_model=entities.UserRead)
 def read_user(
-    user_id: uuid.UUID,
+    user_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_user = entities.User.by_id(process_uuid(user_id), session)
+    db_user = entities.User.by_id(user_id, session)
 
     return utils.format_json_response(
         db_user, headers, response_model=entities.UserRead
@@ -59,7 +51,7 @@ def update_user(
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_user = entities.User.by_id(process_uuid(user.user_id), session)
+    db_user = entities.User.by_id(user.id, session)
     db_user.update(user, session)
 
     return utils.format_json_response(
@@ -69,7 +61,7 @@ def update_user(
 
 @router.delete("/user/{user_id}", response_model=entities.UserRead)
 def delete_user(
-    user_id: uuid.UUID,
+    user_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):

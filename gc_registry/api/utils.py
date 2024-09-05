@@ -1,5 +1,4 @@
 import json
-from typing import List, Optional, Union
 
 import sqlmodel
 from fastapi import HTTPException
@@ -24,10 +23,14 @@ def sqlmodel_obj_to_json(sqlmodel_obj, response_model=None, replace_nan=True):
         return None
     elif isinstance(sqlmodel_obj, list):
         json_content = [
-            json.loads(parse_nans_to_null(elem.json(), replace_nan))
-            if response_model is None
-            else json.loads(
-                parse_nans_to_null(response_model.from_orm(elem).json(), replace_nan)
+            (
+                json.loads(parse_nans_to_null(elem.json(), replace_nan))
+                if response_model is None
+                else json.loads(
+                    parse_nans_to_null(
+                        response_model.from_orm(elem).json(), replace_nan
+                    )
+                )
             )
             for elem in sqlmodel_obj
         ]
@@ -45,7 +48,7 @@ def sqlmodel_obj_to_json(sqlmodel_obj, response_model=None, replace_nan=True):
 
 def format_json_response(
     sqlmodel_obj,
-    headers: dict = None,
+    headers: dict | None = None,
     response_model=None,
     send_raw=False,
     pagination_metadata=None,
@@ -81,13 +84,13 @@ def construct_pagination_metadata(
     locals_dict: dict,
     table_schema: sqlmodel.main.SQLModelMetaclass,
     session: sqlmodel.orm.session.Session,
-    params: List[Optional[str]] = None,
+    params: list[str] | None = None,
     offset: int = 0,
     limit: int = 100,
-    null_values: List[Union[str, None]] = None,
+    null_values: list[str] | None = None,
 ):
     if null_values is None:
-        null_values = ["", None]
+        null_values = [""]
     if params is None:
         params = []
     query = session.query(table_schema)

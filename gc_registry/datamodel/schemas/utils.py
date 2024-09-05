@@ -1,17 +1,7 @@
-import uuid as uuid_pkg
 from typing import Union
 
 from fastapi import HTTPException
 from sqlmodel import SQLModel, select
-
-
-def get_valid_uuid():
-    proposed_uuid = uuid_pkg.uuid4()
-
-    while str(proposed_uuid)[0] == "0":
-        proposed_uuid = uuid_pkg.uuid4()
-
-    return proposed_uuid
 
 
 class ActiveRecord(SQLModel):

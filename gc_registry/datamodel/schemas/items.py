@@ -19,13 +19,13 @@ cancellation_cascade_orders = Literal["age", "price"]
 
 # Items
 class IntervalStartDatetime(datetime.datetime):
-    default: str = "2022-01-01 00:00"
+    default: datetime.datetime | None = None
     title: str = "Interval Start Datetime"
     description: str = ""
 
 
 class IntervalEndDatetime(datetime.datetime):
-    default: str = "2022-01-01 00:30"
+    default: datetime.datetime | None = None
     title: str = "Interval End Datetime"
     description: str = ""
 
@@ -36,31 +36,31 @@ class IntervalUsage(int):
     description: str = ""
 
 
-class UsageUnits(str):
+class UsageUnits:
     default: str = "kWh"
     title: str = "Usage Units"
     description: str = ""
 
 
-class DeviceName(str):
-    default: str = ""
+class DeviceName:
+    default: str | None = None
     title: str = "Device Name"
     description: str = ""
 
 
 class OperationalDate(datetime.date):
-    default: datetime.date = ""
+    default: datetime.date | None = None
     title: str = "Operational Date"
     description: str = ""
 
 
 class Capacity(float):
-    default: float = 1
+    default: float | None = None
     title: str = "Device Capacity"
     description: str = "This is the nameplate capacity in kW"
 
 
 class PeakDemand(float):
-    default: float = 1
+    default: float | None = None
     title: str = "Peak Demand"
     description: str = "The peak demand that has been recorded for the device"

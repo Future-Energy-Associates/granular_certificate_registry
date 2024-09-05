@@ -18,7 +18,7 @@ from .routers import (
 # App initialisation
 load_dotenv()
 
-static_dir_fp = os.getenv("STATIC_DIR_FP", "/code/src/api/static")
+static_dir_fp = os.getenv("STATIC_DIR_FP", "/code/gc_registry/api/static")
 static_dir_fp = os.path.abspath(static_dir_fp)
 middleware_secret_key = os.environ["MIDDLEWARE_SECRET_KEY"]
 

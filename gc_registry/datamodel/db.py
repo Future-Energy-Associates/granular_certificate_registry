@@ -1,13 +1,13 @@
 import importlib
-import os
-from typing import Optional
+from typing import Any, Generator
 
 import numpy as np
 from dotenv import load_dotenv
 from sqlalchemy_utils import create_database, database_exists
 from sqlmodel import Session, SQLModel, create_engine
 
-from src.config import schema_paths_read, schema_paths_write
+from gc_registry.config import schema_paths_read, schema_paths_write
+from gc_registry.settings import settings
 
 # Loading environment variables
 
@@ -36,13 +36,13 @@ def df_to_records_without_nulls(df):
 class DButils:
     def __init__(
         self,
-        db_username: Optional[str] = None,
-        db_password: Optional[str] = None,
-        db_url: Optional[str] = None,
-        db_port: Optional[int] = None,
-        db_name: Optional[str] = None,
-        db_test_fp: Optional[str] = None,
-        env: Optional[str] = "STAGE",
+        db_username: str | None = None,
+        db_password: str | None = None,
+        db_url: str | None = None,
+        db_port: int | None = None,
+        db_name: str | None = None,
+        db_test_fp: str | None = None,
+        env: str | None = "STAGE",
     ):
         self._db_username = db_username
         self._db_password = db_password
@@ -63,11 +63,11 @@ class DButils:
 
         self.engine = create_engine(self.connection_str, pool_pre_ping=True)
 
-    def yield_session(self):
+    def yield_session(self) -> Generator[Any, Any, Any]:
         with Session(self.engine) as session:
             yield session
 
-    def initiate_db_tables(self, schema_paths: list = None) -> None:
+    def initiate_db_tables(self, schema_paths: list | None = None) -> None:
         if schema_paths is None:
             schema_paths = []
         if not database_exists(self.engine.url):
@@ -89,8 +89,8 @@ class DButils:
 # Initialising the DButil clients
 
 db_mapping = [
-    ("read", os.getenv("DATABASE_URL_READ"), schema_paths_read),
-    ("write", os.getenv("DATABASE_URL_WRITE"), schema_paths_write),
+    ("read", settings.DATABASE_URL_READ, schema_paths_read),
+    ("write", settings.DATABASE_URL_WRITE, schema_paths_write),
 ]
 
 db_name_to_client = {}
@@ -99,11 +99,11 @@ for db_name, db_url, schema_paths in db_mapping:
     db_client = DButils(
         db_url=db_url,
         db_name=db_name,
-        db_username=os.getenv("POSTGRES_USER"),
-        db_password=os.getenv("POSTGRES_PASSWORD"),
-        db_port=os.getenv("DATABASE_PORT"),
-        db_test_fp=os.getenv("DB_TEST_FP"),
-        env=os.getenv("ENVIRONMENT"),
+        db_username=settings.POSTGRES_USER,
+        db_password=settings.POSTGRES_PASSWORD,
+        db_port=settings.DATABASE_PORT,
+        db_test_fp=settings.DB_TEST_FP,
+        env=settings.ENVIRONMENT,
     )
     db_name_to_client[db_name] = db_client
     db_client.initiate_db_tables(schema_paths)

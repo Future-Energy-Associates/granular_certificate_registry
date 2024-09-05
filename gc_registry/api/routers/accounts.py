@@ -1,13 +1,12 @@
 # Imports
 import os
-import uuid
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from src.api import utils
-from src.datamodel import db
-from src.datamodel.schemas import entities
+from gc_registry.api import utils
+from gc_registry.datamodel import db
+from gc_registry.datamodel.schemas import entities
 
 from . import authentication
 
@@ -16,13 +15,6 @@ environment = os.getenv("ENVIRONMENT")
 
 # Router initialisation
 router = APIRouter(tags=["Accounts"])
-
-
-def process_uuid(uuid_: uuid.UUID):
-    if environment == "STAGE":
-        uuid_ = str(uuid_).replace("-", "")
-
-    return uuid_
 
 
 ### Account ###
@@ -43,11 +35,11 @@ def create_account(
 
 @router.get("/account/{account_id}", response_model=entities.AccountRead)
 def read_account(
-    account_id: uuid.UUID,
+    account_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_account = entities.Account.by_id(process_uuid(account_id), session)
+    db_account = entities.Account.by_id(account_id, session)
 
     return utils.format_json_response(
         db_account, headers, response_model=entities.AccountRead
@@ -60,7 +52,10 @@ def update_account(
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_account = entities.Account.by_id(process_uuid(account.account_id), session)
+    if account.id is None:
+        raise ValueError("Account ID is required for update")
+
+    db_account = entities.Account.by_id(account.id, session)
     db_account.update(account, session)
 
     return utils.format_json_response(
@@ -70,7 +65,7 @@ def update_account(
 
 @router.delete("/account/{account_id}", response_model=entities.AccountRead)
 def delete_account(
-    account_id: uuid.UUID,
+    account_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):

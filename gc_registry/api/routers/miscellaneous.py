@@ -1,27 +1,19 @@
 # Imports
 import os
-import uuid
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from src.api import utils
-from src.api.routers import authentication
-from src.datamodel import db
-from src.datamodel.schemas import entities
+from gc_registry.api import utils
+from gc_registry.api.routers import authentication
+from gc_registry.datamodel import db
+from gc_registry.datamodel.schemas import entities
 
 environment = os.getenv("ENVIRONMENT")
 
 
 # Router initialisation
 router = APIRouter(tags=["Miscellaneous"])
-
-
-def process_uuid(uuid_: uuid.UUID):
-    if environment == "STAGE":
-        uuid_ = str(uuid_).replace("-", "")
-
-    return uuid_
 
 
 # # MeasurementReport
@@ -43,12 +35,12 @@ def create_measurementreport(
     response_model=entities.MeasurementReportRead,
 )
 def read_measurementreport(
-    measurement_report_id: uuid.UUID,
+    measurement_report_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = entities.MeasurementReport.by_id(
-        process_uuid(measurement_report_id), session
+        measurement_report_id, session
     )
 
     return utils.format_json_response(
@@ -66,7 +58,7 @@ def update_measurementreport(
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = entities.MeasurementReport.by_id(
-        process_uuid(measurementreport.measurement_report_id), session
+        measurementreport.measurement_report_id, session
     )
     db_measurementreport.update(measurementreport, session)
 
@@ -80,7 +72,7 @@ def update_measurementreport(
     response_model=entities.MeasurementReportRead,
 )
 def delete_measurementreport(
-    measurement_report_id: uuid.UUID,
+    measurement_report_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):

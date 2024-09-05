@@ -1,10 +1,9 @@
 import datetime
-import uuid as uuid_pkg
 from typing import Optional, Union
 
 from sqlmodel import Field
 
-from src.datamodel.schemas import utils
+from gc_registry.datamodel.schemas import utils
 
 
 class StorageChargeRecordBase(utils.ActiveRecord):
@@ -21,7 +20,7 @@ class StorageChargeRecordBase(utils.ActiveRecord):
         description="""The energy source from which the Storage Device was charged, matching the energy source of the GC Bundles
                        that were cancelled and allocated to the Storage Device.""",
     )
-    gc_issuance_id: uuid_pkg.UUID = Field(
+    gc_issuance_id: int = Field(
         description="The unique issuance ID of the GC Bundle that was cancelled and allocated to this SCR.",
     )
     gc_bundle_id_range_start: int = Field(
@@ -33,22 +32,22 @@ class StorageChargeRecordBase(utils.ActiveRecord):
     scr_geographic_matching_method: str = Field(
         description="Which type of geographic matching, as described in the EnergyTag GC Matching Standard, has been applied to allocated this SCR.",
     )
-    sdr_allocation_id: Optional[uuid_pkg.UUID] = Field(
+    sdr_allocation_id: int | None = Field(
         description="When allocated, the unique ID of the Storage Discharge Record that has been allocated to this SCR. If blank, no SDR has been allocated to this SCR.",
         foreign_key="storagedischargerecord.sdr_allocation_id",
     )
 
 
 class StorageChargeRecord(StorageChargeRecordBase, table=True):
-    scr_allocation_id: uuid_pkg.UUID = Field(
+    scr_allocation_id: int = Field(
         description="The unique ID of the Storage Charge Record that allocated the energy of the Storage Device to this SDR.",
         primary_key=True,
     )
-    account_id: uuid_pkg.UUID = Field(
+    account_id: int = Field(
         foreign_key="account.account_id",
         description="Each SCR is issued to a single unique production Account that its Storage Device is individually registered to.",
     )
-    device_id: uuid_pkg.UUID = Field(
+    device_id: int = Field(
         foreign_key="device.device_id",
         description="The Device ID of the Storage Device that is being charged.",
     )
@@ -84,19 +83,19 @@ class StorageDischargeRecordBase(utils.ActiveRecord):
 
 
 class StorageDischargeRecord(StorageDischargeRecordBase, table=True):
-    sdr_allocation_id: uuid_pkg.UUID = Field(
+    sdr_allocation_id: int = Field(
         description="The unique ID of this Storage Discharge Record.",
         primary_key=True,
     )
-    device_id: uuid_pkg.UUID = Field(
+    device_id: int = Field(
         foreign_key="device.device_id",
         description="The Device ID of the Storage Device that is being charged.",
     )
-    account_id: uuid_pkg.UUID = Field(
+    account_id: int = Field(
         foreign_key="account.account_id",
         description="Each SDR is issued to a single unique production Account that its Storage Device is individually registered to.",
     )
-    scr_allocation_id: uuid_pkg.UUID = Field(
+    scr_allocation_id: int = Field(
         description="The unique ID of the Storage Charge Record that allocated the energy charged into this Storage Device (adjusted for losses) to this SDR.",
         foreign_key="storagechargerecord.scr_allocation_id",
     )
@@ -114,15 +113,15 @@ class StorageActionBase(utils.ActiveRecord):
     action_response_status: str = Field(
         description="Specifies whether the requested action has been accepted or rejected by the registry."
     )
-    source_account_id: uuid_pkg.UUID = Field(
+    source_account_id: int = Field(
         description="The Account ID of the Account within which the action shall occur or originate from.",
         foreign_key="account.account_id",
     )
-    source_user_id: uuid_pkg.UUID = Field(
+    source_user_id: int = Field(
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified.",
         foreign_key="user.user_id",
     )
-    source_allocation_id: Optional[uuid_pkg.UUID] = Field(
+    source_allocation_id: int | None = Field(
         description="The specific SCRs/SDRs onto which the action will be performed. Returns all records with the specified allocation ID."
     )
     action_request_datetime: datetime.datetime = Field(
@@ -139,14 +138,14 @@ class StorageActionBase(utils.ActiveRecord):
     charging_period_end: Optional[datetime.datetime] = Field(
         description="The UTC datetime up to which records within the specified Account are to be filtered."
     )
-    storage_device_id: Optional[uuid_pkg.UUID] = Field(
+    storage_device_id: int | None = Field(
         description="Filter records associated with the specified production device."
     )
-    storage_energy_source: Optional[str] = Field(
+    storage_energy_source: str | None = Field(
         description="Filter records based on the fuel type used by the production Device.",
     )
     # TODO this also breaks pydantic validation, need to revisit
-    # sparse_filter_list: Optional[dict[uuid_pkg.UUID, datetime.datetime]] = Field(
+    # sparse_filter_list: Optional[dict[int, datetime.datetime]] = Field(
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
     #     sa_column=Column(ARRAY(String())),
     # )

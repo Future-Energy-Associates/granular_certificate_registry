@@ -1,27 +1,19 @@
 # Imports
 import os
-import uuid
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from src.api import utils
-from src.api.routers import authentication
-from src.datamodel import db
-from src.datamodel.schemas import entities
+from gc_registry.api import utils
+from gc_registry.api.routers import authentication
+from gc_registry.datamodel import db
+from gc_registry.datamodel.schemas import entities
 
 environment = os.getenv("ENVIRONMENT")
 
 
 # Router initialisation
 router = APIRouter(tags=["Devices"])
-
-
-def process_uuid(uuid_: uuid.UUID):
-    if environment == "STAGE":
-        uuid_ = str(uuid_).replace("-", "")
-
-    return uuid_
 
 
 ### Device ###
@@ -42,11 +34,11 @@ def create_device(
 
 @router.get("/device/{device_id}", response_model=entities.DeviceRead)
 def read_device(
-    device_id: uuid.UUID,
+    device_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_device = entities.Device.by_id(process_uuid(device_id), session)
+    db_device = entities.Device.by_id(device_id, session)
 
     return utils.format_json_response(
         db_device, headers, response_model=entities.DeviceRead
@@ -59,7 +51,7 @@ def update_device(
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_device = entities.Device.by_id(process_uuid(device.device_id), session)
+    db_device = entities.Device.by_id(device.id, session)
     db_device.update(device, session)
 
     return utils.format_json_response(
@@ -69,7 +61,7 @@ def update_device(
 
 @router.delete("/device/{device_id}", response_model=entities.DeviceRead)
 def delete_device(
-    device_id: uuid.UUID,
+    device_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):

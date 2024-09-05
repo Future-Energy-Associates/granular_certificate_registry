@@ -4,10 +4,10 @@ import os
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from src.api import utils
-from src.api.routers import authentication
-from src.datamodel import db
-from src.datamodel.schemas import gc_entities, storage_entities
+from gc_registry.api import utils
+from gc_registry.api.routers import authentication
+from gc_registry.datamodel import db
+from gc_registry.datamodel.schemas import gc_entities, storage_entities
 
 environment = os.getenv("ENVIRONMENT")
 

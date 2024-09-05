@@ -1,5 +1,4 @@
 import datetime
-import uuid as uuid_pkg
 from typing import (
     AbstractSet,
     Any,
@@ -10,10 +9,11 @@ from typing import (
     Union,
 )
 
+from pydantic import BaseModel
 from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship
 
-from src.datamodel.schemas import utils
+from gc_registry.datamodel.schemas import utils
 
 field_attrs = [
     "default",
@@ -50,9 +50,9 @@ def item_field(
     default: Any = None,
     *args,
     default_factory: Optional[Any] = None,
-    alias: Optional[str] = None,
-    title: Optional[str] = None,
-    description: Optional[str] = None,
+    alias: str | None = None,
+    title: str | None = None,
+    description: str | None = None,
     exclude: Union[
         AbstractSet[Union[int, str]], Mapping[Union[int, str], Any], Any
     ] = None,
@@ -60,17 +60,17 @@ def item_field(
         AbstractSet[Union[int, str]], Mapping[Union[int, str], Any], Any
     ] = None,
     const: Optional[bool] = None,
-    gt: Optional[float] = None,
-    ge: Optional[float] = None,
-    lt: Optional[float] = None,
-    le: Optional[float] = None,
-    multiple_of: Optional[float] = None,
-    min_items: Optional[int] = None,
-    max_items: Optional[int] = None,
-    min_length: Optional[int] = None,
-    max_length: Optional[int] = None,
+    gt: float | None = None,
+    ge: float | None = None,
+    lt: float | None = None,
+    le: float | None = None,
+    multiple_of: float | None = None,
+    min_items: int | None = None,
+    max_items: int | None = None,
+    min_length: int | None = None,
+    max_length: int | None = None,
     allow_mutation: bool = True,
-    regex: Optional[str] = None,
+    regex: str | None = None,
     primary_key: bool = False,
     foreign_key: Optional[Any] = None,
     nullable: Union[bool, Any] = None,
@@ -109,28 +109,26 @@ class OrganisationBase(utils.ActiveRecord):
     name: str
     business_id: int
     primary_contact: str
-    website: Optional[str]
-    address: Optional[str]
+    website: str | None
+    address: str | None
 
 
 class Organisation(OrganisationBase, table=True):
-    organisation_id: uuid_pkg.UUID = Field(
-        primary_key=True, default_factory=uuid_pkg.uuid4
-    )
+    id: int | None = Field(primary_key=True)
     users: list["User"] = Relationship(back_populates="organisation")
 
 
 class OrganisationRead(OrganisationBase):
-    organisation_id: uuid_pkg.UUID
+    id: int
 
 
-class OrganisationUpdate(OrganisationBase):
-    organisation_id: Optional[uuid_pkg.UUID]
-    name: Optional[str]
-    business_id: Optional[int]
-    website: Optional[str]
-    address: Optional[str]
-    primary_contact: Optional[str]
+class OrganisationUpdate(BaseModel):
+    id: int
+    name: str | None
+    business_id: int | None
+    website: str | None
+    address: str | None
+    primary_contact: str | None
 
 
 # User - a single Organisation can have multiple Users, each with different roles and
@@ -140,10 +138,8 @@ class OrganisationUpdate(OrganisationBase):
 
 # a single user can be granted access to many accounts, and vice versa
 class UserAccountLink(utils.ActiveRecord, table=True):
-    user_id: Optional[uuid_pkg.UUID] = Field(
-        default=None, foreign_key="user.user_id", primary_key=True
-    )
-    account_id: Optional[uuid_pkg.UUID] = Field(
+    user_id: int = Field(default=None, foreign_key="user.user_id", primary_key=True)
+    account_id: int = Field(
         default=None, foreign_key="account.account_id", primary_key=True
     )
 
@@ -159,12 +155,12 @@ class UserBase(utils.ActiveRecord):
                        to perform within the registry, according to the EnergyTag Standard.""",
         sa_column=Column(ARRAY(String())),
     )
-    organisation_id: uuid_pkg.UUID = Field(foreign_key="organisation.organisation_id")
+    organisation_id: int = Field(foreign_key="organisation.organisation_id")
 
 
 class User(UserBase, table=True):
-    user_id: uuid_pkg.UUID = Field(primary_key=True, default_factory=uuid_pkg.uuid4)
-    account_ids: Optional[List[uuid_pkg.UUID]] = Field(
+    id: int | None = Field(primary_key=True)
+    account_ids: list[int] = Field(
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
     )
@@ -174,13 +170,13 @@ class User(UserBase, table=True):
 
 
 class UserRead(UserBase):
-    user_id: uuid_pkg.UUID
+    id: int
 
 
-class UserUpdate(UserBase):
-    name: Optional[str]
-    user_id: Optional[uuid_pkg.UUID]
-    primary_contact: Optional[str]
+class UserUpdate(BaseModel):
+    id: int
+    name: str | None
+    primary_contact: str | None
 
 
 # Account - an Organisation can hold multiple accounts, into which
@@ -194,7 +190,7 @@ class AccountBase(utils.ActiveRecord):
 
 
 class Account(AccountBase, table=True):
-    account_id: uuid_pkg.UUID = Field(primary_key=True, default_factory=uuid_pkg.uuid4)
+    id: int | None = Field(primary_key=True)
     users: list["User"] = Relationship(
         back_populates="accounts", link_model=UserAccountLink
     )
@@ -202,13 +198,13 @@ class Account(AccountBase, table=True):
 
 
 class AccountRead(AccountBase):
-    account_id: uuid_pkg.UUID
+    id: int
     users: list["User"]
 
 
-class AccountUpdate(AccountBase):
-    account_name: Optional[str]
-    account_id: Optional[uuid_pkg.UUID]
+class AccountUpdate(BaseModel):
+    id: int | None
+    account_name: str | None
 
 
 # Device - production, consumption, or storage, each device is associated
@@ -225,41 +221,39 @@ class DeviceBase(utils.ActiveRecord):
     capacity: float
     peak_demand: float
     location: str
-    account_id: uuid_pkg.UUID = Field(
+    account_id: int = Field(
         description="The account to which the device is registered, and into which GC Bundles will be issued for energy produced by this Device.",
         foreign_key="account.account_id",
     )
 
 
 class Device(DeviceBase, table=True):
-    device_id: uuid_pkg.UUID = Field(
-        description="A unique identifier for the device. UUIDv4 could be used for this purpose, alternaties include the GS1 codes currently used under EECS.",
+    id: int | None = Field(
+        description="A unique identifier for the device. Integer has been used for this purpose, alternaties include the GS1 codes currently used under EECS.",
         primary_key=True,
-        default_factory=uuid_pkg.uuid4,
     )
     account: Account = Relationship(back_populates="devices")
 
 
 class DeviceRead(DeviceBase):
-    device_id: uuid_pkg.UUID
+    id: int
 
 
-class DeviceUpdate(DeviceBase):
-    device_id: Optional[uuid_pkg.UUID]
-    device_name: Optional[str]
+class DeviceUpdate(BaseModel):
+    id: int
     account: Optional[Account]
-    grid: Optional[str]
-    energy_source: Optional[str]
-    technology_type: Optional[str]
+    grid: str | None
+    energy_source: str | None
+    technology_type: str | None
     operational_date: Optional[datetime.date]
-    capacity: Optional[float]
-    peak_demand: Optional[float]
-    location: Optional[str]
+    capacity: float | None
+    peak_demand: float | None
+    location: str | None
 
 
 # Measurement Report
 class MeasurementReportBase(utils.ActiveRecord):
-    device_id: uuid_pkg.UUID
+    device_id: int
     interval_start_datetime: datetime.datetime
     interval_end_datetime: datetime.datetime
     interval_usage: int = Field(
@@ -271,16 +265,14 @@ class MeasurementReportBase(utils.ActiveRecord):
 
 
 class MeasurementReport(MeasurementReportBase, table=True):
-    measurement_report_id: uuid_pkg.UUID = Field(
-        primary_key=True, default_factory=uuid_pkg.uuid4
-    )
+    measurement_report_id: int | None = Field(primary_key=True)
 
 
 class MeasurementReportRead(MeasurementReportBase):
-    measurement_report_id: uuid_pkg.UUID
+    measurement_report_id: int
 
 
-class MeasurementReportUpdate(MeasurementReportBase):
-    measurement_report_id: Optional[uuid_pkg.UUID]
-    interval_start_datetime: Optional[datetime.datetime]
-    interval_end_datetime: Optional[datetime.datetime]
+class MeasurementReportUpdate(BaseModel):
+    measurement_report_id: int
+    interval_start_datetime: datetime.datetime | None
+    interval_end_datetime: datetime.datetime | None

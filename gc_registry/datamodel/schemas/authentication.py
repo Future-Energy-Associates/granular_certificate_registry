@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlmodel import Field, SQLModel
 
 
@@ -23,10 +21,10 @@ class Token(SQLModel):
 class APIUser(SQLModel):
     username: str = Field(primary_key=True)
     name: str
-    email: Optional[str] = None
-    picture: Optional[str] = None
-    scopes: Optional[str] = None
+    email: str | None = None
+    picture: str | None = None
+    scopes: str | None = None
 
 
 class SecureAPIUser(APIUser, table=True):
-    hashed_password: Optional[str] = None
+    hashed_password: str | None = None
