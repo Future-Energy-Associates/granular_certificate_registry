@@ -30,7 +30,6 @@ WORKDIR /code
 COPY ./pyproject.toml ./poetry.lock* /code/
 
 # Install dependencies using Poetry
-# RUN /root/.local/bin/poetry install --no-root
 ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --only main ; fi"
 
@@ -42,9 +41,3 @@ COPY ./frontend /code/frontend
 COPY ./node_modules /code/node_modules
 COPY ./tests /code/tests
 COPY ./README.md /code/README.md
-
-# Install the package in editable mode
-# RUN /root/.local/bin/poetry install
-
-# Set the command to run the application
-CMD ["/root/.local/bin/poetry", "run", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "80"]

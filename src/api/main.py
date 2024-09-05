@@ -17,7 +17,9 @@ from .routers import (
 
 # App initialisation
 load_dotenv()
-static_dir_fp = os.environ["STATIC_DIR_FP"]
+
+static_dir_fp = os.getenv("STATIC_DIR_FP", "/code/src/api/static")
+static_dir_fp = os.path.abspath(static_dir_fp)
 middleware_secret_key = os.environ["MIDDLEWARE_SECRET_KEY"]
 
 gc_description = """GC lifecycle management functionality. Filtering of GC Bundles for action implementation and queries
@@ -186,12 +188,3 @@ async def read_root(request: Request):
     }
 
     return templates.TemplateResponse("index.jinja", params)
-
-
-# @app.get("/docs", tags=["Core"], response_class=HTMLResponse)
-# async def swagger_ui_html():
-#     return get_swagger_ui_html(
-#         openapi_url="/openapi.json",
-#         title="FastAPI",
-#         swagger_favicon_url="static/favicon.ico",
-#     )
