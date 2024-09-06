@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Optional, Union
+from typing import List, Union
 
 from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, Field
@@ -115,13 +115,13 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
         description="The unique ID of the Storage Discharge Record that has been allocated to this GC Bundle.",
         foreign_key="storagedischargerecord.sdr_allocation_id",
     )
-    discharging_start_datetime: Optional[datetime.datetime] = Field(
+    discharging_start_datetime: datetime.datetime | None = Field(
         description="The UTC datetime at which the Storage Device began discharging the energy represented by this SD-GC (inherited from the allocated SDR).",
     )
-    discharging_end_datetime: Optional[datetime.datetime] = Field(
+    discharging_end_datetime: datetime.datetime | None = Field(
         description="The UTC datetime at which the Storage Device ceased discharging energy represented by this SD-GC (inherited from the allocated SDR).",
     )
-    storage_device_location: Optional[tuple[float, float]] = Field(
+    storage_device_location: tuple[float, float] | None = Field(
         description="The GPS coordinates of the storage Device that has discharged the energy represented by this GC Bundle.",
         sa_column=Column(ARRAY(Float)),
     )
@@ -219,7 +219,7 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         default_factory=datetime.datetime.now,
         description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
     )
-    initial_action_datetime: Optional[datetime.datetime] = Field(
+    initial_action_datetime: datetime.datetime | None = Field(
         description="If recurring, the UTC datetime of the first action that is to be completed.",
     )
     recurring_action_period_units: str | None = Field(
@@ -234,10 +234,10 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     beneficiary: str | None = Field(
         description="The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. If not specified, the Account holder is treated as the Beneficiary."
     )
-    certificate_period_start: Optional[datetime.datetime] = Field(
+    certificate_period_start: datetime.datetime | None = Field(
         description="The UTC datetime from which to filter GC Bundles within the specified Account."
     )
-    certificate_period_end: Optional[datetime.datetime] = Field(
+    certificate_period_end: datetime.datetime | None = Field(
         description="The UTC datetime up to which GC Bundles within the specified Account are to be filtered."
     )
     certificate_quantity: int | None = Field(
@@ -261,7 +261,7 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         description="Update the status of a GC Bundle."
     )
     # TODO this currently can't pass Pydantic validation, need to revisit
-    # sparse_filter_list: Optional[Tuple[str, str]] = Field(
+    # sparse_filter_list: Tuple[str, str] | None = Field(
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
     #     sa_column=Column(ARRAY(String(), String())),
     # )

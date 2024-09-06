@@ -4,7 +4,6 @@ from typing import (
     Any,
     List,
     Mapping,
-    Optional,
     Sequence,
     Union,
 )
@@ -49,7 +48,7 @@ def item_field(
     item,
     default: Any = None,
     *args,
-    default_factory: Optional[Any] = None,
+    default_factory: Any | None = None,
     alias: str | None = None,
     title: str | None = None,
     description: str | None = None,
@@ -59,7 +58,7 @@ def item_field(
     include: Union[
         AbstractSet[Union[int, str]], Mapping[Union[int, str], Any], Any
     ] = None,
-    const: Optional[bool] = None,
+    const: bool | None = None,
     gt: float | None = None,
     ge: float | None = None,
     lt: float | None = None,
@@ -72,13 +71,13 @@ def item_field(
     allow_mutation: bool = True,
     regex: str | None = None,
     primary_key: bool = False,
-    foreign_key: Optional[Any] = None,
+    foreign_key: Any | None = None,
     nullable: Union[bool, Any] = None,
     index: Union[bool, Any] = None,
     sa_column: Union[Column, Any] = None,  # type: ignore
     sa_column_args: Union[Sequence[Any], Any] = None,
     sa_column_kwargs: Union[Mapping[str, Any], Any] = None,
-    schema_extra: Optional[dict[str, Any]] = None,
+    schema_extra: dict[str, Any] | None = None,
     **kwargs,
 ):
     # Everything apart from the item is optional
@@ -164,7 +163,7 @@ class User(UserBase, table=True):
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
     )
-    accounts: Optional[list["Account"]] = Relationship(
+    accounts: list["Account"] | None = Relationship(
         back_populates="users", link_model=UserAccountLink
     )
 
@@ -241,11 +240,11 @@ class DeviceRead(DeviceBase):
 
 class DeviceUpdate(BaseModel):
     id: int
-    account: Optional[Account]
+    account: Account | None
     grid: str | None
     energy_source: str | None
     technology_type: str | None
-    operational_date: Optional[datetime.date]
+    operational_date: datetime.date | None
     capacity: float | None
     peak_demand: float | None
     location: str | None

@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from sqlmodel import SQLModel
 
 from gc_registry.datamodel.schemas import entities, items
@@ -12,7 +10,7 @@ class RegisteringDeviceWrite(SQLModel):
     device_name: items.DeviceName
     # production_account:
     grid: str
-    auxiliary_units: Optional[List[entities.DeviceBase]]
+    auxiliary_units: list[entities.DeviceBase] | None
     energy_source: items.energy_sources
     technology_type: items.technology_types
     operational_date: items.OperationalDate

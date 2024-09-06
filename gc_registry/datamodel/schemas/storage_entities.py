@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, Union
+from typing import Union
 
 from sqlmodel import Field
 
@@ -73,11 +73,11 @@ class StorageDischargeRecordBase(utils.ActiveRecord):
     efficiency_factor_methodology: str = Field(
         description="The method by which the energy storage losses of the Storage Device were calculated.",
     )
-    efficiency_factor_interval_start: Optional[datetime.datetime] = Field(
+    efficiency_factor_interval_start: datetime.datetime | None = Field(
         description="""The UTC datetime from which the Storage Device calculates its effective efficiency factor for this SDR, based on total input and
                        output energy over the interval specified. This field describes only the method proposed in the EnergyTag Standard, and is not mandatory.""",
     )
-    efficiency_factor_interval_end: Optional[datetime.datetime] = Field(
+    efficiency_factor_interval_end: datetime.datetime | None = Field(
         description="The UTC datetime to which the Storage Device calculates its effective efficiency factor for this SDR.",
     )
 
@@ -128,14 +128,14 @@ class StorageActionBase(utils.ActiveRecord):
         default_factory=datetime.datetime.now,
         description="The UTC datetime at which the User submitted the action to the registry.",
     )
-    action_completed_datetime: Optional[datetime.datetime] = Field(
+    action_completed_datetime: datetime.datetime | None = Field(
         default_factory=datetime.datetime.now,
         description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
     )
-    charging_period_start: Optional[datetime.datetime] = Field(
+    charging_period_start: datetime.datetime | None = Field(
         description="The UTC datetime from which to filter records within the specified Account."
     )
-    charging_period_end: Optional[datetime.datetime] = Field(
+    charging_period_end: datetime.datetime | None = Field(
         description="The UTC datetime up to which records within the specified Account are to be filtered."
     )
     storage_device_id: int | None = Field(
@@ -145,7 +145,7 @@ class StorageActionBase(utils.ActiveRecord):
         description="Filter records based on the fuel type used by the production Device.",
     )
     # TODO this also breaks pydantic validation, need to revisit
-    # sparse_filter_list: Optional[dict[int, datetime.datetime]] = Field(
+    # sparse_filter_list: dict[int, datetime.datetime] | None = Field(
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
     #     sa_column=Column(ARRAY(String())),
     # )
