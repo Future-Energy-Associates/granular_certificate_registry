@@ -128,7 +128,7 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
 
         # checking username exists
         if username is None:
-            raise ValueError("Username not found in token")
+            raise CredentialsException
 
         get_api_user(fake_users_db, username=username)
 
@@ -158,7 +158,7 @@ def read_api_user(
     username: str | None = str(payload.get("sub"))
 
     if username is None:
-        raise ValueError("Username not found in token")
+        raise CredentialsException
 
     api_user = get_api_user(fake_users_db, username=username)
 
@@ -173,7 +173,7 @@ def refresh(oauth_token: str = Depends(oauth2_scheme)):
     username: str | None = payload.pop("sub", None)
 
     if username is None:
-        raise ValueError("Username not found in token")
+        raise CredentialsException
 
     oauth_token = create_access_token(
         data={"sub": username},
