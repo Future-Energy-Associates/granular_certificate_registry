@@ -1,6 +1,6 @@
 import uuid as uuid_pkg
 from typing import (
-    ForwardRef,
+    TYPE_CHECKING,
     List,
     Optional,
 )
@@ -9,13 +9,14 @@ from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship
 
 from src.models.user import UserBase
-from src.schemas import user_account_link
+from src.schemas.user_account_link import UserAccountLink
+
+if TYPE_CHECKING:
+    from src.schemas.account import Account
 
 # User - a single Organisation can have multiple Users, each with different roles and
 # responsibilities at the discretion of the Organisation they are related to. Each
 # User may be authorised to operate multiple accounts.
-
-Account = ForwardRef("Account", module="src.schemas.account")
 
 
 class User(UserBase, table=True):
@@ -24,12 +25,9 @@ class User(UserBase, table=True):
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
     )
-    accounts: Optional[List[Account]] = Relationship(
-        back_populates="users", link_model=user_account_link.UserAccountLink
+    accounts: Optional[List["Account"]] = Relationship(
+        back_populates="users", link_model=UserAccountLink
     )
-
-
-User.model_rebuild()
 
 
 class UserRead(UserBase):
