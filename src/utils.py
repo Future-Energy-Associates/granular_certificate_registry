@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 import sqlmodel
 from fastapi import HTTPException
-from fastresponses import JSONResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlmodel import col
 

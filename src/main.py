@@ -3,18 +3,18 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastresponses import HTMLResponse
-from fasttemplating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from markdown import markdown
 from starlette.middleware.sessions import SessionMiddleware
 
 from .crud import (
-    accounts,
-    certificates,
-    devices,
+    account,
+    certificate,
+    device,
     organisations,
     storage,
-    users,
+    user,
 )
 
 load_dotenv()
@@ -70,12 +70,12 @@ app = FastAPI(
 app.add_middleware(SessionMiddleware, secret_key=MIDDLEWARE_SECRET_KEY)
 
 # app.include_router(authentication.router)
-app.include_router(certificates.router, prefix="/certificates")
+app.include_router(certificate.router, prefix="/certificates")
 app.include_router(storage.router, prefix="/storage")
 app.include_router(organisations.router, prefix="/organisations")
-app.include_router(users.router, prefix="/users")
-app.include_router(accounts.router, prefix="/accounts")
-app.include_router(devices.router, prefix="/devices")
+app.include_router(user.router, prefix="/users")
+app.include_router(account.router, prefix="/accounts")
+app.include_router(device.router, prefix="/devices")
 
 openapi_data = app.openapi()
 

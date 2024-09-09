@@ -5,7 +5,7 @@ from typing import (
 
 from sqlmodel import Field, Relationship
 
-from src.schemas import utils
+from src.schemas import user, utils
 
 
 # Organisation - corporate entities or individuals that represent trading bodies registered
@@ -22,7 +22,7 @@ class Organisation(OrganisationBase, table=True):
     organisation_id: uuid_pkg.UUID = Field(
         primary_key=True, default_factory=uuid_pkg.uuid4
     )
-    users: list["User"] = Relationship(back_populates="organisation")
+    users: list[user.User] = Relationship(back_populates="organisation")  # noqa
 
 
 class OrganisationRead(OrganisationBase):

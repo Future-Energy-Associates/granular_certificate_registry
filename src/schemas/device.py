@@ -7,7 +7,6 @@ from typing import (
 from sqlmodel import Field, Relationship
 
 from src.schemas import utils
-from src.schemas.account import Account
 
 # Device - production, consumption, or storage, each device is associated
 # with exactly one account owned by an organisation operating in the same
@@ -35,7 +34,7 @@ class Device(DeviceBase, table=True):
         primary_key=True,
         default_factory=uuid_pkg.uuid4,
     )
-    account: Account = Relationship(back_populates="devices")
+    account: "Account" = Relationship(back_populates="devices")
 
 
 class DeviceRead(DeviceBase):
@@ -45,7 +44,7 @@ class DeviceRead(DeviceBase):
 class DeviceUpdate(DeviceBase):
     device_id: Optional[uuid_pkg.UUID]
     device_name: Optional[str]
-    account: Optional[Account]
+    account: Optional["Account"]
     grid: Optional[str]
     energy_source: Optional[str]
     technology_type: Optional[str]

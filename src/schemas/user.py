@@ -7,20 +7,11 @@ from typing import (
 from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship
 
-from src.schemas import utils
+from src.schemas import user_account_link, utils
 
 # User - a single Organisation can have multiple Users, each with different roles and
 # responsibilities at the discretion of the Organisation they are related to. Each
 # User may be authorised to operate multiple accounts.
-
-
-class UserAccountLink(utils.ActiveRecord, table=True):
-    user_id: Optional[uuid_pkg.UUID] = Field(
-        default=None, foreign_key="user.user_id", primary_key=True
-    )
-    account_id: Optional[uuid_pkg.UUID] = Field(
-        default=None, foreign_key="account.account_id", primary_key=True
-    )
 
 
 class UserBase(utils.ActiveRecord):
@@ -43,8 +34,8 @@ class User(UserBase, table=True):
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
     )
-    accounts: Optional[list["Account"]] = Relationship(
-        back_populates="users", link_model=UserAccountLink
+    accounts: Optional[list["Account"]] = Relationship(  # noqa
+        back_populates="users", link_model=user_account_link.UserAccountLink
     )
 
 
