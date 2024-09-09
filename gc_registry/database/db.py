@@ -1,6 +1,5 @@
 import importlib
 import os
-from typing import Optional
 
 import numpy as np
 from dotenv import load_dotenv
@@ -36,13 +35,13 @@ def df_to_records_without_nulls(df):
 class DButils:
     def __init__(
         self,
-        db_username: Optional[str] = None,
-        db_password: Optional[str] = None,
-        db_url: Optional[str] = None,
-        db_port: Optional[int] = None,
-        db_name: Optional[str] = None,
-        db_test_fp: Optional[str] = None,
-        env: Optional[str] = "STAGE",
+        db_username: str | None = None,
+        db_password: str | None = None,
+        db_url: str | None = None,
+        db_port: int | None = None,
+        db_name: str | None = None,
+        db_test_fp: str | None = None,
+        env: str | None = "STAGE",
     ):
         self._db_username = db_username
         self._db_password = db_password

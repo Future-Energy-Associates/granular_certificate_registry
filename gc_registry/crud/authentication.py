@@ -1,6 +1,5 @@
 import datetime
 import os
-from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -84,7 +83,7 @@ def authenticate_api_user(fake_db, username: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: Optional[datetime.timedelta] = None):
+def create_access_token(data: dict, expires_delta: datetime.timedelta | None = None):
     to_encode = data.copy()
 
     if expires_delta:
@@ -215,8 +214,8 @@ def token(form_data: OAuth2PasswordRequestForm = Depends()):
 
 @router.post("/token-params", response_model=Token)
 def token_params(
-    username: Optional[str] = None,
-    password: Optional[str] = None,
+    username: str | None = None,
+    password: str | None = None,
 ):
     if username is not None and password is not None:
         user = authenticate_api_user(fake_users_db, username, password)

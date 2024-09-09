@@ -1,6 +1,5 @@
 import json
-import os
-from typing import List, Optional, Union
+from typing import List, Union
 
 import sqlmodel
 from fastapi import HTTPException
@@ -129,7 +128,7 @@ def construct_pagination_metadata(
     locals_dict: dict,
     table_schema: sqlmodel.main.SQLModelMetaclass,
     session: sqlmodel.orm.session.Session,
-    params: List[Optional[str]] = None,
+    params: List[str | None] = None,
     offset: int = 0,
     limit: int = 100,
     null_values: List[Union[str, None]] = None,

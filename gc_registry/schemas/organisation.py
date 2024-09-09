@@ -1,7 +1,3 @@
-from typing import (
-    Optional,
-)
-
 from sqlmodel import Field, Relationship
 
 from gc_registry.models.organisation import OrganisationBase
@@ -21,9 +17,9 @@ class OrganisationRead(OrganisationBase):
 
 
 class OrganisationUpdate(OrganisationBase):
-    organisation_id: Optional[int]
-    name: Optional[str]
-    business_id: Optional[int]
-    website: Optional[str]
-    address: Optional[str]
-    primary_contact: Optional[str]
+    organisation_id: int | None
+    name: str | None
+    business_id: int | None
+    website: str | None
+    address: str | None
+    primary_contact: str | None

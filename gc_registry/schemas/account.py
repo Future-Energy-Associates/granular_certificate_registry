@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
 from sqlmodel import Field, Relationship
 
@@ -28,5 +28,5 @@ class AccountRead(AccountBase):
 
 
 class AccountUpdate(AccountBase):
-    account_name: Optional[str]
-    account_id: Optional[int]
+    account_name: str | None
+    account_id: int | None

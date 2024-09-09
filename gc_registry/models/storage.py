@@ -1,6 +1,5 @@
 import datetime
 
-from typing import Optional
 
 from sqlmodel import Field
 
@@ -33,7 +32,7 @@ class StorageChargeRecordBase(utils.ActiveRecord):
     scr_geographic_matching_method: str = Field(
         description="Which type of geographic matching, as described in the EnergyTag GC Matching Standard, has been applied to allocated this SCR.",
     )
-    sdr_allocation_id: Optional[int] = Field(
+    sdr_allocation_id: int | None = Field(
         description="When allocated, the unique ID of the Storage Discharge Record that has been allocated to this SCR. If blank, no SDR has been allocated to this SCR.",
         foreign_key="storagedischargerecord.sdr_allocation_id",
     )
@@ -59,10 +58,10 @@ class StorageDischargeRecordBase(utils.ActiveRecord):
     efficiency_factor_methodology: str = Field(
         description="The method by which the energy storage losses of the Storage Device were calculated.",
     )
-    efficiency_factor_interval_start: Optional[datetime.datetime] = Field(
+    efficiency_factor_interval_start: datetime.datetime | None = Field(
         description="""The UTC datetime from which the Storage Device calculates its effective efficiency factor for this SDR, based on total input and
                        output energy over the interval specified. This field describes only the method proposed in the EnergyTag Standard, and is not mandatory.""",
     )
-    efficiency_factor_interval_end: Optional[datetime.datetime] = Field(
+    efficiency_factor_interval_end: datetime.datetime | None = Field(
         description="The UTC datetime to which the Storage Device calculates its effective efficiency factor for this SDR.",
     )

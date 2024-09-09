@@ -1,8 +1,5 @@
 import datetime
-from typing import (
-    TYPE_CHECKING,
-    Optional,
-)
+from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship
 
@@ -30,12 +27,12 @@ class DeviceRead(DeviceBase):
 
 
 class DeviceUpdate(DeviceBase):
-    device_name: Optional[str]
-    grid: Optional[str]
-    energy_source: Optional[str]
-    technology_type: Optional[str]
-    operational_date: Optional[datetime.datetime]
-    capacity: Optional[float]
-    peak_demand: Optional[float]
-    location: Optional[str]
-    account_id: Optional[int]
+    device_name: str | None
+    grid: str | None
+    energy_source: str | None
+    technology_type: str | None
+    operational_date: datetime.datetime | None
+    capacity: float | None
+    peak_demand: float | None
+    location: str | None
+    account_id: int | None

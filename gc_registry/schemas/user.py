@@ -1,8 +1,4 @@
-from typing import (
-    TYPE_CHECKING,
-    List,
-    Optional,
-)
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship
@@ -20,11 +16,11 @@ if TYPE_CHECKING:
 
 class User(UserBase, table=True):
     user_id: int = Field(primary_key=True, autoincrement=True)
-    account_ids: Optional[List[int]] = Field(
+    account_ids: List[int] | None = Field(
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
     )
-    accounts: Optional[List["Account"]] = Relationship(
+    accounts: List["Account"] | None = Relationship(
         back_populates="users", link_model=UserAccountLink
     )
 
@@ -34,6 +30,6 @@ class UserRead(UserBase):
 
 
 class UserUpdate(UserBase):
-    name: Optional[str]
-    user_id: Optional[int]
-    primary_contact: Optional[str]
+    name: str | None
+    user_id: int | None
+    primary_contact: str | None

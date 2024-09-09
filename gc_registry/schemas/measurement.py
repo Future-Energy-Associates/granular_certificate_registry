@@ -1,7 +1,4 @@
 import datetime
-from typing import (
-    Optional,
-)
 
 from sqlmodel import Field
 
@@ -17,6 +14,6 @@ class MeasurementReportRead(MeasurementReportBase):
 
 
 class MeasurementReportUpdate(MeasurementReportBase):
-    measurement_report_id: Optional[int]
-    interval_start_datetime: Optional[datetime.datetime]
-    interval_end_datetime: Optional[datetime.datetime]
+    measurement_report_id: int | None
+    interval_start_datetime: datetime.datetime | None
+    interval_end_datetime: datetime.datetime | None
