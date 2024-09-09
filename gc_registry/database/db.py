@@ -1,16 +1,12 @@
 import importlib
-import os
+from typing import Any, Generator
 
 import numpy as np
-from dotenv import load_dotenv
 from sqlalchemy_utils import create_database, database_exists
 from sqlmodel import Session, SQLModel, create_engine
 
 from gc_registry.database.config import schema_paths_read, schema_paths_write
-
-# Loading environment variables
-
-load_dotenv()
+from gc_registry.settings import settings
 
 
 # Defining utility functions and classes
@@ -62,7 +58,7 @@ class DButils:
 
         self.engine = create_engine(self.connection_str, pool_pre_ping=True)
 
-    def yield_session(self):
+    def yield_session(self) -> Generator[Any, Any, Any]:
         with Session(self.engine) as session:
             yield session
 
@@ -88,8 +84,8 @@ class DButils:
 # Initialising the DButil clients
 
 db_mapping = [
-    ("read", os.getenv("DATABASE_URL_READ"), schema_paths_read),
-    ("write", os.getenv("DATABASE_URL_WRITE"), schema_paths_write),
+    ("read", settings.DATABASE_URL_READ, schema_paths_read),
+    ("write", settings.DATABASE_URL_WRITE, schema_paths_write),
 ]
 
 db_name_to_client = {}
@@ -98,11 +94,11 @@ for db_name, db_url, schema_paths in db_mapping:
     db_client = DButils(
         db_url=db_url,
         db_name=db_name,
-        db_username=os.getenv("POSTGRES_USER"),
-        db_password=os.getenv("POSTGRES_PASSWORD"),
-        db_port=os.getenv("DATABASE_PORT"),
-        db_test_fp=os.getenv("DB_TEST_FP"),
-        env=os.getenv("ENVIRONMENT"),
+        db_username=settings.POSTGRES_USER,
+        db_password=settings.POSTGRES_PASSWORD,
+        db_port=settings.DATABASE_PORT,
+        db_test_fp=settings.DB_TEST_FP,
+        env=settings.ENVIRONMENT,
     )
     db_name_to_client[db_name] = db_client
     db_client.initiate_db_tables(schema_paths)

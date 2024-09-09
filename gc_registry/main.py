@@ -1,7 +1,6 @@
-import os
 from pathlib import Path
 
-from dotenv import load_dotenv
+import settings
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -17,16 +16,9 @@ from .crud import (
     user,
 )
 
-load_dotenv()
-
-STATIC_DIR_FP = os.path.abspath(
-    os.getenv("STATIC_DIR_FP", "/code/gc_registry/api/static")
-)
-MIDDLEWARE_SECRET_KEY = os.environ["MIDDLEWARE_SECRET_KEY"]
-
 descriptions = {}
 for desc in ["api", "certificate", "storage"]:
-    with open(Path(STATIC_DIR_FP, "descriptions", f"{desc}.md"), "r") as file:
+    with open(Path(settings.STATIC_DIR_FP, "descriptions", f"{desc}.md"), "r") as file:
         descriptions[desc] = markdown(file.read())
 
 tags_metadata = [
@@ -69,7 +61,7 @@ app = FastAPI(
     docs_url=None,
 )
 
-app.add_middleware(SessionMiddleware, secret_key=MIDDLEWARE_SECRET_KEY)
+app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
 
 # app.include_router(authentication.router)
 app.include_router(certificate.router, prefix="/certificates")
@@ -81,7 +73,7 @@ app.include_router(device.router, prefix="/devices")
 
 openapi_data = app.openapi()
 
-templates = Jinja2Templates(directory=f"{STATIC_DIR_FP}/templates")
+templates = Jinja2Templates(directory=f"{settings.STATIC_DIR_FP}/templates")
 
 
 @app.get("/", response_class=HTMLResponse, tags=["Core"])
