@@ -1,13 +1,70 @@
 import json
 import os
 import uuid
+import uuid as uuid_pkg
 from typing import List, Optional, Union
 
 import sqlmodel
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
-from sqlmodel import col
+from sqlmodel import SQLModel, col, select
+
+
+def get_valid_uuid():
+    proposed_uuid = uuid_pkg.uuid4()
+
+    while str(proposed_uuid)[0] == "0":
+        proposed_uuid = uuid_pkg.uuid4()
+
+    return proposed_uuid
+
+
+class ActiveRecord(SQLModel):
+    @classmethod
+    def by_id(cls, id_: int, session):
+        obj = session.get(cls, id_)
+        if obj is None:
+            raise HTTPException(
+                status_code=404, detail=f"{cls.__name__} with id {id_} not found"
+            )
+        return obj
+
+    @classmethod
+    def all(cls, session):
+        return session.exec(select(cls)).all()
+
+    @classmethod
+    def create(cls, source: Union[dict, SQLModel], session):
+        if isinstance(source, SQLModel):
+            obj = cls.model_validate(source)
+        elif isinstance(source, dict):
+            obj = cls.model_validate_json(json.dumps(source))
+        else:
+            raise ValueError(f"The input type {type(source)} can not be processed")
+
+        session.add(obj)
+        session.commit()
+        session.refresh(obj)
+
+        return obj
+
+    def save(self, session):
+        session.add(self)
+        session.commit()
+        session.refresh(self)
+
+    def update(self, source: Union[dict, SQLModel], session):
+        if isinstance(source, SQLModel):
+            source = source.model_dump(exclude_unset=True)
+
+        for key, value in source.items():
+            setattr(self, key, value)
+        self.save(session)
+
+    def delete(self, session):
+        session.delete(self)
+        session.commit()
 
 
 def process_uuid(uuid_: uuid.UUID):

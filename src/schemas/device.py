@@ -1,33 +1,19 @@
-from __future__ import annotations
-
 import datetime
 import uuid as uuid_pkg
 from typing import (
+    ForwardRef,
     Optional,
 )
 
 from sqlmodel import Field, Relationship
 
-from src.schemas import utils
+from src.models.device import DeviceBase
 
 # Device - production, consumption, or storage, each device is associated
 # with exactly one account owned by an organisation operating in the same
 # domain as the Device.
 
-
-class DeviceBase(utils.ActiveRecord):
-    device_name: str
-    grid: str
-    energy_source: str
-    technology_type: str
-    operational_date: datetime.date
-    capacity: float
-    peak_demand: float
-    location: str
-    account_id: uuid_pkg.UUID = Field(
-        description="The account to which the device is registered, and into which GC Bundles will be issued for energy produced by this Device.",
-        foreign_key="account.account_id",
-    )
+Account = ForwardRef("Account", module="src.schemas.account")
 
 
 class Device(DeviceBase, table=True):
@@ -36,7 +22,7 @@ class Device(DeviceBase, table=True):
         primary_key=True,
         default_factory=uuid_pkg.uuid4,
     )
-    account: "Account" = Relationship(back_populates="devices")
+    account: Account = Relationship(back_populates="devices")
 
 
 class DeviceRead(DeviceBase):
@@ -46,7 +32,7 @@ class DeviceRead(DeviceBase):
 class DeviceUpdate(DeviceBase):
     device_id: Optional[uuid_pkg.UUID]
     device_name: Optional[str]
-    account: Optional["Account"]
+    account: Optional[Account]
     grid: Optional[str]
     energy_source: Optional[str]
     technology_type: Optional[str]
@@ -54,8 +40,3 @@ class DeviceUpdate(DeviceBase):
     capacity: Optional[float]
     peak_demand: Optional[float]
     location: Optional[str]
-
-
-# Manually define forward annotations
-Device.__annotations__["account"] = "src.schemas.account.Account"
-DeviceUpdate.__annotations__["account"] = "src.schemas.account.Account"

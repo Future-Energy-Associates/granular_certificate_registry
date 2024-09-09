@@ -5,7 +5,7 @@ from typing import (
 
 from sqlmodel import Field
 
-from src.schemas import utils
+from src import utils
 
 
 class UserAccountLink(utils.ActiveRecord, table=True):

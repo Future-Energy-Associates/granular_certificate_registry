@@ -5,24 +5,18 @@ from typing import (
 
 from sqlmodel import Field, Relationship
 
-from src.schemas import user, utils
-
+from src.models.organisation import OrganisationBase
+from src.schemas import user
 
 # Organisation - corporate entities or individuals that represent trading bodies registered
 # with the domain's regulatory business registration body (e.g. UK = Companies House)
-class OrganisationBase(utils.ActiveRecord):
-    name: str
-    business_id: int
-    primary_contact: str
-    website: Optional[str]
-    address: Optional[str]
 
 
 class Organisation(OrganisationBase, table=True):
     organisation_id: uuid_pkg.UUID = Field(
         primary_key=True, default_factory=uuid_pkg.uuid4
     )
-    users: list[user.User] = Relationship(back_populates="organisation")  # noqa
+    users: list[user.User] = Relationship(back_populates="organisation")
 
 
 class OrganisationRead(OrganisationBase):

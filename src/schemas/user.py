@@ -1,7 +1,6 @@
-from __future__ import annotations
-
 import uuid as uuid_pkg
 from typing import (
+    ForwardRef,
     List,
     Optional,
 )
@@ -9,25 +8,14 @@ from typing import (
 from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship
 
-from src.schemas import user_account_link, utils
+from src.models.user import UserBase
+from src.schemas import user_account_link
 
 # User - a single Organisation can have multiple Users, each with different roles and
 # responsibilities at the discretion of the Organisation they are related to. Each
 # User may be authorised to operate multiple accounts.
 
-
-class UserBase(utils.ActiveRecord):
-    name: str
-    primary_contact: str
-    role: List[str] = Field(
-        description="""The roles of the User with the registry. A single User can be assigned multiple roles
-                       by the Registry Administrator (which is itself a User for the purposes of managing allowable
-                       actions), including: 'GC Issuer', 'Production Registrar', 'Measurement Body', and 'Trading User',
-                       and 'Production User'. The roles are used to determine the actions that the User is allowed
-                       to perform within the registry, according to the EnergyTag Standard.""",
-        sa_column=Column(ARRAY(String())),
-    )
-    organisation_id: uuid_pkg.UUID = Field(foreign_key="organisation.organisation_id")
+Account = ForwardRef("Account", module="src.schemas.account")
 
 
 class User(UserBase, table=True):
@@ -36,9 +24,12 @@ class User(UserBase, table=True):
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
     )
-    accounts: Optional[list["Account"]] = Relationship(
+    accounts: Optional[List[Account]] = Relationship(
         back_populates="users", link_model=user_account_link.UserAccountLink
     )
+
+
+User.model_rebuild()
 
 
 class UserRead(UserBase):
@@ -49,7 +40,3 @@ class UserUpdate(UserBase):
     name: Optional[str]
     user_id: Optional[uuid_pkg.UUID]
     primary_contact: Optional[str]
-
-
-# Manually define forward annotations
-User.__annotations__["accounts"] = List["src.schemas.account.Account"]
