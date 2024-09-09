@@ -1,11 +1,9 @@
 import json
-from typing import List, Union
+from typing import Union
 
-import sqlmodel
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import func
-from sqlmodel import SQLModel, col, select
+from sqlmodel import SQLModel, select
 
 
 class ActiveRecord(SQLModel):
