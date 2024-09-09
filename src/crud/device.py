@@ -17,11 +17,11 @@ router = APIRouter(tags=["Devices"])
 
 @router.post("/device", response_model=device.DeviceRead)
 def create_device(
-    device: device.DeviceBase,
+    device_base: device.DeviceBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_device = device.Device.create(device, session)
+    db_device = device.Device.create(device_base, session)
 
     return utils.format_json_response(
         db_device, headers, response_model=device.DeviceRead
@@ -43,12 +43,14 @@ def read_device(
 
 @router.patch("/device/{device_id}", response_model=device.DeviceRead)
 def update_device(
-    device: device.DeviceUpdate,
+    device_update: device.DeviceUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_device = device.Device.by_id(utils.process_uuid(device.device_id), session)
-    db_device.update(device, session)
+    db_device = device.Device.by_id(
+        utils.process_uuid(device_update.device_id), session
+    )
+    db_device.update(device_update, session)
 
     return utils.format_json_response(
         db_device, headers, response_model=device.DeviceRead

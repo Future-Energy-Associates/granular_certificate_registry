@@ -1,5 +1,5 @@
+import datetime
 import os
-from datetime import datetime, timedelta
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -10,6 +10,7 @@ from passlib.context import CryptContext
 from sqlmodel import Session, select
 from starlette.requests import Request
 
+from src import utils
 from src.database import db
 from src.schemas.authentication import (
     APIUser,
@@ -17,8 +18,6 @@ from src.schemas.authentication import (
     Token,
     TokenBlacklist,
 )
-
-from .. import utils
 
 # router initialisation
 
@@ -85,13 +84,13 @@ def authenticate_api_user(fake_db, username: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: Optional[datetime.timedelta] = None):
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.datetime.now(datetime.UTC) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=15)
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
@@ -171,7 +170,7 @@ def refresh(oauth_token: str = Depends(oauth2_scheme)):
 
     oauth_token = create_access_token(
         data={"sub": username},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+        expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
     return {"access_token": oauth_token, "token_type": "bearer"}
@@ -205,7 +204,7 @@ def token(form_data: OAuth2PasswordRequestForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
@@ -228,7 +227,7 @@ def token_params(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires

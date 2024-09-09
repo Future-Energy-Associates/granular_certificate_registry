@@ -16,11 +16,11 @@ router = APIRouter(tags=["Organisations"])
 # organisation
 @router.post("/organisation", response_model=organisation.OrganisationRead)
 def create_organisation(
-    organisation: organisation.OrganisationBase,
+    organisation_base: organisation.OrganisationBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_organisation = organisation.Organisation.create(organisation, session)
+    db_organisation = organisation.Organisation.create(organisation_base, session)
 
     return utils.format_json_response(
         db_organisation, headers, response_model=organisation.OrganisationRead
@@ -48,14 +48,14 @@ def read_organisation(
     "/organisation/{organisation_id}", response_model=organisation.OrganisationRead
 )
 def update_organisation(
-    organisation: organisation.OrganisationUpdate,
+    organisation_update: organisation.OrganisationUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_organisation = organisation.Organisation.by_id(
-        utils.process_uuid(organisation.organisation_id), session
+        utils.process_uuid(organisation_update.organisation_id), session
     )
-    db_organisation.update(organisation, session)
+    db_organisation.update(organisation_update, session)
 
     return utils.format_json_response(
         db_organisation, headers, response_model=organisation.OrganisationRead

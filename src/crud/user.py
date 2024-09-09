@@ -17,11 +17,11 @@ router = APIRouter(tags=["Users"])
 
 @router.post("/user", response_model=user.UserRead)
 def create_user(
-    user: user.UserBase,
+    user_base: user.UserBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_user = user.User.create(user, session)
+    db_user = user.User.create(user_base, session)
 
     return utils.format_json_response(db_user, headers, response_model=user.UserRead)
 
@@ -39,12 +39,12 @@ def read_user(
 
 @router.patch("/user/{user_id}", response_model=user.UserRead)
 def update_user(
-    user: user.UserUpdate,
+    user_update: user.UserUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_user = user.User.by_id(utils.process_uuid(user.user_id), session)
-    db_user.update(user, session)
+    db_user = user.User.by_id(utils.process_uuid(user_update.user_id), session)
+    db_user.update(user_update, session)
 
     return utils.format_json_response(db_user, headers, response_model=user.UserRead)
 

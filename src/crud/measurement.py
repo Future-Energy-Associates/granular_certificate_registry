@@ -16,12 +16,12 @@ router = APIRouter(tags=["Miscellaneous"])
 # # MeasurementReport
 @router.post("/measurementreport", response_model=measurement.MeasurementReportRead)
 def create_measurementreport(
-    measurementreport: measurement.MeasurementReportBase,
+    measurement_report_base: measurement.MeasurementReportBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = measurement.MeasurementReport.create(
-        measurementreport, session
+        measurement_report_base, session
     )
 
     return utils.format_json_response(
@@ -52,14 +52,14 @@ def read_measurementreport(
     response_model=measurement.MeasurementReportRead,
 )
 def update_measurementreport(
-    measurementreport: measurement.MeasurementReportUpdate,
+    measurement_report_update: measurement.MeasurementReportUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     db_measurementreport = measurement.MeasurementReport.by_id(
-        utils.process_uuid(measurementreport.measurement_report_id), session
+        utils.process_uuid(measurement_report_update.measurement_report_id), session
     )
-    db_measurementreport.update(measurementreport, session)
+    db_measurementreport.update(measurement_report_update, session)
 
     return utils.format_json_response(
         db_measurementreport, headers, response_model=measurement.MeasurementReportRead

@@ -100,12 +100,12 @@ def query_SDR(
     status_code=200,
 )
 def SCR_withdraw(
-    storage_action: storage_action.StorageAction,
+    storage_action_base: storage_action.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SCRs from the specified Account matching the provided search criteria."""
-    scr_action = storage_action.StorageAction.create(storage_action, session)
+    scr_action = storage_action.StorageAction.create(storage_action_base, session)
 
     return utils.format_json_response(
         scr_action,
@@ -120,12 +120,12 @@ def SCR_withdraw(
     status_code=200,
 )
 def SDR_withdraw(
-    storage_action: storage_action.StorageAction,
+    storage_action_base: storage_action.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SDRs from the specified Account matching the provided search criteria."""
-    sdr_action = storage_action.StorageAction.create(storage_action, session)
+    sdr_action = storage_action.StorageAction.create(storage_action_base, session)
 
     return utils.format_json_response(
         sdr_action,
@@ -139,18 +139,16 @@ def SDR_withdraw(
     response_model=storage_action.StorageActionResponse,
     status_code=200,
 )
-def update_certificate_mutables(
-    certificate_bundle_action: storage_action.StorageAction,
+def update_storage_mutables(
+    storage_update: storage_action.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Update the mutable aspects (associated Account ID, status) of a given certificate bundle."""
-    storage_action = storage_action.StorageAction.create(
-        certificate_bundle_action, session
-    )
+    storage_update_action = storage_action.StorageAction.create(storage_update, session)
 
     return utils.format_json_response(
-        storage_action,
+        storage_update_action,
         headers,
         response_model=storage_action.StorageActionResponse,
     )
