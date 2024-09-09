@@ -41,3 +41,4 @@ COPY ./frontend /code/frontend
 COPY ./tests /code/tests
 COPY ./README.md /code/README.md
 COPY ./Makefile /code/Makefile
+COPY ./alembic.ini /code/alembic.ini

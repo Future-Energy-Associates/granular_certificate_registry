@@ -53,7 +53,7 @@ db.fix:
 
 .PHONY: db.revision
 db.revision:
-	db.fix  && \
+	make db.fix  && \
 		echo "Creating new revision..." && \
 		docker compose run --rm gc_registry alembic revision --autogenerate -m $(NAME) && \
 		echo "Revision created successfully."
