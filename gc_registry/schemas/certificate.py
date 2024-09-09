@@ -12,7 +12,6 @@ from gc_registry.models.certificate import GranularCertificateBundleBase
 class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
     issuance_id: int = Field(
         primary_key=True,
-        autoincrement=True,
         description="""A unique identifier assigned to the GC Bundle at the time of issuance.
         If the bundle is split through partial transfer or cancellation, this issuance ID remains unchanged across each child GC Bundle.""",
     )

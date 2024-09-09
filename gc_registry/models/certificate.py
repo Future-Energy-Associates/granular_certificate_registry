@@ -24,7 +24,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     certificate_status: str = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
     )
-    id: int = Field(
+    account_id: int = Field(
         foreign_key="account.id",
         description="Each GC Bundle is issued to a single unique production Account that its production Device is individually registered to.",
     )
@@ -67,7 +67,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     )
 
     ### Production Device Characteristics ###
-    id: int = Field(
+    device_id: int = Field(
         foreign_key="device.id",
         description="Each GC Bundle is associated with a single production Device.",
     )

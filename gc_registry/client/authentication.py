@@ -7,7 +7,7 @@ from passlib.context import CryptContext
 from sqlmodel import Session, select
 from starlette.requests import Request
 
-from gc_registry import settings, utils
+from gc_registry import utils
 from gc_registry.database import db
 from gc_registry.schemas.authentication import (
     APIUser,
@@ -15,6 +15,7 @@ from gc_registry.schemas.authentication import (
     Token,
     TokenBlacklist,
 )
+from gc_registry.settings import settings
 
 # router initialisation
 
@@ -53,10 +54,12 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def get_api_user(db, username: str) -> SecureAPIUser:
+def get_api_user(db, username: str) -> SecureAPIUser | None:
     if username in db:
         user_dict = db[username]
         return SecureAPIUser(**user_dict)
+    else:
+        return None
 
 
 def authenticate_api_user(fake_db, username: str, password: str):
@@ -88,7 +91,7 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta | None = N
 
 
 def is_token_blacklisted(oauth_token):
-    with Session(db.db_name_to_client["authentication"].engine) as session:
+    with next(db.db_name_to_client["read"].yield_session()) as session:
         statement = select(TokenBlacklist).where(TokenBlacklist.token == oauth_token)
         results = session.exec(statement).all()
 
@@ -107,16 +110,14 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
         payload = jwt.decode(
             oauth_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
-        username: str = payload.get("sub")
-        expire: str = payload.get("exp")
+        username: str = payload.get("sub", "default")
+        expire: str = payload.get("exp", "60")
 
         # checking the expiry date
-        current_ts = datetime.now().timestamp()
+        current_ts = datetime.datetime.now(datetime.UTC).timestamp()
 
         if (float(expire) - current_ts) < 0:
-            with Session(
-                db.db_name_to_client["authentication"].yield_session
-            ) as session:
+            with next(db.db_name_to_client["read"].yield_session()) as session:
                 session.add(TokenBlacklist(token=oauth_token))
                 session.commit()
 
@@ -149,7 +150,7 @@ def read_api_user(
     payload = jwt.decode(
         oauth_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
     )
-    username: str = payload.get("sub")
+    username: str = payload.get("sub", "default")
 
     api_user = get_api_user(fake_users_db, username=username)
 
@@ -161,7 +162,7 @@ def refresh(oauth_token: str = Depends(oauth2_scheme)):
     payload = jwt.decode(
         oauth_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
     )
-    username: str = payload.get("sub")
+    username: str = payload.get("sub", "default")
 
     oauth_token = create_access_token(
         data={"sub": username},

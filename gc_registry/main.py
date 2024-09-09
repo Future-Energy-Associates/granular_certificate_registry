@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import settings
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -15,6 +14,7 @@ from .crud import (
     storage,
     user,
 )
+from .settings import settings
 
 descriptions = {}
 for desc in ["api", "certificate", "storage"]:

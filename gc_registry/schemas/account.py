@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, List
 
+from pydantic import BaseModel
 from sqlmodel import Field, Relationship
 
 from gc_registry.models.account import AccountBase
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class Account(AccountBase, table=True):
-    id: int = Field(primary_key=True, autoincrement=True)
+    id: int = Field(primary_key=True)
     users: List["User"] = Relationship(
         back_populates="accounts", link_model=UserAccountLink
     )
@@ -27,6 +28,7 @@ class AccountRead(AccountBase):
     id: int
 
 
-class AccountUpdate(AccountBase):
+class AccountUpdate(BaseModel):
+    id: int
     account_name: str | None
-    id: int | None
+    user_id: int | None

@@ -19,7 +19,7 @@ class StorageActionBase(utils.ActiveRecord):
         description="The Account ID of the Account within which the action shall occur or originate from.",
         foreign_key="account.id",
     )
-    source_id: int = Field(
+    user_id: int = Field(
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified.",
         foreign_key="user.id",
     )

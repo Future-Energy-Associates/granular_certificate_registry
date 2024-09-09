@@ -2,7 +2,7 @@ import importlib
 from typing import Any, Generator
 
 import numpy as np
-from sqlalchemy_utils import create_database, database_exists
+from sqlalchemy_utils import create_database, database_exists  # type: ignore
 from sqlmodel import Session, SQLModel, create_engine
 
 from gc_registry.database.config import schema_paths_read, schema_paths_write
@@ -62,7 +62,7 @@ class DButils:
         with Session(self.engine) as session:
             yield session
 
-    def initiate_db_tables(self, schema_paths: list = None) -> None:
+    def initiate_db_tables(self, schema_paths: list | None = None) -> None:
         if schema_paths is None:
             schema_paths = []
         if not database_exists(self.engine.url):

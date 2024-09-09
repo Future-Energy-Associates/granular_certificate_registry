@@ -92,7 +92,7 @@ def sqlmodel_obj_to_json(sqlmodel_obj, response_model=None, replace_nan=True):
 
 def format_json_response(
     sqlmodel_obj,
-    headers: dict = None,
+    headers: dict | None = None,
     response_model=None,
     send_raw=False,
     pagination_metadata=None,
@@ -122,33 +122,3 @@ def format_json_response(
         }
 
     return JSONResponse(content=json_content, headers=headers)
-
-
-def construct_pagination_metadata(
-    locals_dict: dict,
-    table_schema: sqlmodel.main.SQLModelMetaclass,
-    session: sqlmodel.orm.session.Session,
-    params: List[str | None] = None,
-    offset: int = 0,
-    limit: int = 100,
-    null_values: List[Union[str, None]] = None,
-):
-    if null_values is None:
-        null_values = ["", None]
-    if params is None:
-        params = []
-    query = session.query(table_schema)
-
-    for param in params:
-        value = locals_dict[param]
-
-        if value not in null_values:
-            query = query.filter(
-                func.lower(col(getattr(table_schema, param))).contains(
-                    value.strip().lower()
-                )
-            )
-
-    pagination_metadata = {"count": query.count(), "offset": offset, "limit": limit}
-
-    return pagination_metadata
