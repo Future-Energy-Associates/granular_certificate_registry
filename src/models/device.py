@@ -1,5 +1,5 @@
+import datetime
 import uuid as uuid_pkg
-from datetime import datetime
 
 from sqlmodel import Field
 
@@ -11,7 +11,7 @@ class DeviceBase(utils.ActiveRecord):
     grid: str
     energy_source: str
     technology_type: str
-    operational_date: datetime.date
+    operational_date: datetime.datetime
     capacity: float
     peak_demand: float
     location: str

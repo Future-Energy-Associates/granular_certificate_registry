@@ -49,7 +49,7 @@ class DeviceName(str):
 
 
 class OperationalDate(datetime.date):
-    default: datetime.date = ""
+    default: datetime.datetime = ""
     title: str = "Operational Date"
     description: str = ""
 

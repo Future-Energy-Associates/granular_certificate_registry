@@ -77,7 +77,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     device_technology_type: str = Field(
         description="The Device's technology type, for example: Offshore Wind Turbine, Biomass Plant, Fixed Hydro.",
     )
-    device_production_start_date: datetime.date = Field(
+    device_production_start_date: datetime.datetime = Field(
         description="The date on which the production Device began generating energy.",
     )
     device_capacity: int = Field(
@@ -100,10 +100,10 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     production_ending_interval: datetime.datetime = Field(
         description="The datetime in UTC format indicating the end of the relevant production period.",
     )
-    issuance_datestamp: datetime.date = Field(
+    issuance_datestamp: datetime.datetime = Field(
         description="The date in UTC format (YYYY-MM-DD) indicating the date on which the Issuing Body delivered the GC Bundle to the production Device's registered Account.",
     )
-    expiry_datestamp: datetime.date = Field(
+    expiry_datestamp: datetime.datetime = Field(
         description="The date in UTC format (YYYY-MM-DD) indicating the point at which the GC Bundle will be rendered invalid if they have not been cancelled. This expiry period can vary across Domains.",
     )
 
