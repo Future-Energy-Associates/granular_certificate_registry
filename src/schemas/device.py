@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import uuid as uuid_pkg
 from typing import (
@@ -52,3 +54,8 @@ class DeviceUpdate(DeviceBase):
     capacity: Optional[float]
     peak_demand: Optional[float]
     location: Optional[str]
+
+
+# Manually define forward annotations
+Device.__annotations__["account"] = "src.schemas.account.Account"
+DeviceUpdate.__annotations__["account"] = "src.schemas.account.Account"

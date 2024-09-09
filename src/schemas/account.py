@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 import uuid as uuid_pkg
-from typing import (
-    Optional,
-)
+from typing import List, Optional
 
 from sqlmodel import Field, Relationship
 
@@ -33,3 +33,9 @@ class AccountRead(AccountBase):
 class AccountUpdate(AccountBase):
     account_name: Optional[str]
     account_id: Optional[uuid_pkg.UUID]
+
+
+# Manually define forward annotations
+Account.__annotations__["users"] = List["src.schemas.user.User"]
+Account.__annotations__["devices"] = List["src.schemas.device.Device"]
+AccountRead.__annotations__["users"] = List["src.schemas.user.User"]

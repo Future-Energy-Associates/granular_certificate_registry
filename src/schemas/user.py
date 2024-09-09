@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid as uuid_pkg
 from typing import (
     List,
@@ -34,7 +36,7 @@ class User(UserBase, table=True):
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
     )
-    accounts: Optional[list["Account"]] = Relationship(  # noqa
+    accounts: Optional[list["Account"]] = Relationship(
         back_populates="users", link_model=user_account_link.UserAccountLink
     )
 
@@ -47,3 +49,7 @@ class UserUpdate(UserBase):
     name: Optional[str]
     user_id: Optional[uuid_pkg.UUID]
     primary_contact: Optional[str]
+
+
+# Manually define forward annotations
+User.__annotations__["accounts"] = List["src.schemas.account.Account"]
