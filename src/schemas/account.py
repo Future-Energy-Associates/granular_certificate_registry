@@ -19,15 +19,15 @@ class AccountBase(utils.ActiveRecord):
 
 class Account(AccountBase, table=True):
     account_id: uuid_pkg.UUID = Field(primary_key=True, default_factory=uuid_pkg.uuid4)
-    users: list["User"] = Relationship(
+    users: list["User"] = Relationship(  # noqa
         back_populates="accounts", link_model=user.UserAccountLink
     )
-    devices: list["Device"] = Relationship(back_populates="devices")
+    devices: list["Device"] = Relationship(back_populates="devices")  # noqa
 
 
 class AccountRead(AccountBase):
     account_id: uuid_pkg.UUID
-    users: list["User"]
+    users: list["User"]  # noqa
 
 
 class AccountUpdate(AccountBase):
