@@ -4,9 +4,9 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from src.api import utils
-from src.api.routers import authentication
-from src import db
+from src import utils
+from src.crud import authentication
+from src.database import db
 from src.schemas import entities
 
 # Router initialisation
