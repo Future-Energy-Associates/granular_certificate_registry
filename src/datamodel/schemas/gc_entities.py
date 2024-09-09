@@ -111,23 +111,29 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     storage_device_id: Optional[uuid_pkg.UUID] = Field(
         foreign_key="device.device_id",
         description="The Device ID of the storage Device that released the energy represented by the GC Bundle.",
+        default=None,
     )
     sdr_allocation_id: Optional[uuid_pkg.UUID] = Field(
         description="The unique ID of the Storage Discharge Record that has been allocated to this GC Bundle.",
         foreign_key="storagedischargerecord.sdr_allocation_id",
+        default=None,
     )
     discharging_start_datetime: Optional[datetime.datetime] = Field(
         description="The UTC datetime at which the Storage Device began discharging the energy represented by this SD-GC (inherited from the allocated SDR).",
+        default=None,
     )
     discharging_end_datetime: Optional[datetime.datetime] = Field(
         description="The UTC datetime at which the Storage Device ceased discharging energy represented by this SD-GC (inherited from the allocated SDR).",
+        default=None,
     )
     storage_device_location: Optional[tuple[float, float]] = Field(
         description="The GPS coordinates of the storage Device that has discharged the energy represented by this GC Bundle.",
         sa_column=Column(ARRAY(Float)),
+        default=None,
     )
     storage_efficiency_factor: Optional[float] = Field(
         description="The efficiency factor of the storage Device that has discharged the energy represented by this GC Bundle.",
+        default=None,
     )
 
     ### Issuing Body Characteristics ###
@@ -142,18 +148,23 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     )
     legal_status: Optional[str] = Field(
         description="May contain pertinent information on the Issuing Authority, where relevant.",
+        default=None,
     )
     issuance_purpose: Optional[str] = Field(
         description="May contain the purpose of the GC Bundle issuance, for example: Disclosure, Subsidy Support.",
+        default=None,
     )
     support_received: Optional[str] = Field(
         description="May contain information on any support received for the generation or investment into the production Device for which this GC Bundle have been issued.",
+        default=None,
     )
     quality_scheme_reference: Optional[str] = Field(
         description="May contain any references to quality schemes for which this GC Bundle were issued.",
+        default=None,
     )
     dissemination_level: Optional[str] = Field(
         description="Specifies whether the energy associated with this GC Bundle was self-consumed or injected into a private or public grid.",
+        default=None,
     )
     issue_market_zone: str = Field(
         description="References the bidding zone and/or market authority and/or price node within which the GC Bundle have been issued.",

@@ -114,6 +114,7 @@ class OrganisationBase(utils.ActiveRecord):
 
 
 class Organisation(OrganisationBase, table=True):
+    __tablename__ = "organisation"
     organisation_id: uuid_pkg.UUID = Field(
         primary_key=True, default_factory=uuid_pkg.uuid4
     )
@@ -163,6 +164,7 @@ class UserBase(utils.ActiveRecord):
 
 
 class User(UserBase, table=True):
+    __tablename__ = "user"
     user_id: uuid_pkg.UUID = Field(primary_key=True, default_factory=uuid_pkg.uuid4)
     account_ids: Optional[List[uuid_pkg.UUID]] = Field(
         description="The accounts to which the user is registered.",
@@ -171,6 +173,7 @@ class User(UserBase, table=True):
     accounts: Optional[list["Account"]] = Relationship(
         back_populates="users", link_model=UserAccountLink
     )
+    organisation: Organisation = Relationship(back_populates="users")
 
 
 class UserRead(UserBase):
@@ -194,11 +197,12 @@ class AccountBase(utils.ActiveRecord):
 
 
 class Account(AccountBase, table=True):
+    __tablename__ = "account"
     account_id: uuid_pkg.UUID = Field(primary_key=True, default_factory=uuid_pkg.uuid4)
     users: list["User"] = Relationship(
         back_populates="accounts", link_model=UserAccountLink
     )
-    devices: list["Device"] = Relationship(back_populates="devices")
+    devices: list["Device"] = Relationship(back_populates="account")
 
 
 class AccountRead(AccountBase):
@@ -237,7 +241,7 @@ class Device(DeviceBase, table=True):
         primary_key=True,
         default_factory=uuid_pkg.uuid4,
     )
-    account: Account = Relationship(back_populates="devices")
+    account: "Account" = Relationship(back_populates="devices")
 
 
 class DeviceRead(DeviceBase):
@@ -247,7 +251,7 @@ class DeviceRead(DeviceBase):
 class DeviceUpdate(DeviceBase):
     device_id: Optional[uuid_pkg.UUID]
     device_name: Optional[str]
-    account: Optional[Account]
+    account: Optional["Account"]
     grid: Optional[str]
     energy_source: Optional[str]
     technology_type: Optional[str]
