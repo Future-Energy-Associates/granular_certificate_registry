@@ -1,7 +1,5 @@
 import datetime
-import os
 
-from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -9,7 +7,7 @@ from passlib.context import CryptContext
 from sqlmodel import Session, select
 from starlette.requests import Request
 
-from gc_registry import utils
+from gc_registry import settings, utils
 from gc_registry.database import db
 from gc_registry.schemas.authentication import (
     APIUser,
@@ -21,16 +19,6 @@ from gc_registry.schemas.authentication import (
 # router initialisation
 
 router = APIRouter(tags=["Authentication"])
-
-
-# Initialisation
-
-load_dotenv()
-
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
-REFRESH_WARNING_MINS = int(os.getenv("REFRESH_WARNING_MINS"))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -92,7 +80,9 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta | None = N
         expire = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=15)
 
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
 
     return encoded_jwt
 
@@ -114,7 +104,9 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
 
     try:
         # extracting params in the JWT
-        payload = jwt.decode(oauth_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(
+            oauth_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
         username: str = payload.get("sub")
         expire: str = payload.get("exp")
 
@@ -138,7 +130,7 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
         raise CredentialsException
 
     # providing refresh token if near expiry
-    if (float(expire) - current_ts) < (REFRESH_WARNING_MINS * 60):
+    if (float(expire) - current_ts) < (settings.REFRESH_WARNING_MINS * 60):
         headers["refresh"] = "true"
     else:
         headers["refresh"] = "false"
@@ -154,7 +146,9 @@ def read_api_user(
     headers: dict = Depends(validate_user_and_get_headers),
     oauth_token: str = Depends(oauth2_scheme),
 ):
-    payload = jwt.decode(oauth_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    payload = jwt.decode(
+        oauth_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+    )
     username: str = payload.get("sub")
 
     api_user = get_api_user(fake_users_db, username=username)
@@ -164,12 +158,14 @@ def read_api_user(
 
 @router.get("/refresh", response_model=Token)
 def refresh(oauth_token: str = Depends(oauth2_scheme)):
-    payload = jwt.decode(oauth_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    payload = jwt.decode(
+        oauth_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+    )
     username: str = payload.get("sub")
 
     oauth_token = create_access_token(
         data={"sub": username},
-        expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+        expires_delta=datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
     return {"access_token": oauth_token, "token_type": "bearer"}
@@ -203,7 +199,9 @@ def token(form_data: OAuth2PasswordRequestForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = datetime.timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
 
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
@@ -226,7 +224,9 @@ def token_params(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = datetime.timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
 
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires

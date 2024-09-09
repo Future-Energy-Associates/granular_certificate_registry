@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
 from gc_registry import utils
-from gc_registry.crud import authentication
+from gc_registry.client import authentication
 from gc_registry.database import db
 from gc_registry.schemas import certificate, certificate_action
 

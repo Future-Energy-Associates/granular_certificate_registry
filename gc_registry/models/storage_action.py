@@ -1,6 +1,5 @@
 import datetime
 
-
 from sqlmodel import Field
 
 from gc_registry import utils

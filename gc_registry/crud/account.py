@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
-from gc_registry import utils
-from gc_registry.database import db
-from gc_registry.schemas import account
 from sqlmodel import Session
 
-from . import authentication
+from gc_registry import utils
+from gc_registry.client import authentication
+from gc_registry.database import db
+from gc_registry.schemas import account
 
 # Router initialisation
 router = APIRouter(tags=["Accounts"])
