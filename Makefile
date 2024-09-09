@@ -2,31 +2,31 @@
 # Shortcuts for build commands, linting, testing etc
 #
 
-SRC = src
+gc_registry = gc_registry
 
 .PHONY: lint
 lint:
-	poetry run ruff check $(SRC)
+	poetry run ruff check $(gc_registry)
 
 .PHONY: lint.fix
 lint.fix:
-	poetry run ruff check --fix $(SRC)
+	poetry run ruff check --fix $(gc_registry)
 
 .PHONY: format
 format:
-	poetry run ruff format $(SRC)
+	poetry run ruff format $(gc_registry)
 
 .PHONY: typecheck
 typecheck:
-	poetry run mypy $(SRC)
+	poetry run mypy $(gc_registry)
 
 .PHONY: test
 test:
-	docker compose run --rm gc_registry pytest --cov-report term --cov-report html --cov=src
+	docker compose run --rm gc_registry pytest --cov-report term --cov-report html --cov=gc_registry
 
 .PHONY: test.local
 test.local:
-	poetry run pytest --cov-report term --cov-report html --cov=src
+	poetry run pytest --cov-report term --cov-report html --cov=gc_registry
 
 .PHONY: pre-commit
 pre-commit: lint.fix format typecheck

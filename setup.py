@@ -7,6 +7,6 @@ setup(
     description="FEA EnergyTag Granular Certificate Demonstration Registry Platform",
     author="Connor Galbraith",
     author_email="connor@futureenergy.associates",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
+    packages=find_packages(where="gc_registry"),
+    package_dir={"": "gc_registry"},
 )

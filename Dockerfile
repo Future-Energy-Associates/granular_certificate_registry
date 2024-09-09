@@ -35,7 +35,7 @@ RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; els
 
 # Copy the rest of the application code
 COPY ./setup.py /code/setup.py
-COPY ./src /code/src
+COPY ./gc_registry /code/gc_registry
 COPY ./.env /code/.env
 COPY ./frontend /code/frontend
 COPY ./tests /code/tests
