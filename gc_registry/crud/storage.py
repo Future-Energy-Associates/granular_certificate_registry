@@ -169,7 +169,7 @@ def issue_SDGC(
     a GC Bundle issued to a production Device albeit with additional storage-specific attributes as described in the Standard.
 
     These bundles can be queried using the same GC Bundle query endpoint as regular GC Bundles, but with the additional option to filter
-    by the storage_device_id and the discharging_start_datetime, which is inherited from the allocated SDR.
+    by the storage_id and the discharging_start_datetime, which is inherited from the allocated SDR.
     """
 
     db_sdgc = certificate.GranularCertificateBundle.create(sdgc, session)

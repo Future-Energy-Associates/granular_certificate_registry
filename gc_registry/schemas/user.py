@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class User(UserBase, table=True):
-    user_id: int = Field(primary_key=True, autoincrement=True)
+    id: int = Field(primary_key=True, autoincrement=True)
     account_ids: List[int] | None = Field(
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
@@ -26,10 +26,10 @@ class User(UserBase, table=True):
 
 
 class UserRead(UserBase):
-    user_id: int
+    id: int
 
 
 class UserUpdate(UserBase):
     name: str | None
-    user_id: int | None
+    id: int | None
     primary_contact: str | None

@@ -12,11 +12,11 @@ class StorageChargeRecord(StorageChargeRecordBase, table=True):
         primary_key=True,
     )
     account_id: int = Field(
-        foreign_key="account.account_id",
+        foreign_key="account.id",
         description="Each SCR is issued to a single unique production Account that its Storage Device is individually registered to.",
     )
     device_id: int = Field(
-        foreign_key="device.device_id",
+        foreign_key="device.id",
         description="The Device ID of the Storage Device that is being charged.",
     )
 
@@ -26,13 +26,13 @@ class StorageDischargeRecord(StorageDischargeRecordBase, table=True):
         description="The unique ID of this Storage Discharge Record.",
         primary_key=True,
     )
-    device_id: int = Field(
-        foreign_key="device.device_id",
-        description="The Device ID of the Storage Device that is being charged.",
-    )
     account_id: int = Field(
-        foreign_key="account.account_id",
+        foreign_key="account.id",
         description="Each SDR is issued to a single unique production Account that its Storage Device is individually registered to.",
+    )
+    device_id: int = Field(
+        foreign_key="device.id",
+        description="The Device ID of the Storage Device that is being charged.",
     )
     scr_allocation_id: int = Field(
         description="The unique ID of the Storage Charge Record that allocated the energy charged into this Storage Device (adjusted for losses) to this SDR.",

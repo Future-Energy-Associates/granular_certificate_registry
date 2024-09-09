@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 
 
 class Device(DeviceBase, table=True):
-    device_id: int = Field(
-        description="A unique identifier for the device. UUIDv4 could be used for this purpose, alternaties include the GS1 codes currently used under EECS.",
+    id: int = Field(
+        description="A unique identifier for the device. Integers could be used for this purpose, alternaties include the GS1 codes currently used under EECS.",
         primary_key=True,
         autoincrement=True,
     )
@@ -23,7 +23,7 @@ class Device(DeviceBase, table=True):
 
 
 class DeviceRead(DeviceBase):
-    device_id: int
+    id: int
 
 
 class DeviceUpdate(DeviceBase):

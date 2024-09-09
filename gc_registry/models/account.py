@@ -8,7 +8,7 @@ from gc_registry import utils
 
 class AccountBase(utils.ActiveRecord):
     account_name: str
-    user_ids: List[int] | None = Field(
+    ids: List[int] | None = Field(
         description="The users registered to the account.",
         sa_column=Column(ARRAY(String())),
     )

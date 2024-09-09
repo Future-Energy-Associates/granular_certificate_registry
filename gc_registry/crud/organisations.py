@@ -24,9 +24,7 @@ def create_organisation(
     )
 
 
-@router.get(
-    "/organisation/{organisation_id}", response_model=organisation.OrganisationRead
-)
+@router.get("/organisation/{id}", response_model=organisation.OrganisationRead)
 def read_organisation(
     organisation_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
@@ -39,17 +37,13 @@ def read_organisation(
     )
 
 
-@router.patch(
-    "/organisation/{organisation_id}", response_model=organisation.OrganisationRead
-)
+@router.patch("/organisation/{id}", response_model=organisation.OrganisationRead)
 def update_organisation(
     organisation_update: organisation.OrganisationUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_organisation = organisation.Organisation.by_id(
-        organisation_update.organisation_id, session
-    )
+    db_organisation = organisation.Organisation.by_id(organisation_update.id, session)
     db_organisation.update(organisation_update, session)
 
     return utils.format_json_response(
@@ -57,9 +51,7 @@ def update_organisation(
     )
 
 
-@router.delete(
-    "/organisation/{organisation_id}", response_model=organisation.OrganisationRead
-)
+@router.delete("/organisation/{id}", response_model=organisation.OrganisationRead)
 def delete_organisation(
     organisation_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class Account(AccountBase, table=True):
-    account_id: int = Field(primary_key=True, autoincrement=True)
+    id: int = Field(primary_key=True, autoincrement=True)
     users: List["User"] = Relationship(
         back_populates="accounts", link_model=UserAccountLink
     )
@@ -24,9 +24,9 @@ class Account(AccountBase, table=True):
 
 
 class AccountRead(AccountBase):
-    account_id: int
+    id: int
 
 
 class AccountUpdate(AccountBase):
     account_name: str | None
-    account_id: int | None
+    id: int | None

@@ -2,20 +2,20 @@ components:
   schemas:
     Account:
       properties:
-        account_id:
+        id:
           format: uuid
           title: Account Id
           type: string
         account_name:
           title: Account Name
           type: string
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
       required:
       - account_name
-      - organisation_id
+      - id
       title: Account
       type: object
     AccountBase:
@@ -23,18 +23,18 @@ components:
         account_name:
           title: Account Name
           type: string
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
       required:
       - account_name
-      - organisation_id
+      - id
       title: AccountBase
       type: object
     AccountRead:
       properties:
-        account_id:
+        id:
           format: uuid
           title: Account Id
           type: string
@@ -43,7 +43,7 @@ components:
           type: string
         organisation:
           $ref: '#/components/schemas/Organisation'
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
@@ -54,15 +54,15 @@ components:
           type: array
       required:
       - account_name
-      - organisation_id
-      - account_id
+      - id
+      - id
       - organisation
       - users
       title: AccountRead
       type: object
     AccountUpdate:
       properties:
-        account_id:
+        id:
           format: uuid
           title: Account Id
           type: string
@@ -71,21 +71,21 @@ components:
           type: string
         organisation:
           $ref: '#/components/schemas/Organisation'
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
-        user_id:
+        id:
           format: uuid
           title: User Id
           type: string
       required:
-      - organisation_id
+      - id
       title: AccountUpdate
       type: object
     DeviceBase:
       properties:
-        account_id:
+        id:
           description: The account to which the device is registered, and into which
             GC Bundles will be issued for energy produced by this Device.
           format: uuid
@@ -125,12 +125,12 @@ components:
       - operational_date
       - capacity
       - peak_demand
-      - account_id
+      - id
       title: DeviceBase
       type: object
     DeviceRead:
       properties:
-        account_id:
+        id:
           description: The account to which the device is registered, and into which
             GC Bundles will be issued for energy produced by this Device.
           format: uuid
@@ -139,7 +139,7 @@ components:
         capacity:
           title: Capacity
           type: number
-        device_id:
+        id:
           format: uuid
           title: Device Id
           type: string
@@ -174,15 +174,15 @@ components:
       - operational_date
       - capacity
       - peak_demand
-      - account_id
-      - device_id
+      - id
+      - id
       title: DeviceRead
       type: object
     DeviceUpdate:
       properties:
         account:
           $ref: '#/components/schemas/Account'
-        account_id:
+        id:
           description: The account to which the device is registered, and into which
             GC Bundles will be issued for energy produced by this Device.
           format: uuid
@@ -191,7 +191,7 @@ components:
         capacity:
           title: Capacity
           type: number
-        device_id:
+        id:
           format: uuid
           title: Device Id
           type: string
@@ -223,7 +223,7 @@ components:
           title: Technology Type
           type: string
       required:
-      - account_id
+      - id
       title: DeviceUpdate
       type: object
     GranularCertificateActionResponse:
@@ -269,7 +269,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -282,7 +282,7 @@ components:
             type: string
           title: Energy Source
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -306,7 +306,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -323,8 +323,8 @@ components:
           title: Sparse Filter List
           type: object
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       - action_response_status
       title: GranularCertificateActionResponse
       type: object
@@ -355,7 +355,7 @@ components:
 
         the queue.'
       properties:
-        account_id:
+        id:
           description: Each GC Bundle is issued to a single unique production Account
             that its production Device is individually registered to.
           format: uuid
@@ -406,7 +406,7 @@ components:
           description: The maximum capacity of the production Device in Watts (W).
           title: Device Capacity
           type: integer
-        device_id:
+        id:
           description: Each GC Bundle is associated with a single production Device.
           format: uuid
           title: Device Id
@@ -563,7 +563,7 @@ components:
           format: uuid
           title: Sdr Allocation Id
           type: string
-        storage_device_id:
+        storage_id:
           description: The Device ID of the storage Device that released the energy
             represented by the GC Bundle.
           format: uuid
@@ -592,7 +592,7 @@ components:
           type: string
       required:
       - certificate_status
-      - account_id
+      - id
       - bundle_id_range_start
       - bundle_id_range_end
       - bundle_quantity
@@ -601,7 +601,7 @@ components:
       - face_value
       - issuance_post_energy_carrier_conversion
       - registry_configuration
-      - device_id
+      - id
       - device_name
       - device_technology_type
       - device_production_start_date
@@ -645,7 +645,7 @@ components:
 
         the queue.'
       properties:
-        account_id:
+        id:
           description: Each GC Bundle is issued to a single unique production Account
             that its production Device is individually registered to.
           format: uuid
@@ -696,7 +696,7 @@ components:
           description: The maximum capacity of the production Device in Watts (W).
           title: Device Capacity
           type: integer
-        device_id:
+        id:
           description: Each GC Bundle is associated with a single production Device.
           format: uuid
           title: Device Id
@@ -845,7 +845,7 @@ components:
           format: uuid
           title: Sdr Allocation Id
           type: string
-        storage_device_id:
+        storage_id:
           description: The Device ID of the storage Device that released the energy
             represented by the GC Bundle.
           format: uuid
@@ -874,7 +874,7 @@ components:
           type: string
       required:
       - certificate_status
-      - account_id
+      - id
       - bundle_id_range_start
       - bundle_id_range_end
       - bundle_quantity
@@ -883,7 +883,7 @@ components:
       - face_value
       - issuance_post_energy_carrier_conversion
       - registry_configuration
-      - device_id
+      - id
       - device_name
       - device_technology_type
       - device_production_start_date
@@ -949,7 +949,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -962,7 +962,7 @@ components:
             type: string
           title: Energy Source
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -986,7 +986,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1003,8 +1003,8 @@ components:
           title: Sparse Filter List
           type: object
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: GranularCertificateCancellation
       type: object
     GranularCertificateClaim:
@@ -1050,7 +1050,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -1063,7 +1063,7 @@ components:
             type: string
           title: Energy Source
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -1087,7 +1087,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1104,8 +1104,8 @@ components:
           title: Sparse Filter List
           type: object
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: GranularCertificateClaim
       type: object
     GranularCertificateQuery:
@@ -1151,7 +1151,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -1164,7 +1164,7 @@ components:
             type: string
           title: Energy Source
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -1188,7 +1188,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1205,8 +1205,8 @@ components:
           title: Sparse Filter List
           type: object
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: GranularCertificateQuery
       type: object
     GranularCertificateQueryResponse:
@@ -1252,7 +1252,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -1270,7 +1270,7 @@ components:
             $ref: '#/components/schemas/GranularCertificateBundle'
           title: Filtered Certificate Bundles
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -1294,7 +1294,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1311,8 +1311,8 @@ components:
           title: Sparse Filter List
           type: object
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       - action_response_status
       title: GranularCertificateQueryResponse
       type: object
@@ -1365,7 +1365,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -1398,7 +1398,7 @@ components:
             field, for example: ''days'', ''weeks'', ''months'', ''years''.'
           title: Recurring Cancellation Period Units
           type: string
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -1422,7 +1422,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1439,8 +1439,8 @@ components:
           title: Sparse Filter List
           type: object
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       - initial_cancellation_datetime
       title: GranularCertificateRecurringCancellation
       type: object
@@ -1487,7 +1487,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -1520,7 +1520,7 @@ components:
             field, for example: ''days'', ''weeks'', ''months'', ''years''.'
           title: Recurring Transfer Period Units
           type: string
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -1544,7 +1544,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1560,15 +1560,15 @@ components:
             specified.
           title: Sparse Filter List
           type: object
-        target_account_id:
+        target_id:
           description: For (recurring) transfers, the Account ID into which the GC
             Bundles are to be transferred to.
           format: uuid
           title: Target Account Id
           type: string
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       - initial_transfer_datetime
       title: GranularCertificateRecurringTransfer
       type: object
@@ -1610,7 +1610,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -1623,7 +1623,7 @@ components:
             type: string
           title: Energy Source
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -1647,7 +1647,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1673,8 +1673,8 @@ components:
           title: Target Registry
           type: string
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: GranularCertificateReservation
       type: object
     GranularCertificateTransfer:
@@ -1720,7 +1720,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -1733,7 +1733,7 @@ components:
             type: string
           title: Energy Source
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -1757,7 +1757,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1773,20 +1773,20 @@ components:
             specified.
           title: Sparse Filter List
           type: object
-        target_account_id:
+        target_id:
           description: For (recurring) transfers, the Account ID into which the GC
             Bundles are to be transferred to.
           format: uuid
           title: Target Account Id
           type: string
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: GranularCertificateTransfer
       type: object
     GranularCertificateUpdateMutables:
       properties:
-        account_id:
+        id:
           description: Update the associated Account of a GC Bundle.
           format: uuid
           title: Account Id
@@ -1832,7 +1832,7 @@ components:
           description: Update the status of a GC Bundle.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -1845,7 +1845,7 @@ components:
             type: string
           title: Energy Source
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -1869,7 +1869,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1886,8 +1886,8 @@ components:
           title: Sparse Filter List
           type: object
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: GranularCertificateUpdateMutables
       type: object
     GranularCertificateWithdraw:
@@ -1933,7 +1933,7 @@ components:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
-        device_id:
+        id:
           description: Filter GC Bundles associated with the specified production
             device.
           format: uuid
@@ -1946,7 +1946,7 @@ components:
             type: string
           title: Energy Source
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -1970,7 +1970,7 @@ components:
           format: uuid
           title: Source Certificate Issuance Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -1987,8 +1987,8 @@ components:
           title: Sparse Filter List
           type: object
       required:
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: GranularCertificateWithdraw
       type: object
     HTTPValidationError:
@@ -2011,7 +2011,7 @@ components:
         name:
           title: Name
           type: string
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
@@ -2061,7 +2061,7 @@ components:
         name:
           title: Name
           type: string
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
@@ -2075,7 +2075,7 @@ components:
       - name
       - business_id
       - primary_contact
-      - organisation_id
+      - id
       title: OrganisationRead
       type: object
     OrganisationUpdate:
@@ -2089,7 +2089,7 @@ components:
         name:
           title: Name
           type: string
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
@@ -2151,7 +2151,7 @@ components:
             $ref: '#/components/schemas/StorageChargeRecord'
           title: Filtered Scrs
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -2163,7 +2163,7 @@ components:
           format: uuid
           title: Source Allocation Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -2179,7 +2179,7 @@ components:
             specified.
           title: Sparse Filter List
           type: object
-        storage_device_id:
+        storage_id:
           description: Filter records associated with the specified production device.
           format: uuid
           title: Storage Device Id
@@ -2193,8 +2193,8 @@ components:
           type: array
       required:
       - action_response_status
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: SCRQueryResponse
       type: object
     SDRQueryResponse:
@@ -2247,7 +2247,7 @@ components:
             $ref: '#/components/schemas/StorageDischargeRecord'
           title: Filtered Sdrs
           type: array
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -2259,7 +2259,7 @@ components:
           format: uuid
           title: Source Allocation Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -2275,7 +2275,7 @@ components:
             specified.
           title: Sparse Filter List
           type: object
-        storage_device_id:
+        storage_id:
           description: Filter records associated with the specified production device.
           format: uuid
           title: Storage Device Id
@@ -2289,8 +2289,8 @@ components:
           type: array
       required:
       - action_response_status
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: SDRQueryResponse
       type: object
     StorageAction:
@@ -2332,7 +2332,7 @@ components:
           format: date-time
           title: Charging Period Start
           type: string
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -2344,7 +2344,7 @@ components:
           format: uuid
           title: Source Allocation Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -2360,7 +2360,7 @@ components:
             specified.
           title: Sparse Filter List
           type: object
-        storage_device_id:
+        storage_id:
           description: Filter records associated with the specified production device.
           format: uuid
           title: Storage Device Id
@@ -2374,8 +2374,8 @@ components:
           type: array
       required:
       - action_response_status
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: StorageAction
       type: object
     StorageActionResponse:
@@ -2423,7 +2423,7 @@ components:
           format: date-time
           title: Charging Period Start
           type: string
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -2435,7 +2435,7 @@ components:
           format: uuid
           title: Source Allocation Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -2451,7 +2451,7 @@ components:
             specified.
           title: Sparse Filter List
           type: object
-        storage_device_id:
+        storage_id:
           description: Filter records associated with the specified production device.
           format: uuid
           title: Storage Device Id
@@ -2465,8 +2465,8 @@ components:
           type: array
       required:
       - action_response_status
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: StorageActionResponse
       type: object
     StorageActionUpdateMutables:
@@ -2508,7 +2508,7 @@ components:
           format: date-time
           title: Charging Period Start
           type: string
-        source_account_id:
+        source_id:
           description: The Account ID of the Account within which the action shall
             occur or originate from.
           format: uuid
@@ -2520,7 +2520,7 @@ components:
           format: uuid
           title: Source Allocation Id
           type: string
-        source_user_id:
+        source_id:
           description: The User that is performing the action, and can be verified
             as having the sufficient authority to perform the requested action on
             the Account specified.
@@ -2536,7 +2536,7 @@ components:
             specified.
           title: Sparse Filter List
           type: object
-        storage_device_id:
+        storage_id:
           description: Filter records associated with the specified production device.
           format: uuid
           title: Storage Device Id
@@ -2550,13 +2550,13 @@ components:
           type: array
       required:
       - action_response_status
-      - source_account_id
-      - source_user_id
+      - source_id
+      - source_id
       title: StorageActionUpdateMutables
       type: object
     StorageChargeRecord:
       properties:
-        account_id:
+        id:
           description: Each SCR is issued to a single unique production Account that
             its Storage Device is individually registered to.
           format: uuid
@@ -2585,7 +2585,7 @@ components:
           format: date-time
           title: Charging Start Datetime
           type: string
-        device_id:
+        id:
           description: The Device ID of the Storage Device that is being charged.
           format: uuid
           title: Device Id
@@ -2634,8 +2634,8 @@ components:
       - gc_bundle_id_range_end
       - scr_geographic_matching_method
       - scr_allocation_id
-      - account_id
-      - device_id
+      - id
+      - id
       title: StorageChargeRecord
       type: object
     StorageChargeRecordBase:
@@ -2704,7 +2704,7 @@ components:
       type: object
     StorageDischargeRecord:
       properties:
-        account_id:
+        id:
           description: Each SDR is issued to a single unique production Account that
             its Storage Device is individually registered to.
           format: uuid
@@ -2716,7 +2716,7 @@ components:
             \   that were cancelled and allocated to the Storage Device."
           title: Charging Energy Source
           type: string
-        device_id:
+        id:
           description: The Device ID of the Storage Device that is being charged.
           format: uuid
           title: Device Id
@@ -2784,8 +2784,8 @@ components:
       - scr_allocation_methodology
       - efficiency_factor_methodology
       - sdr_allocation_id
-      - device_id
-      - account_id
+      - id
+      - id
       - scr_allocation_id
       title: StorageDischargeRecord
       type: object
@@ -2854,7 +2854,7 @@ components:
         name:
           title: Name
           type: string
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
@@ -2874,14 +2874,14 @@ components:
             type: string
           title: Role
           type: array
-        user_id:
+        id:
           format: uuid
           title: User Id
           type: string
       required:
       - name
       - primary_contact
-      - organisation_id
+      - id
       - role
       title: User
       type: object
@@ -2890,7 +2890,7 @@ components:
         name:
           title: Name
           type: string
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
@@ -2913,7 +2913,7 @@ components:
       required:
       - name
       - primary_contact
-      - organisation_id
+      - id
       - role
       title: UserBase
       type: object
@@ -2922,7 +2922,7 @@ components:
         name:
           title: Name
           type: string
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
@@ -2942,28 +2942,28 @@ components:
             type: string
           title: Role
           type: array
-        user_id:
+        id:
           format: uuid
           title: User Id
           type: string
       required:
       - name
       - primary_contact
-      - organisation_id
+      - id
       - role
-      - user_id
+      - id
       title: UserRead
       type: object
     UserUpdate:
       properties:
-        account_id:
+        id:
           format: uuid
           title: Account Id
           type: string
         name:
           title: Name
           type: string
-        organisation_id:
+        id:
           format: uuid
           title: Organisation Id
           type: string
@@ -2983,12 +2983,12 @@ components:
             type: string
           title: Role
           type: array
-        user_id:
+        id:
           format: uuid
           title: User Id
           type: string
       required:
-      - organisation_id
+      - id
       - role
       title: UserUpdate
       type: object
@@ -3089,12 +3089,12 @@ paths:
       summary: Create Account
       tags:
       - Accounts
-  /accounts/account/{account_id}:
+  /accounts/account/{id}:
     delete:
-      operationId: delete_account_accounts_account__account_id__delete
+      operationId: delete_account_accounts_account__id__delete
       parameters:
       - in: path
-        name: account_id
+        name: id
         required: true
         schema:
           format: uuid
@@ -3119,10 +3119,10 @@ paths:
       tags:
       - Accounts
     get:
-      operationId: read_account_accounts_account__account_id__get
+      operationId: read_account_accounts_account__id__get
       parameters:
       - in: path
-        name: account_id
+        name: id
         required: true
         schema:
           format: uuid
@@ -3147,7 +3147,7 @@ paths:
       tags:
       - Accounts
     patch:
-      operationId: update_account_accounts_account__account_id__patch
+      operationId: update_account_accounts_account__id__patch
       requestBody:
         content:
           application/json:
@@ -3494,12 +3494,12 @@ paths:
       summary: Create Device
       tags:
       - Devices
-  /devices/device/{device_id}:
+  /devices/device/{id}:
     delete:
-      operationId: delete_device_devices_device__device_id__delete
+      operationId: delete_device_devices_device__id__delete
       parameters:
       - in: path
-        name: device_id
+        name: id
         required: true
         schema:
           format: uuid
@@ -3524,10 +3524,10 @@ paths:
       tags:
       - Devices
     get:
-      operationId: read_device_devices_device__device_id__get
+      operationId: read_device_devices_device__id__get
       parameters:
       - in: path
-        name: device_id
+        name: id
         required: true
         schema:
           format: uuid
@@ -3552,7 +3552,7 @@ paths:
       tags:
       - Devices
     patch:
-      operationId: update_device_devices_device__device_id__patch
+      operationId: update_device_devices_device__id__patch
       requestBody:
         content:
           application/json:
@@ -3604,12 +3604,12 @@ paths:
       summary: Create Organisation
       tags:
       - Organisations
-  /organisations/organisation/{organisation_id}:
+  /organisations/organisation/{id}:
     delete:
-      operationId: delete_organisation_organisations_organisation__organisation_id__delete
+      operationId: delete_organisation_organisations_organisation__id__delete
       parameters:
       - in: path
-        name: organisation_id
+        name: id
         required: true
         schema:
           format: uuid
@@ -3634,10 +3634,10 @@ paths:
       tags:
       - Organisations
     get:
-      operationId: read_organisation_organisations_organisation__organisation_id__get
+      operationId: read_organisation_organisations_organisation__id__get
       parameters:
       - in: path
-        name: organisation_id
+        name: id
         required: true
         schema:
           format: uuid
@@ -3662,7 +3662,7 @@ paths:
       tags:
       - Organisations
     patch:
-      operationId: update_organisation_organisations_organisation__organisation_id__patch
+      operationId: update_organisation_organisations_organisation__id__patch
       requestBody:
         content:
           application/json:
@@ -3758,7 +3758,7 @@ paths:
         These bundles can be queried using the same GC Bundle query endpoint as regular
         GC Bundles, but with the additional option to filter
 
-        by the storage_device_id and the discharging_start_datetime, which is inherited
+        by the storage_id and the discharging_start_datetime, which is inherited
         from the allocated SDR.'
       operationId: issue_SDGC_storage_storage_issue_sdgc_post
       requestBody:
@@ -3957,12 +3957,12 @@ paths:
       summary: Create User
       tags:
       - Users
-  /users/user/{user_id}:
+  /users/user/{id}:
     delete:
-      operationId: delete_user_users_user__user_id__delete
+      operationId: delete_user_users_user__id__delete
       parameters:
       - in: path
-        name: user_id
+        name: id
         required: true
         schema:
           format: uuid
@@ -3987,10 +3987,10 @@ paths:
       tags:
       - Users
     get:
-      operationId: read_user_users_user__user_id__get
+      operationId: read_user_users_user__id__get
       parameters:
       - in: path
-        name: user_id
+        name: id
         required: true
         schema:
           format: uuid
@@ -4015,7 +4015,7 @@ paths:
       tags:
       - Users
     patch:
-      operationId: update_user_users_user__user_id__patch
+      operationId: update_user_users_user__id__patch
       requestBody:
         content:
           application/json:

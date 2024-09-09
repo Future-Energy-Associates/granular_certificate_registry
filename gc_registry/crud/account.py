@@ -24,7 +24,7 @@ def create_account(
     )
 
 
-@router.get("/account/{account_id}", response_model=account.AccountRead)
+@router.get("/account/{id}", response_model=account.AccountRead)
 def read_account(
     account_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
@@ -37,13 +37,13 @@ def read_account(
     )
 
 
-@router.patch("/account/{account_id}", response_model=account.AccountRead)
+@router.patch("/account/{id}", response_model=account.AccountRead)
 def update_account(
     account_update: account.AccountUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_account = account.Account.by_id(account_update.account_id, session)
+    db_account = account.Account.by_id(account_update.id, session)
     db_account.update(account_update, session)
 
     return utils.format_json_response(
@@ -51,7 +51,7 @@ def update_account(
     )
 
 
-@router.delete("/account/{account_id}", response_model=account.AccountRead)
+@router.delete("/account/{id}", response_model=account.AccountRead)
 def delete_account(
     account_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),

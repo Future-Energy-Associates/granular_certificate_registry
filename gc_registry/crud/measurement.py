@@ -11,41 +11,41 @@ router = APIRouter(tags=["Miscellaneous"])
 
 
 # # MeasurementReport
-@router.post("/measurementreport", response_model=measurement.MeasurementReportRead)
-def create_measurementreport(
+@router.post("/measurement_report", response_model=measurement.MeasurementReportRead)
+def create_measurement_report(
     measurement_report_base: measurement.MeasurementReportBase,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_measurementreport = measurement.MeasurementReport.create(
+    db_measurement_report = measurement.MeasurementReport.create(
         measurement_report_base, session
     )
 
     return utils.format_json_response(
-        db_measurementreport, headers, response_model=measurement.MeasurementReportRead
+        db_measurement_report, headers, response_model=measurement.MeasurementReportRead
     )
 
 
 @router.get(
-    "/measurementreport/{measurement_report_id}",
+    "/measurement_report/{id}",
     response_model=measurement.MeasurementReportRead,
 )
-def read_measurementreport(
+def read_measurement_report(
     measurement_report_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_measurementreport = measurement.MeasurementReport.by_id(
+    db_measurement_report = measurement.MeasurementReport.by_id(
         measurement_report_id, session
     )
 
     return utils.format_json_response(
-        db_measurementreport, headers, response_model=measurement.MeasurementReportRead
+        db_measurement_report, headers, response_model=measurement.MeasurementReportRead
     )
 
 
 @router.patch(
-    "/measurementreport/{measurement_report_id}",
+    "/measurement_report/{id}",
     response_model=measurement.MeasurementReportRead,
 )
 def update_measurementreport(
@@ -53,18 +53,18 @@ def update_measurementreport(
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_measurementreport = measurement.MeasurementReport.by_id(
-        measurement_report_update.measurement_report_id, session
+    db_measurement_report = measurement.MeasurementReport.by_id(
+        measurement_report_update.id, session
     )
-    db_measurementreport.update(measurement_report_update, session)
+    db_measurement_report.update(measurement_report_update, session)
 
     return utils.format_json_response(
-        db_measurementreport, headers, response_model=measurement.MeasurementReportRead
+        db_measurement_report, headers, response_model=measurement.MeasurementReportRead
     )
 
 
 @router.delete(
-    "/measurementreport/{measurement_report_id}",
+    "/measurement_report/{id}",
     response_model=measurement.MeasurementReportRead,
 )
 def delete_measurementreport(
@@ -72,11 +72,11 @@ def delete_measurementreport(
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_measurementreport = measurement.MeasurementReport.by_id(
+    db_measurement_report = measurement.MeasurementReport.by_id(
         measurement_report_id, session
     )
-    db_measurementreport.delete(session)
+    db_measurement_report.delete(session)
 
     return utils.format_json_response(
-        db_measurementreport, headers, response_model=measurement.MeasurementReportRead
+        db_measurement_report, headers, response_model=measurement.MeasurementReportRead
     )

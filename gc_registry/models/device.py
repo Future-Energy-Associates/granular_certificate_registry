@@ -15,7 +15,7 @@ class DeviceBase(utils.ActiveRecord):
     capacity: float
     peak_demand: float
     location: str
-    account_id: int = Field(
+    id: int = Field(
         description="The account to which the device is registered, and into which GC Bundles will be issued for energy produced by this Device.",
-        foreign_key="account.account_id",
+        foreign_key="account.id",
     )

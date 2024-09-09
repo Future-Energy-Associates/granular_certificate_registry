@@ -16,13 +16,13 @@ class StorageActionBase(utils.ActiveRecord):
     action_response_status: str = Field(
         description="Specifies whether the requested action has been accepted or rejected by the registry."
     )
-    source_account_id: int = Field(
+    source_id: int = Field(
         description="The Account ID of the Account within which the action shall occur or originate from.",
-        foreign_key="account.account_id",
+        foreign_key="account.id",
     )
-    source_user_id: int = Field(
+    source_id: int = Field(
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified.",
-        foreign_key="user.user_id",
+        foreign_key="user.id",
     )
     source_allocation_id: int | None = Field(
         description="The specific SCRs/SDRs onto which the action will be performed. Returns all records with the specified allocation ID."
@@ -41,7 +41,7 @@ class StorageActionBase(utils.ActiveRecord):
     charging_period_end: datetime.datetime | None = Field(
         description="The UTC datetime up to which records within the specified Account are to be filtered."
     )
-    storage_device_id: int | None = Field(
+    storage_id: int | None = Field(
         description="Filter records associated with the specified production device."
     )
     storage_energy_source: str | None = Field(

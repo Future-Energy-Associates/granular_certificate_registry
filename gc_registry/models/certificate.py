@@ -25,8 +25,8 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     certificate_status: str = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
     )
-    account_id: int = Field(
-        foreign_key="account.account_id",
+    id: int = Field(
+        foreign_key="account.id",
         description="Each GC Bundle is issued to a single unique production Account that its production Device is individually registered to.",
     )
     bundle_id_range_start: int = Field(
@@ -68,8 +68,8 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     )
 
     ### Production Device Characteristics ###
-    device_id: int = Field(
-        foreign_key="device.device_id",
+    id: int = Field(
+        foreign_key="device.id",
         description="Each GC Bundle is associated with a single production Device.",
     )
     device_name: str = Field(description="The name of the production Device.")
@@ -107,8 +107,8 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     )
 
     ### Storage Characteristics ###
-    storage_device_id: int | None = Field(
-        foreign_key="device.device_id",
+    storage_id: int | None = Field(
+        foreign_key="device.id",
         description="The Device ID of the storage Device that released the energy represented by the GC Bundle.",
     )
     sdr_allocation_id: int | None = Field(

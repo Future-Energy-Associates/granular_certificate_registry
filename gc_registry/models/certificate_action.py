@@ -11,13 +11,13 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     action_type: str = Field(
         description="The type of action to be performed on the GC Bundle.",
     )
-    source_account_id: int = Field(
+    source_id: int = Field(
         description="The Account ID of the Account within which the action shall occur or originate from."
     )
-    source_user_id: int = Field(
+    source_id: int = Field(
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified."
     )
-    target_account_id: int | None = Field(
+    target_id: int | None = Field(
         description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to."
     )
     source_certificate_issuance_id: int | None = Field(
@@ -63,7 +63,7 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         Of the GC Bundles identified, return the total number of certificates to action on,
         splitting GC Bundles from the start of the range where necessary.""",
     )
-    device_id: int | None = Field(
+    id: int | None = Field(
         description="Filter GC Bundles associated with the specified production device."
     )
     energy_source: str | None = Field(
@@ -72,7 +72,7 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     certificate_status: str | None = Field(
         description="""Filter on the status of the GC Bundles."""
     )
-    account_id_to_update_to: int | None = Field(
+    id_to_update_to: int | None = Field(
         description="Update the associated Account of a GC Bundle."
     )
     certificate_status_to_update_to: str | None = Field(

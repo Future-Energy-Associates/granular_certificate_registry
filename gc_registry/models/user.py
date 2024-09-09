@@ -17,4 +17,4 @@ class UserBase(utils.ActiveRecord):
                        to perform within the registry, according to the EnergyTag Standard.""",
         sa_column=Column(ARRAY(String())),
     )
-    organisation_id: int = Field(foreign_key="organisation.organisation_id")
+    id: int = Field(foreign_key="organisation.id")

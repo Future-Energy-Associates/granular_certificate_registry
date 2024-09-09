@@ -26,7 +26,7 @@ def create_device(
     )
 
 
-@router.get("/device/{device_id}", response_model=device.DeviceRead)
+@router.get("/device/{id}", response_model=device.DeviceRead)
 def read_device(
     device_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
@@ -39,13 +39,13 @@ def read_device(
     )
 
 
-@router.patch("/device/{device_id}", response_model=device.DeviceRead)
+@router.patch("/device/{id}", response_model=device.DeviceRead)
 def update_device(
     device_update: device.DeviceUpdate,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_device = device.Device.by_id(device_update.device_id, session)
+    db_device = device.Device.by_id(device_update.id, session)
     db_device.update(device_update, session)
 
     return utils.format_json_response(
@@ -53,7 +53,7 @@ def update_device(
     )
 
 
-@router.delete("/device/{device_id}", response_model=device.DeviceRead)
+@router.delete("/device/{id}", response_model=device.DeviceRead)
 def delete_device(
     device_id: int,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
