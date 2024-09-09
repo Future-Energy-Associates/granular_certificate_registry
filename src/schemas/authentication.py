@@ -2,7 +2,7 @@ from typing import Optional
 
 from sqlmodel import Field, SQLModel
 
-from src.models.base_models import TokenBlacklistBase
+from src.models.authentication import TokenBlacklistBase
 
 
 class TokenBlacklist(TokenBlacklistBase, table=True):
