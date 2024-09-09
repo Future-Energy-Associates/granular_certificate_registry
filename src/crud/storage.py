@@ -6,7 +6,7 @@ from sqlmodel import Session
 from src import utils
 from src.crud import authentication
 from src.database import db
-from src.schemas import certificate, storage
+from src.schemas import certificate, storage, storage_action
 
 # Router initialisation
 router = APIRouter(tags=["Storage"])
@@ -34,21 +34,21 @@ def create_SCR(
 
 @router.get(
     "/storage/query_scr",
-    response_model=storage.SCRQueryResponse,
+    response_model=storage_action.SCRQueryResponse,
     status_code=200,
 )
 def query_SCR(
-    scr_query: storage.StorageAction,
+    scr_query: storage_action.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Return all SCRs from the specified Account that match the provided search criteria."""
-    scr_action = storage.StorageAction.create(scr_query, session)
+    scr_action = storage_action.StorageAction.create(scr_query, session)
 
     return utils.format_json_response(
         scr_action,
         headers,
-        response_model=storage.SCRQueryResponse,
+        response_model=storage_action.SCRQueryResponse,
     )
 
 
@@ -76,81 +76,83 @@ def create_SDR(
 
 @router.get(
     "/storage/query_sdr",
-    response_model=storage.SDRQueryResponse,
+    response_model=storage_action.SDRQueryResponse,
     status_code=200,
 )
 def query_SDR(
-    sdr_query: storage.StorageAction,
+    sdr_query: storage_action.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Return all SDRs from the specified Account that match the provided search criteria."""
-    sdr_action = storage.StorageAction.create(sdr_query, session)
+    sdr_action = storage_action.StorageAction.create(sdr_query, session)
 
     return utils.format_json_response(
         sdr_action,
         headers,
-        response_model=storage.SDRQueryResponse,
+        response_model=storage_action.SDRQueryResponse,
     )
 
 
 @router.post(
     "/storage/withdraw_scr",
-    response_model=storage.StorageActionResponse,
+    response_model=storage_action.StorageActionResponse,
     status_code=200,
 )
 def SCR_withdraw(
-    storage_action: storage.StorageAction,
+    storage_action: storage_action.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SCRs from the specified Account matching the provided search criteria."""
-    scr_action = storage.StorageAction.create(storage_action, session)
+    scr_action = storage_action.StorageAction.create(storage_action, session)
 
     return utils.format_json_response(
         scr_action,
         headers,
-        response_model=storage.StorageActionResponse,
+        response_model=storage_action.StorageActionResponse,
     )
 
 
 @router.post(
     "/storage/withdraw_sdr",
-    response_model=storage.StorageActionResponse,
+    response_model=storage_action.StorageActionResponse,
     status_code=200,
 )
 def SDR_withdraw(
-    storage_action: storage.StorageAction,
+    storage_action: storage_action.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SDRs from the specified Account matching the provided search criteria."""
-    sdr_action = storage.StorageAction.create(storage_action, session)
+    sdr_action = storage_action.StorageAction.create(storage_action, session)
 
     return utils.format_json_response(
         sdr_action,
         headers,
-        response_model=storage.StorageActionResponse,
+        response_model=storage_action.StorageActionResponse,
     )
 
 
 @router.patch(
     "/storage/update_mutables",
-    response_model=storage.StorageActionResponse,
+    response_model=storage_action.StorageActionResponse,
     status_code=200,
 )
 def update_certificate_mutables(
-    certificate_bundle_action: storage.StorageAction,
+    certificate_bundle_action: storage_action.StorageAction,
     headers: dict = Depends(authentication.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Update the mutable aspects (associated Account ID, status) of a given certificate bundle."""
-    storage_action = storage.StorageAction.create(certificate_bundle_action, session)
+    storage_action = storage_action.StorageAction.create(
+        certificate_bundle_action, session
+    )
 
     return utils.format_json_response(
         storage_action,
         headers,
-        response_model=storage.StorageActionResponse,
+        response_model=storage_action.StorageActionResponse,
     )
 
 
