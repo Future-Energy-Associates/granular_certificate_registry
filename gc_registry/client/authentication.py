@@ -114,7 +114,7 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
         expire: str = payload.get("exp", "60")
 
         # checking the expiry date
-        current_ts = datetime.datetime.now(datetime.UTC).timestamp()
+        current_ts = datetime.datetime.utcnow().timestamp()
 
         if (float(expire) - current_ts) < 0:
             with next(db.db_name_to_client["read"].yield_session()) as session:
