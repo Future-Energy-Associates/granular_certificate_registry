@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM python:3.11-slim
 
 # Set environment variables to non-interactive to avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -17,11 +17,10 @@ RUN apt update && apt install -y \
     musl-dev
 
 # Install Poetry
-# RUN curl -sSL https://install.python-poetry.org | python3 -
 RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python3 && \
-cd /usr/local/bin && \
-ln -s /opt/poetry/bin/poetry && \
-poetry config virtualenvs.create false
+    cd /usr/local/bin && \
+    ln -s /opt/poetry/bin/poetry && \
+    poetry config virtualenvs.create false
 
 # Set the working directory
 WORKDIR /code
@@ -38,6 +37,6 @@ COPY ./setup.py /code/setup.py
 COPY ./src /code/src
 COPY ./.env /code/.env
 COPY ./frontend /code/frontend
-COPY ./tests /code/tests
+COPY ./src/tests /code/tests
 COPY ./README.md /code/README.md
 COPY ./Makefile /code/Makefile

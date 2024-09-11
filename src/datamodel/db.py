@@ -67,7 +67,7 @@ class DButils:
         with Session(self.engine) as session:
             yield session
 
-    def initiate_db_tables(self, schema_paths: list = None) -> None:
+    def initiate_db_tables(self, schema_paths: list[str] | None = None) -> None:
         if schema_paths is None:
             schema_paths = []
         if not database_exists(self.engine.url):
