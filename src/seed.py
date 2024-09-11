@@ -1,7 +1,9 @@
+import datetime
 from sqlmodel import Session
 
 from src.datamodel import db
 from src.issuance_data.pjm.pjm import PJM
+from src.issuance_data.elexon.elexon import ElexonClient
 
 engine = db.db_name_to_client["write"].engine
 
@@ -10,9 +12,24 @@ def seed_data():
     print("Seeding the database with data....")
     with Session(engine) as session:
         # Use PJM class to get data from the PJM API
-        pjm = PJM()
-        response = pjm.get_data("gen_by_fuel", test=True)
-        certificate_bundles = pjm.map_generation_to_certificates(response.json())
+        client = ElexonClient()
+        from_date = datetime.datetime(2021, 1, 1, 0, 0, 0)
+        to_date = from_date + datetime.timedelta(days=1)
+        bmu_ids = [
+            "E_MARK-1",
+            "E_MARK-2",
+            "RATS-1",
+            "RATS-2",
+            "RATS-3",
+            "RATS-4",
+            "RATSGT-2",
+            "RATSGT-4",
+        ]
+        dataset = "B1610"
+        data = client.get_dataset_in_datetime_range(
+            dataset, from_date, to_date, bmu_ids=bmu_ids
+        )
+        certificate_bundles = client.map_generation_to_certificates(data)
 
         for certificate_bundle in certificate_bundles:
             session.add(certificate_bundle)
