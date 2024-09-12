@@ -38,7 +38,6 @@ COPY ./setup.py /code/setup.py
 COPY ./gc_registry /code/gc_registry
 COPY ./.env /code/.env
 COPY ./frontend /code/frontend
-COPY ./tests /code/tests
 COPY ./README.md /code/README.md
 COPY ./Makefile /code/Makefile
 COPY ./alembic.ini /code/alembic.ini

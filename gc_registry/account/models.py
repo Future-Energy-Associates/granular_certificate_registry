@@ -21,7 +21,7 @@ class Account(AccountBase, table=True):
     users: List["User"] = Relationship(
         back_populates="accounts", link_model=UserAccountLink
     )
-    devices: List["Device"] = Relationship(back_populates="devices")
+    devices: List["Device"] = Relationship(back_populates="account")
 
 
 class AccountRead(AccountBase):
