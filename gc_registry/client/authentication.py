@@ -77,6 +77,9 @@ def authenticate_api_user(fake_db, username: str, password: str):
 def create_access_token(data: dict, expires_delta: datetime.timedelta | None = None):
     to_encode = data.copy()
 
+    # TODO utcnow() returns naive datetimes and will be deprecated in a future release,
+    # so we need to find an alternative e.g. datetime.now(datetime.UTC) that does not
+    # break mypy
     if expires_delta:
         expire = datetime.datetime.utcnow() + expires_delta
     else:
