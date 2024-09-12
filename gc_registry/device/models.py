@@ -16,10 +16,12 @@ if TYPE_CHECKING:
 
 
 class Device(DeviceBase, table=True):
-    id: int = Field(
+    id: int | None = Field(
+        default=None,
         description="A unique identifier for the device. Integers could be used for this purpose, alternaties include the GS1 codes currently used under EECS.",
         primary_key=True,
     )
+    account_id: int = Field(foreign_key="account.id")
     account: "Account" = Relationship(back_populates="devices")
 
 

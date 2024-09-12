@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Union
 
 from sqlmodel import Field
@@ -15,7 +16,8 @@ from gc_registry.certificate.schemas import (
 
 
 class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
-    issuance_id: int = Field(
+    issuance_id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
         primary_key=True,
         description="""A unique identifier assigned to the GC Bundle at the time of issuance.
         If the bundle is split through partial transfer or cancellation, this issuance ID remains unchanged across each child GC Bundle.""",

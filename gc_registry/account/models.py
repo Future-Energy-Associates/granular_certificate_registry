@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class Account(AccountBase, table=True):
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     users: List["User"] = Relationship(
         back_populates="accounts", link_model=UserAccountLink
     )

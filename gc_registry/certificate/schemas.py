@@ -107,24 +107,30 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
 
     ### Storage Characteristics ###
     storage_id: int | None = Field(
+        default=None,
         foreign_key="device.id",
         description="The Device ID of the storage Device that released the energy represented by the GC Bundle.",
     )
     sdr_allocation_id: int | None = Field(
+        default=None,
         description="The unique ID of the Storage Discharge Record that has been allocated to this GC Bundle.",
         foreign_key="storagedischargerecord.sdr_allocation_id",
     )
     discharging_start_datetime: datetime.datetime | None = Field(
+        default=None,
         description="The UTC datetime at which the Storage Device began discharging the energy represented by this SD-GC (inherited from the allocated SDR).",
     )
     discharging_end_datetime: datetime.datetime | None = Field(
+        default=None,
         description="The UTC datetime at which the Storage Device ceased discharging energy represented by this SD-GC (inherited from the allocated SDR).",
     )
     storage_device_location: tuple[float, float] | None = Field(
+        default=None,
         description="The GPS coordinates of the storage Device that has discharged the energy represented by this GC Bundle.",
         sa_column=Column(ARRAY(Float)),
     )
     storage_efficiency_factor: float | None = Field(
+        default=None,
         description="The efficiency factor of the storage Device that has discharged the energy represented by this GC Bundle.",
     )
 
@@ -139,18 +145,23 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
         description="The Issuing Body that has issued this GC Bundle.",
     )
     legal_status: str | None = Field(
+        default=None,
         description="May contain pertinent information on the Issuing Authority, where relevant.",
     )
     issuance_purpose: str | None = Field(
+        default=None,
         description="May contain the purpose of the GC Bundle issuance, for example: Disclosure, Subsidy Support.",
     )
     support_received: str | None = Field(
+        default=None,
         description="May contain information on any support received for the generation or investment into the production Device for which this GC Bundle have been issued.",
     )
     quality_scheme_reference: str | None = Field(
+        default=None,
         description="May contain any references to quality schemes for which this GC Bundle were issued.",
     )
     dissemination_level: str | None = Field(
+        default=None,
         description="Specifies whether the energy associated with this GC Bundle was self-consumed or injected into a private or public grid.",
     )
     issue_market_zone: str = Field(
@@ -159,9 +170,11 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
 
     ### Other Optional Characteristics ###
     emissions_factor_production_device: float | None = Field(
+        default=None,
         description="May indicate the emissions factor (kgCO2e/MWh) of the production Device at the datetime in which this GC Bundle was issued against.",
     )
     emissions_factor_source: str | None = Field(
+        default=None,
         description="Includes a reference to the calculation methodology of the production Device emissions factor.",
     )
 

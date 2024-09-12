@@ -5,6 +5,8 @@ from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship
 
 from gc_registry import utils
+
+# from gc_registry.organisation.models import Organisation
 from gc_registry.user.schemas import UserBase
 
 if TYPE_CHECKING:
@@ -23,14 +25,18 @@ class UserAccountLink(utils.ActiveRecord, table=True):
 
 
 class User(UserBase, table=True):
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     account_ids: List[int] | None = Field(
+        default=None,
         description="The accounts to which the user is registered.",
         sa_column=Column(ARRAY(String())),
     )
     accounts: List["Account"] | None = Relationship(
         back_populates="users", link_model=UserAccountLink
     )
+
+    # organisation_id: int = Field(foreign_key="organisation.id")
+    # organisation: "Organisation" = Relationship(back_populates="users")
 
 
 class UserRead(UserBase):
