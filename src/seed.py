@@ -1,11 +1,10 @@
 import datetime
-from sqlalchemy import select
+
 from sqlmodel import Session
 
 from src.datamodel import db
-from src.issuance_data.pjm.pjm import PJM
-from src.issuance_data.elexon.elexon import ElexonClient
 from src.datamodel.schemas.entities import Account, Device
+from src.issuance_data.elexon.elexon import ElexonClient
 
 engine = db.db_name_to_client["write"].engine
 
@@ -28,7 +27,6 @@ def seed_data():
     dataset = "B1610"
 
     with Session(engine) as session:
-
         # Create an Account to add the certificates to
         account_dict = {
             "account_name": "Test Account",

@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
-import pandas as pd
+
 import elexonpy
+import pandas as pd
+import requests
 from elexonpy.api_client import ApiClient
 from pydantic import UUID4
-import requests
 
 from src.datamodel.schemas.gc_entities import GranularCertificateBundle
 
@@ -71,7 +72,6 @@ class ElexonClient:
         account_id: UUID4,
         device_id: str | None = None,
     ) -> list[GranularCertificateBundle]:
-
         # Filter out any rows where the quantity is less than or equal to zero (no generation)
         generation_data = [x for x in generation_data if x["quantity"] > 0]
 
