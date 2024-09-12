@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta
-from uuid import uuid4
 
 import elexonpy
-import httpx
 import pandas as pd
+import requests
 from elexonpy.api_client import ApiClient
 
 from gc_registry.certificate.models import GranularCertificateBundle
@@ -49,13 +48,16 @@ class ElexonClient:
     ):
         data = []
         for half_hour_dt in pd.date_range(from_date, to_date, freq="30min"):
-            params = httpx.QueryParams(
-                settlementDate=half_hour_dt.date(),
-                settlementPeriod=datetime_to_settlement_period(half_hour_dt),
-            )
+            params = {
+                "settlementDate": half_hour_dt.date(),
+                "settlementPeriod": datetime_to_settlement_period(half_hour_dt),
+            }
             if bmu_ids:
-                params = params.add("bmUnit", bmu_ids)
-            response = httpx.get(f"{self.base_url}/datasets/{dataset}", params=params)
+                params["bmUnit"] = bmu_ids
+            response = requests.get(
+                f"{self.base_url}/datasets/{dataset}",
+                params=params,  # type: ignore
+            )
 
             response.raise_for_status()
 
@@ -66,15 +68,15 @@ class ElexonClient:
     def map_generation_to_certificates(
         self,
         generation_data: list[dict],
-        account_id: str | None = None,
+        account_id: int,
         device_id: str | None = None,
     ) -> list[GranularCertificateBundle]:
         # Filter out any rows where the quantity is less than or equal to zero (no generation)
         generation_data = [x for x in generation_data if x["quantity"] > 0]
 
-        mapped_data: list[GranularCertificateBundle] = []
+        mapped_data: list = []
         for data in generation_data:
-            bundle_mwh = data["quantity"]
+            bundle_wh = int(data["quantity"] * 1000)
 
             # Get existing "bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
@@ -82,21 +84,21 @@ class ElexonClient:
             else:
                 bundle_id_range_start = 0
 
-            bundle_id_range_end = bundle_id_range_start + bundle_mwh
+            bundle_id_range_end = bundle_id_range_start + bundle_wh
 
             transformed = {
-                "account_id": account_id if account_id else str(uuid4()),
+                "account_id": account_id,
                 "certificate_status": "Active",
                 "bundle_id_range_start": bundle_id_range_start,
                 "bundle_id_range_end": bundle_id_range_end,
-                "bundle_quantity": bundle_mwh,
+                "bundle_quantity": bundle_id_range_end - bundle_id_range_start + 1,
                 "energy_carrier": "Electricity",
                 "energy_source": "wind",
-                "face_value": bundle_mwh,
+                "face_value": bundle_wh,
                 "issuance_post_energy_carrier_conversion": False,
                 "registry_configuration": 1,
                 ### Production Device Characteristics ###
-                "device_id": device_id if device_id else str(uuid4()),
+                "device_id": device_id,
                 "device_name": "Device Name Placeholder",
                 "device_technology_type": "wind",
                 "device_production_start_date": datetime.strptime(
@@ -124,28 +126,7 @@ class ElexonClient:
             }
 
             # Validate and append the transformed data
-            valid_data = GranularCertificateBundle(**transformed)
+            valid_data = GranularCertificateBundle.model_validate(transformed)
             mapped_data.append(valid_data)
 
         return mapped_data
-
-
-if __name__ == "__main__":
-    client = ElexonClient()
-    from_date = datetime(2021, 1, 1, 0, 0, 0)
-    to_date = from_date + pd.Timedelta(hours=2)
-    bmu_ids = [
-        "E_MARK-1",
-        "E_MARK-2",
-        "RATS-1",
-        "RATS-2",
-        "RATS-3",
-        "RATS-4",
-        "RATSGT-2",
-        "RATSGT-4",
-    ]
-    dataset = "B1610"
-    data = client.get_dataset_in_datetime_range(
-        dataset, from_date, to_date, bmu_ids=bmu_ids
-    )
-    certificates = client.map_generation_to_certificates(data)

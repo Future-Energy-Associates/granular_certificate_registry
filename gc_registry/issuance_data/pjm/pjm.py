@@ -1,7 +1,6 @@
 import datetime
 import json
 from typing import Any
-from uuid import uuid4
 
 import httpx
 import pandas as pd
@@ -59,7 +58,7 @@ class PJM:
 
             transformed = {
                 ### Account details ###
-                "account_id": account_id if account_id else uuid4(),
+                "account_id": account_id,
                 ### Mutable Attributes ###
                 "certificate_status": "Active",
                 "bundle_id_range_start": bundle_id_range_start,
@@ -72,7 +71,7 @@ class PJM:
                 "issuance_post_energy_carrier_conversion": False,
                 "registry_configuration": 1,
                 ### Production Device Characteristics ###
-                "device_id": device_id if device_id else uuid4(),
+                "device_id": device_id,
                 "device_name": "Device Name Placeholder",
                 "device_technology_type": data["fuel_type"],
                 "device_production_start_date": parse_datetime(

@@ -2,38 +2,84 @@ import datetime
 
 from sqlmodel import Session
 
+from gc_registry.account.models import Account
 from gc_registry.database import db
+from gc_registry.device.models import Device
 from gc_registry.issuance_data.elexon.elexon import ElexonClient
-
-engine = db.db_name_to_client["write"].engine
+from gc_registry.user.models import User
 
 
 def seed_data():
-    print("Seeding the database with data....")
-    with Session(engine) as session:
-        # Use PJM class to get data from the PJM API
-        client = ElexonClient()
-        from_date = datetime.datetime(2021, 1, 1, 0, 0, 0)
-        to_date = from_date + datetime.timedelta(days=1)
-        bmu_ids = [
-            "E_MARK-1",
-            "E_MARK-2",
-            "RATS-1",
-            "RATS-2",
-            "RATS-3",
-            "RATS-4",
-            "RATSGT-2",
-            "RATSGT-4",
-        ]
-        dataset = "B1610"
-        data = client.get_dataset_in_datetime_range(
-            dataset, from_date, to_date, bmu_ids=bmu_ids
-        )
-        certificate_bundles = client.map_generation_to_certificates(data)
+    client = db.db_name_to_client["write"]
+    engine = client.engine
 
-        for certificate_bundle in certificate_bundles:
-            session.add(certificate_bundle)
+    print("Seeding the database with data....")
+    bmu_ids = [
+        "E_MARK-1",
+        "E_MARK-2",
+        "RATS-1",
+        "RATS-2",
+        "RATS-3",
+        "RATS-4",
+        "RATSGT-2",
+        "RATSGT-4",
+    ]
+    client = ElexonClient()
+    from_date = datetime.datetime(2024, 1, 1, 0, 0, 0)
+    to_date = from_date + datetime.timedelta(days=1)
+    dataset = "B1610"
+
+    with Session(engine) as session:
+        # Create a User to add the certificates to
+        user_dict = {
+            "primary_contact": "a_user@usermail.com",
+            "name": "A User",
+            "role": ["Production User"],
+        }
+        user = User.model_validate(user_dict)
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+
+        # Create an Account to add the certificates to
+        account_dict = {
+            "account_name": "Test Account",
+            "users": [user],
+        }
+        account = Account.model_validate(account_dict)
+        session.add(account)
+        session.commit()
+        session.refresh(account)
+
+        for bmu_id in bmu_ids:
+            device_dict = {
+                "device_name": bmu_id,
+                "grid": "National Grid",
+                "energy_source": "wind",
+                "technology_type": "wind",
+                "operational_date": datetime.datetime(2015, 1, 1, 0, 0, 0),
+                "capacity": 1000,
+                "peak_demand": 100,
+                "location": "Some Location",
+                "account_id": account.id,
+            }
+            device = Device.model_validate(device_dict)
+            session.add(device)
             session.commit()
-            session.refresh(certificate_bundle)
+            session.refresh(device)
+
+            # Use Elexon to get data from the Elexon API
+
+            data = client.get_dataset_in_datetime_range(
+                dataset, from_date, to_date, bmu_ids=[bmu_id]
+            )
+            certificate_bundles = client.map_generation_to_certificates(
+                data, account_id=account.id, device_id=device.id
+            )
+
+            for certificate_bundle in certificate_bundles:
+                session.add(certificate_bundle)
+                session.commit()
+                session.refresh(certificate_bundle)
 
     print("Seeding complete!")
