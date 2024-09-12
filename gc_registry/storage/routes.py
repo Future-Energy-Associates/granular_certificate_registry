@@ -7,13 +7,13 @@ from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.certificate.schemas import GranularCertificateBundleBase
 from gc_registry.database import db
 from gc_registry.storage.models import (
+    StorageAction,
     StorageChargeRecord,
     StorageDischargeRecord,
 )
 from gc_registry.storage.schemas import (
     SCRQueryResponse,
     SDRQueryResponse,
-    StorageAction,
     StorageActionResponse,
     StorageChargeRecordBase,
     StorageDischargeRecordBase,

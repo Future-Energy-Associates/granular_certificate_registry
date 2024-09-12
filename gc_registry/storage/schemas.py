@@ -123,16 +123,6 @@ class StorageActionResponse(StorageActionBase):
     )
 
 
-class StorageAction(StorageActionBase, table=True):
-    """A record of a User's request to the registry to query SCRs/SDRs within a specified Account."""
-
-    action_id: int = Field(
-        primary_key=True,
-        default=None,
-        description="A unique ID assigned to this action.",
-    )
-
-
 class SCRQueryResponse(StorageActionResponse):
     filtered_scrs: Union[list[StorageChargeRecordBase], None]
 

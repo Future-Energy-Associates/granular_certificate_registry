@@ -1,6 +1,7 @@
 from sqlmodel import Field
 
 from gc_registry.storage.schemas import (
+    StorageActionBase,
     StorageChargeRecordBase,
     StorageDischargeRecordBase,
 )
@@ -37,4 +38,14 @@ class StorageDischargeRecord(StorageDischargeRecordBase, table=True):
     scr_allocation_id: int = Field(
         description="The unique ID of the Storage Charge Record that allocated the energy charged into this Storage Device (adjusted for losses) to this SDR.",
         foreign_key="storagechargerecord.scr_allocation_id",
+    )
+
+
+class StorageAction(StorageActionBase, table=True):
+    """A record of a User's request to the registry to query SCRs/SDRs within a specified Account."""
+
+    action_id: int = Field(
+        primary_key=True,
+        default=None,
+        description="A unique ID assigned to this action.",
     )
