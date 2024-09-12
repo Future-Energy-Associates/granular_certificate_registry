@@ -63,6 +63,7 @@ ruff = "^0.5.6"
 psycopg2 = "^2.9.9"
 markdown = "^3.7"
 pydantic-settings = "^2.4.0"
+alembic = "^1.13.2"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.2"
