@@ -68,6 +68,7 @@ testcontainers = "^4.8.1"
 psycopg = "^3.2.1"
 elexonpy = "^1.0.9"
 httpx = "^0.27.2"
+types-requests = "^2.32.0.20240907"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.2"
