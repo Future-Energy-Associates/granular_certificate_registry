@@ -6,15 +6,13 @@ from fastapi.templating import Jinja2Templates
 from markdown import markdown
 from starlette.middleware.sessions import SessionMiddleware
 
-from .crud import (
-    account,
-    certificate,
-    device,
-    organisations,
-    storage,
-    user,
-)
+from .account.routes import router as account_router
+from .certificate.routes import router as certificate_router
+from .device.routes import router as device_router
+from .organisation.routes import router as organisation_router
 from .settings import settings
+from .storage.routes import router as storage_router
+from .user.routes import router as user_router
 
 descriptions = {}
 for desc in ["api", "certificate", "storage"]:
@@ -64,12 +62,12 @@ app = FastAPI(
 app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
 
 # app.include_router(authentication.router)
-app.include_router(certificate.router, prefix="/certificates")
-app.include_router(storage.router, prefix="/storage")
-app.include_router(organisations.router, prefix="/organisations")
-app.include_router(user.router, prefix="/users")
-app.include_router(account.router, prefix="/accounts")
-app.include_router(device.router, prefix="/devices")
+app.include_router(certificate_router, prefix="/certificates")
+app.include_router(storage_router, prefix="/storage")
+app.include_router(organisation_router, prefix="/organisations")
+app.include_router(user_router, prefix="/users")
+app.include_router(account_router, prefix="/accounts")
+app.include_router(device_router, prefix="/devices")
 
 openapi_data = app.openapi()
 
