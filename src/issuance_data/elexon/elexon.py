@@ -3,6 +3,7 @@ from uuid import uuid4
 import pandas as pd
 import elexonpy
 from elexonpy.api_client import ApiClient
+from pydantic import UUID4
 import requests
 
 from src.datamodel.schemas.gc_entities import GranularCertificateBundle
@@ -67,7 +68,7 @@ class ElexonClient:
     def map_generation_to_certificates(
         self,
         generation_data: list[dict],
-        account_id: str | None = None,
+        account_id: UUID4,
         device_id: str | None = None,
     ) -> list[GranularCertificateBundle]:
 
@@ -87,7 +88,7 @@ class ElexonClient:
             bundle_id_range_end = bundle_id_range_start + bundle_mwh
 
             transformed = {
-                "account_id": account_id if account_id else str(uuid4()),
+                "account_id": account_id,
                 "certificate_status": "Active",
                 "bundle_id_range_start": bundle_id_range_start,
                 "bundle_id_range_end": bundle_id_range_end,
@@ -136,6 +137,8 @@ if __name__ == "__main__":
     client = ElexonClient()
     from_date = datetime(2021, 1, 1, 0, 0, 0)
     to_date = from_date + pd.Timedelta(hours=2)
+
+    # For BMU IDs see https://osuked.github.io/Power-Station-Dictionary/dictionary.html
     bmu_ids = [
         "E_MARK-1",
         "E_MARK-2",
