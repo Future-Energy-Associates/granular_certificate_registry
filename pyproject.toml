@@ -60,12 +60,11 @@ uvicorn = "^0.30.5"
 wheel = "^0.44.0"
 starlette = "0.37.2"
 ruff = "^0.5.6"
-psycopg2 = "^2.9.9"
+psycopg = {extras = ["binary"], version = "^3.1.13"}
 markdown = "^3.7"
 pydantic-settings = "^2.4.0"
 alembic = "^1.13.2"
 testcontainers = {extras = ["postgres"], version = "^4.3.3"}
-psycopg = "^3.2.1"
 elexonpy = "^1.0.9"
 httpx = "^0.27.2"
 types-requests = "^2.32.0.20240907"
