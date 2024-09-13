@@ -2,7 +2,7 @@
 # Shortcuts for build commands, linting, testing etc
 #
 
-SRC = src
+SRC = gc_registry
 
 .PHONY: lint
 lint:
@@ -22,17 +22,21 @@ typecheck:
 
 .PHONY: test
 test:
-	docker compose run --rm gc_registry pytest --cov-report term --cov-report html --cov=src
+	docker compose run --rm gc_registry pytest --cov-report term --cov-report html --cov=gc_registry
 
 .PHONY: test.local
 test.local:
-	poetry run pytest --cov-report term --cov-report html --cov=src
+	poetry run pytest --cov-report term --cov-report html --cov=gc_registry
+
+.PHONY: workflow
+workflow:
+	poetry run pytest
 
 .PHONY: pre-commit
 pre-commit: lint.fix format typecheck
 
 .PHONY: ci
-ci: lint typecheck test.local
+ci: lint typecheck workflow
 
 .PHONY: db.update
 db.update:
@@ -53,7 +57,7 @@ db.fix:
 
 .PHONY: db.revision
 db.revision:
-	db.fix  && \
+	make db.fix  && \
 		echo "Creating new revision..." && \
 		docker compose run --rm gc_registry alembic revision --autogenerate -m $(NAME) && \
 		echo "Revision created successfully."
