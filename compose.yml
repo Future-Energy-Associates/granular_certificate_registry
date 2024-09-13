@@ -1,5 +1,6 @@
 services:
   gc_registry:
+    restart: always
     build:
       context: ./
       dockerfile: "Dockerfile"
