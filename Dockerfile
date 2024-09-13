@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11.4-slim
 
 # Set environment variables to non-interactive to avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
