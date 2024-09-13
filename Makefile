@@ -26,7 +26,7 @@ test:
 
 .PHONY: test.local
 test.local:
-	poetry run pytest -n 1 --cov-report term --cov-report html --cov=gc_registry
+	poetry run pytest --cov-report term --cov-report html --cov=gc_registry
 
 .PHONY: pre-commit
 pre-commit: lint.fix format typecheck
