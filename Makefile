@@ -28,11 +28,15 @@ test:
 test.local:
 	poetry run pytest --cov-report term --cov-report html --cov=gc_registry
 
+.PHONY: workflow
+workflow:
+	poetry run pytest --cov=gc_registry
+
 .PHONY: pre-commit
 pre-commit: lint.fix format typecheck
 
 .PHONY: ci
-ci: lint typecheck test.local
+ci: lint typecheck workflow
 
 .PHONY: db.update
 db.update:
