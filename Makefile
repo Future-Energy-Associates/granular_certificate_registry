@@ -30,7 +30,7 @@ test.local:
 
 .PHONY: workflow
 workflow:
-	poetry run pytest --cov=gc_registry
+	poetry run pytest
 
 .PHONY: pre-commit
 pre-commit: lint.fix format typecheck
