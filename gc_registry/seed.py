@@ -4,8 +4,8 @@ from sqlmodel import Session
 
 from gc_registry.account.models import Account
 from gc_registry.database import db
-from gc_registry.device.models import Device
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
+from gc_registry.device.models import Device
 from gc_registry.user.models import User
 
 
