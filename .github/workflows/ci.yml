@@ -25,11 +25,11 @@ jobs:
       - name: Build Docker container
         run: docker compose build
 
-      - name: Build and run tests
-        run: |
-          docker compose -f compose.yml -f compose.ci.yml up -d
-          docker compose -f compose.yml -f compose.ci.yml run gc_registry make ci
-          docker compose -f compose.yml -f compose.ci.yml down
+      # - name: Build and run tests
+      #   run: |
+      #     docker compose -f compose.yml -f compose.ci.yml up -d
+      #     docker compose -f compose.yml -f compose.ci.yml run gc_registry make ci
+      #     docker compose -f compose.yml -f compose.ci.yml down
 
       - name: Run CI tasks
         run: docker compose -f compose.yml -f compose.ci.yml run -i -T --rm gc_registry make ci
