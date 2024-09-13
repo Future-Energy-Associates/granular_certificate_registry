@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 import elexonpy
+import httpx
 import pandas as pd
-import requests
 from elexonpy.api_client import ApiClient
 
 from gc_registry.certificate.models import GranularCertificateBundle
@@ -54,7 +54,7 @@ class ElexonClient:
             }
             if bmu_ids:
                 params["bmUnit"] = bmu_ids
-            response = requests.get(
+            response = httpx.get(
                 f"{self.base_url}/datasets/{dataset}",
                 params=params,  # type: ignore
             )
