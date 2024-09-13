@@ -1,5 +1,7 @@
 services:
   gc_registry:
+    restart: always
+    image: gc_registry:latest
     build:
       context: ./
       dockerfile: "Dockerfile"

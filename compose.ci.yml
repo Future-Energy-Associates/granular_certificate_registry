@@ -1,11 +1,15 @@
 services:
-  api:
+  gc_registry:
     restart: no
     env_file:
       - .env
       - .env.ci
     environment:
       - TC_HOST=host.docker.internal
+      - POSTGRES_DB=gc_registry
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - DATABASE_URL=postgresql://postgres:password@db_write/gc_registry
     build:
       context: .
       args:
@@ -14,3 +18,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       - host.docker.internal:host-gateway
+    depends_on:
+      - db_write
+
+  db_write:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=gc_registry
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password

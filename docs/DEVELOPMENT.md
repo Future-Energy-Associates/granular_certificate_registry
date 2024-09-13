@@ -44,7 +44,7 @@ Make sure your feature branch is up-to-date with the `dev` branch and run `make 
 
 #### 2. Change the database models
 
-Edit the [models.py](../src/datamodel/schemas) file to reflect the changes you
+Edit the [models.py](../gc_registry/datamodel/schemas) file to reflect the changes you
 want to make to the schema.
 
 #### 3. Generate the migration code

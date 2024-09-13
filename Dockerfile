@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM python:3.11.4-slim
 
 # Set environment variables to non-interactive to avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -27,17 +27,21 @@ poetry config virtualenvs.create false
 WORKDIR /code
 
 # Copy the project files
-COPY ./pyproject.toml ./poetry.lock* /code/
+COPY ./pyproject.toml ./poetry.lock* ./
 
 # Install dependencies using Poetry
 ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --only main ; fi"
 
+ENV PYTHONPATH=/code
+
 # Copy the rest of the application code
-COPY ./setup.py /code/setup.py
-COPY ./src /code/src
-COPY ./.env /code/.env
-COPY ./frontend /code/frontend
-COPY ./tests /code/tests
-COPY ./README.md /code/README.md
-COPY ./Makefile /code/Makefile
+COPY ./setup.py ./setup.py
+COPY ./gc_registry ./gc_registry/
+COPY ./.env ./.env
+COPY ./frontend ./frontend/
+COPY ./README.md ./README.md
+COPY ./Makefile ./Makefile
+COPY ./alembic.ini ./alembic.ini
+
+CMD ["uvicorn", "gc_registry.main:app", "--host", "0.0.0.0", "--port", "8000"]
