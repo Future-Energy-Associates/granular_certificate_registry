@@ -1,16 +1,19 @@
 import os
 from typing import Generator
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlmodel import Session, SQLModel
 from testcontainers.postgres import PostgresContainer
+
 from gc_registry.account.models import Account
 from gc_registry.device.models import Device
 from gc_registry.user.models import User
 
+
 def get_db_url():
-    if 'CI' in os.environ:
+    if "CI" in os.environ:
         return "postgresql://postgres:password@db_write/gc_registry"
     else:
         try:
@@ -20,6 +23,7 @@ def get_db_url():
         except Exception as e:
             pytest.skip(f"Failed to start PostgreSQL container: {str(e)}")
 
+
 @pytest.fixture(scope="session")
 def db_engine() -> Generator[Engine, None, None]:
     """
@@ -28,13 +32,11 @@ def db_engine() -> Generator[Engine, None, None]:
     url = get_db_url()
     if url is None:
         pytest.skip("Unable to establish database connection")
-    
+
     db_engine = create_engine(url)
     SQLModel.metadata.create_all(db_engine)
     yield db_engine
     db_engine.dispose()
-
-
 
 
 @pytest.fixture(scope="function")
