@@ -23,7 +23,7 @@ jobs:
         run: docker compose build
 
       - name: Run CI tasks
-        run: docker compose up -f compose.yml -f compose.ci.yml run -i -T --rm gc_registry make ci
+        run: docker compose -f compose.yml -f compose.ci.yml run -i -T --rm gc_registry make ci
 
       - name: Store coverage files
         uses: actions/upload-artifact@v4

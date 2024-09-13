@@ -32,7 +32,7 @@ test.local:
 pre-commit: lint.fix format typecheck
 
 .PHONY: ci
-ci: lint typecheck test.local
+ci: lint typecheck test
 
 .PHONY: db.update
 db.update:
