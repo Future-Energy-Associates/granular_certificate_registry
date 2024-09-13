@@ -1,4 +1,3 @@
-import pytest
 from sqlmodel import Session
 
 from gc_registry.device.models import Device
