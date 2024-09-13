@@ -27,17 +27,19 @@ poetry config virtualenvs.create false
 WORKDIR /code
 
 # Copy the project files
-COPY ./pyproject.toml ./poetry.lock* /code/
+COPY ./pyproject.toml ./poetry.lock* ./
 
 # Install dependencies using Poetry
 ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --only main ; fi"
 
 # Copy the rest of the application code
-COPY ./setup.py /code/setup.py
-COPY ./gc_registry /code/gc_registry
-COPY ./.env /code/.env
-COPY ./frontend /code/frontend
-COPY ./README.md /code/README.md
-COPY ./Makefile /code/Makefile
-COPY ./alembic.ini /code/alembic.ini
+COPY ./setup.py ./setup.py
+COPY ./gc_registry ./gc_registry/
+COPY ./.env ./.env
+COPY ./frontend ./frontend/
+COPY ./README.md ./README.md
+COPY ./Makefile ./Makefile
+COPY ./alembic.ini ./alembic.ini
+
+CMD ["uvicorn", "gc_registry.main:app", "--host", "0.0.0.0", "--port", "8000"]
