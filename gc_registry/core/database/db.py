@@ -5,7 +5,7 @@ import numpy as np
 from sqlalchemy_utils import create_database, database_exists  # type: ignore
 from sqlmodel import Session, SQLModel, create_engine
 
-from gc_registry.database.config import schema_paths_read, schema_paths_write
+from gc_registry.core.database.config import schema_paths_read, schema_paths_write
 from gc_registry.settings import settings
 
 

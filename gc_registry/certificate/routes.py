@@ -10,7 +10,7 @@ from gc_registry.certificate.models import (
     GranularCertificateBundleBase,
     GranularCertificateQueryResponse,
 )
-from gc_registry.database import db
+from gc_registry.core.database import db
 
 # Router initialisation
 router = APIRouter(tags=["Certificates"])

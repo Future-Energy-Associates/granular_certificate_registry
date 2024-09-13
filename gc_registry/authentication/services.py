@@ -14,7 +14,7 @@ from gc_registry.authentication.models import (
     Token,
     TokenBlacklist,
 )
-from gc_registry.database import db
+from gc_registry.core.database import db
 from gc_registry.settings import settings
 
 # router initialisation

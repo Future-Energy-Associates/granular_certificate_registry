@@ -5,7 +5,7 @@ from gc_registry import utils
 from gc_registry.authentication import services
 from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.certificate.schemas import GranularCertificateBundleBase
-from gc_registry.database import db
+from gc_registry.core.database import db
 from gc_registry.storage.models import (
     StorageAction,
     StorageChargeRecord,

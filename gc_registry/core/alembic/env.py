@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-from gc_registry.database.db import db_name_to_client
+from gc_registry.core.database.db import db_name_to_client
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

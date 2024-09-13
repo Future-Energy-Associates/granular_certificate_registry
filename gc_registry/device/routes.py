@@ -4,7 +4,7 @@ from sqlmodel import Session
 
 from gc_registry import utils
 from gc_registry.authentication import services
-from gc_registry.database import db
+from gc_registry.core.database import db
 from gc_registry.device import models
 
 # Router initialisation
