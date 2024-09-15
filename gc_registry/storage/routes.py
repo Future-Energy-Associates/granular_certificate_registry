@@ -31,7 +31,7 @@ router = APIRouter(tags=["Storage"])
 def create_SCR(
     scr: StorageChargeRecordBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     """Create a Storage Charge Record with the specified properties."""
     db_scr = StorageChargeRecord.create(scr, session)
@@ -73,7 +73,7 @@ def query_SCR(
 def create_SDR(
     sdr: StorageDischargeRecordBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     """Create a Storage Discharge Record with the specified properties."""
     db_sdr = StorageDischargeRecord.create(sdr, session)
@@ -113,7 +113,7 @@ def query_SDR(
 def SCR_withdraw(
     storage_action_base: StorageAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SCRs from the specified Account matching the provided search criteria."""
     scr_action = StorageAction.create(storage_action_base, session)
@@ -133,33 +133,13 @@ def SCR_withdraw(
 def SDR_withdraw(
     storage_action_base: StorageAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SDRs from the specified Account matching the provided search criteria."""
     sdr_action = StorageAction.create(storage_action_base, session)
 
     return utils.format_json_response(
         sdr_action,
-        headers,
-        response_model=StorageActionResponse,
-    )
-
-
-@router.patch(
-    "/storage/update_mutables",
-    response_model=StorageActionResponse,
-    status_code=200,
-)
-def update_storage_mutables(
-    storage_update: StorageAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
-):
-    """Update the mutable aspects (associated Account ID, status) of a given certificate bundle."""
-    storage_update_action = StorageAction.create(storage_update, session)
-
-    return utils.format_json_response(
-        storage_update_action,
         headers,
         response_model=StorageActionResponse,
     )
@@ -173,7 +153,7 @@ def update_storage_mutables(
 def issue_SDGC(
     sdgc: GranularCertificateBundleBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     """A GC Bundle that has been issued following the verification of a cancelled GC Bundle and the proper allocation of a pair
     of Storage Charge and Discharge Records. The GC Bundle is issued to the Account of the Storage Device, and is identical to
