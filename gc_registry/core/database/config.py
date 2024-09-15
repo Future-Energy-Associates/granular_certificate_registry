@@ -12,6 +12,8 @@ schema_paths_read = [
     "gc_registry.storage.models.StorageChargeRecord",
     "gc_registry.storage.models.StorageDischargeRecord",
     "gc_registry.storage.models.StorageAction",
+    "gc_registry.core.database.read_write_sync.Entity",
+    "gc_registry.core.database.read_write_sync.Event",
 ]
 
 schema_paths_write = [
