@@ -15,7 +15,7 @@ router = APIRouter(tags=["Organisations"])
 def create_organisation(
     organisation_base: models.OrganisationBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     db_organisation = models.Organisation.create(organisation_base, session)
 
@@ -41,7 +41,7 @@ def read_organisation(
 def update_organisation(
     organisation_update: models.OrganisationUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     db_organisation = models.Organisation.by_id(organisation_update.id, session)
     db_organisation.update(organisation_update, session)
@@ -55,7 +55,7 @@ def update_organisation(
 def delete_organisation(
     organisation_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     db_organisation = models.Organisation.by_id(organisation_id, session)
     db_organisation.delete(session)

@@ -16,7 +16,7 @@ router = APIRouter(tags=["Users"])
 def create_user(
     user_base: models.UserBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     db_user = models.User.create(user_base, session)
 
@@ -38,7 +38,7 @@ def read_user(
 def update_user(
     user_update: models.UserUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     db_user = models.User.by_id(user_update.id, session)
     db_user.update(user_update, session)
@@ -50,7 +50,7 @@ def update_user(
 def delete_user(
     user_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     db_user = models.User.by_id(user_id, session)
     db_user.delete(session)

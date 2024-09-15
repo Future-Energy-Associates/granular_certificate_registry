@@ -17,7 +17,7 @@ router = APIRouter(tags=["Devices"])
 def create_device(
     device_base: models.DeviceBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     db_device = models.Device.create(device_base, session)
 
@@ -43,7 +43,7 @@ def read_device(
 def update_device(
     device_update: models.DeviceUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     db_device = models.Device.by_id(device_update.id, session)
     db_device.update(device_update, session)
@@ -57,7 +57,7 @@ def update_device(
 def delete_device(
     device_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["write"].yield_session),
 ):
     db_device = models.Device.by_id(device_id, session)
     db_device.delete(session)
