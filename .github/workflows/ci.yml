@@ -42,8 +42,8 @@ jobs:
       - name: Store coverage files
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-html
-          path: htmlcov/cov_report.html
+          name: coverage_results
+          path: gc_registry/tests/reports/coverage_results.xml
             
   publish:
     name: "Publish Unit Test Results"
@@ -53,24 +53,16 @@ jobs:
     steps:
 
       - name: Download Test Results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
 
         if: always()
         with:
-          junit_files: "./test-results-report/cov_report.html"
+          junit_files: "./gc_registry/tests/reports/coverage_results.xml"
           comment_mode: always
           check_name: "Unit Tests Results"
-
-      - name: Code Coverage Summary Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: ./coverage-html/cov_report.html
-          badge: true
-          format: markdown
-          output: both
 
       - name: Write to Job Summary
         run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
