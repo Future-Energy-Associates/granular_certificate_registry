@@ -38,15 +38,12 @@ jobs:
 
       - name: Run CI tasks
         run: docker compose -f compose.yml -f compose.ci.yml run -i -T --rm gc_registry make ci
-      
-      - name: Verify coverage file exists
-        run: find . -name "coverage_results.xml"
 
       - name: Store coverage files
         uses: actions/upload-artifact@v4
         with:
           name: coverage_results
-          path: ${{ github.workspace }}/reports/coverage_results.xml
+          path: ./coverage_results.xml
             
   publish:
     name: "Publish Unit Test Results"
@@ -62,23 +59,23 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage_results
-          path: ./reports/coverage_results.xml
+          path: ./coverage_results.xml
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
 
         if: always()
         with:
-          junit_files: "${{ github.workspace }}/reports/coverage_results.xml"
+          junit_files: "./coverage_results.xml"
           comment_mode: always
           check_name: "Unit Tests Results"
 
       - name: Write to Job Summary
-        run: cat ${{ github.workspace }}/reports/coverage_results.xml >> $GITHUB_STEP_SUMMARY
+        run: cat ./coverage_results.xml >> $GITHUB_STEP_SUMMARY
 
       - name: Publish coverage as PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: Unit Tests Code Coverage
-          path: ${{ github.workspace }}/reports/coverage_results.xml
+          path: ./coverage_results.xml
 
