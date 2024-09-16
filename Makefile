@@ -30,7 +30,7 @@ test.local:
 
 .PHONY: workflow
 workflow:
-	poetry run pytest --cov-report term --cov-report xml --junitxml=./gc_registry/tests/reports/coverage.xml --cov=gc_registry
+	poetry run pytest --cov-report term --cov-report xml --junitxml=./reports/coverage_results.xml --cov=gc_registry
 
 .PHONY: pre-commit
 pre-commit: lint.fix format typecheck
