@@ -43,5 +43,41 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-html
-          path: htmlcov
+          path: htmlcov/cov_report.html
+            
+  publish:
+    name: "Publish Unit Test Results"
+    needs: quality
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+
+      - name: Download Test Results
+        uses: actions/download-artifact@v3
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+
+        if: always()
+        with:
+          junit_files: "./test-results-report/cov_report.html"
+          comment_mode: always
+          check_name: "Unit Tests Results"
+
+      - name: Code Coverage Summary Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: ./coverage-html/cov_report.html
+          badge: true
+          format: markdown
+          output: both
+
+      - name: Write to Job Summary
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Publish coverage as PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: Unit Tests Code Coverage
+          path: code-coverage-results.md
 
