@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage_results
-          path: ./reports/coverage_results.xml
+          path: ${{ github.workspace }}/reports/coverage_results.xml
             
   publish:
     name: "Publish Unit Test Results"
@@ -69,16 +69,16 @@ jobs:
 
         if: always()
         with:
-          junit_files: "./reports/coverage_results.xml"
+          junit_files: "${{ github.workspace }}/reports/coverage_results.xml"
           comment_mode: always
           check_name: "Unit Tests Results"
 
       - name: Write to Job Summary
-        run: cat ./reports/coverage_results.xml >> $GITHUB_STEP_SUMMARY
+        run: cat ${{ github.workspace }}/reports/coverage_results.xml >> $GITHUB_STEP_SUMMARY
 
       - name: Publish coverage as PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: Unit Tests Code Coverage
-          path: ./reports/coverage_results.xml
+          path: ${{ github.workspace }}/reports/coverage_results.xml
 
