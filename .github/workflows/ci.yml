@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Docker
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Setup env vars
         run: cp .env.example .env
@@ -38,12 +38,15 @@ jobs:
 
       - name: Run CI tasks
         run: docker compose -f compose.yml -f compose.ci.yml run -i -T --rm gc_registry make ci
+      
+      - name: Verify coverage file exists
+        run: find . -name "coverage_results.xml"
 
       - name: Store coverage files
         uses: actions/upload-artifact@v4
         with:
           name: coverage_results
-          path: gc_registry/tests/reports/coverage_results.xml
+          path: ./gc_registry/tests/reports/coverage_results.xml
             
   publish:
     name: "Publish Unit Test Results"
@@ -52,8 +55,14 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
 
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Download Test Results
         uses: actions/download-artifact@v4
+        with:
+          name: coverage_results
+          path: ./gc_registry/tests/reports/coverage_results.xml
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -65,11 +74,11 @@ jobs:
           check_name: "Unit Tests Results"
 
       - name: Write to Job Summary
-        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+        run: cat ./gc_registry/tests/reports/coverage_results.xml >> $GITHUB_STEP_SUMMARY
 
       - name: Publish coverage as PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: Unit Tests Code Coverage
-          path: code-coverage-results.md
+          path: ./gc_registry/tests/reports/coverage_results.xml
 
