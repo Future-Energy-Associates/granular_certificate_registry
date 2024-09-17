@@ -46,6 +46,19 @@ class ElexonClient:
         to_date: datetime,
         bmu_ids: list[str] | None = None,
     ):
+        """
+        Get the dataset in the given date range
+        e.g. https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/B1610
+
+        Args:
+            dataset: The dataset to query
+            from_date: The start date
+            to_date: The end date
+            bmu_ids: The BMU IDs to query
+
+        Returns:
+            The dataset in the given date range
+        """
         data = []
         for half_hour_dt in pd.date_range(from_date, to_date, freq="30min"):
             params = {

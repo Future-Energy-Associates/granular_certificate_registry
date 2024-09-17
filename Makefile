@@ -64,7 +64,10 @@ db.revision:
 
 .PHONY: db.reset
 db.reset:
-	docker compose down && docker volume rm tariff-tribe_db-data && make db.update
+	docker compose down && \
+		docker volume rm granular_certificate_registry_postgres_data_read && \
+		docker volume rm granular_certificate_registry_postgres_data_write && \
+		make db.update
 
 .PHONY: db.seed
 db.seed:
