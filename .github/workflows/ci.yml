@@ -44,16 +44,16 @@ jobs:
 
         if: always()
         with:
-          junit_files: "/code/coverage.xml"
+          junit_files: "./coverage.xml"
           comment_mode: always
           check_name: "Unit Tests Results"
 
       - name: Write to Job Summary
-        run: cat /code/coverage.xml >> $GITHUB_STEP_SUMMARY
+        run: cat ./coverage.xml >> $GITHUB_STEP_SUMMARY
 
       - name: Publish coverage as PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: Unit Tests Code Coverage
-          path: /code/coverage.xml
+          path: ./coverage.xml
 
