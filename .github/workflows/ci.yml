@@ -39,31 +39,6 @@ jobs:
       - name: Run CI tasks
         run: docker compose -f compose.yml -f compose.ci.yml run -i -T --rm gc_registry make ci
 
-      - name: List directory contents
-        run: ls -R
-
-      - name: Store coverage files
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: /code/coverage.xml
-            
-  publish:
-    name: "Publish Unit Test Results"
-    needs: quality
-    runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    steps:
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download Test Results
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage
-          path: /code/coverage.xml
-
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
 

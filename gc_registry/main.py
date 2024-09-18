@@ -61,6 +61,8 @@ app = FastAPI(
 
 app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
 
+# add instantiated instance of sync functionality here
+
 # app.include_router(authentication.router)
 app.include_router(certificate_router, prefix="/certificates")
 app.include_router(storage_router, prefix="/storage")
