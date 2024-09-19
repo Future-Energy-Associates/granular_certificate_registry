@@ -23,6 +23,7 @@ class Event(SQLModel, table=True):
 
 
 def transform_write_entities_to_read(entities: list[SQLModel] | SQLModel):
+    # TODO add transformations here when read schemas are defined
     return entities
 
 
