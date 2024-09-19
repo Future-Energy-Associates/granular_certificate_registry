@@ -27,7 +27,6 @@ class TestCQRS:
 
         # Check that the events were created in the correct order
         events = db_write_session.exec(select(Event)).all()
-        events = [event[0] for event in events]
 
         assert len(events) == 2
 
@@ -48,13 +47,13 @@ class TestCQRS:
             select(Device).filter(Device.id == fake_db_wind_device.id)
         ).first()
         if wind_device is not None:
-            assert wind_device[0] == fake_db_wind_device
+            assert wind_device == fake_db_wind_device
 
         user = db_read_session.exec(
             select(User).filter(User.id == fake_db_user.id)
         ).first()
         if user is not None:
-            assert user[0] == fake_db_user
+            assert user == fake_db_user
 
     def test_update_entity(
         self,
@@ -82,7 +81,6 @@ class TestCQRS:
 
         # Check that the event item contains the correct information
         events = db_write_session.exec(select(Event)).all()
-        events = [event[0] for event in events]
         event = events[-1]
 
         assert event.event_type == "UPDATE"
@@ -94,7 +92,7 @@ class TestCQRS:
             select(Device).filter(Device.id == fake_db_wind_device.id)
         ).first()
         if wind_device is not None:
-            assert wind_device[0].device_name == "new_fake_wind_device"
+            assert wind_device.device_name == "new_fake_wind_device"
 
     def test_delete_entity(
         self,
@@ -118,7 +116,6 @@ class TestCQRS:
 
         # Check that the event item contains the correct information
         events = db_write_session.exec(select(Event)).all()
-        events = [event[0] for event in events]
         event = events[-1]
 
         assert event.event_type == "DELETE"
@@ -129,4 +126,4 @@ class TestCQRS:
         ).first()
 
         if wind_device is not None:
-            assert wind_device[0].is_deleted is True
+            assert wind_device.is_deleted is True
