@@ -42,6 +42,9 @@ jobs:
           docker compose -f compose.yml -f compose.ci.yml run -i -T --rm \
             -v ${{ github.workspace }}/coverage:/app/coverage \
             gc_registry make ci
+      
+      - name: List directory contents
+        run: ls -R ./coverage
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
