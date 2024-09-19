@@ -9,6 +9,7 @@ from gc_registry.organisation.schemas import OrganisationBase
 
 class Organisation(OrganisationBase, table=True):
     id: int | None = Field(primary_key=True)
+    is_deleted: bool = Field(default=False)
     # users: list[User] = Relationship(back_populates="organisation")
 
 
@@ -17,9 +18,9 @@ class OrganisationRead(OrganisationBase):
 
 
 class OrganisationUpdate(BaseModel):
-    id: int
-    name: str | None
-    business_id: int | None
-    website: str | None
-    address: str | None
-    primary_contact: str | None
+    id: int = None
+    name: str | None = None
+    business_id: int | None = None
+    website: str | None = None
+    address: str | None = None
+    primary_contact: str | None = None

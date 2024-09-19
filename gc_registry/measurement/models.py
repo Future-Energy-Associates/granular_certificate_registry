@@ -8,6 +8,7 @@ from gc_registry.measurement.schemas import MeasurementReportBase
 
 class MeasurementReport(MeasurementReportBase, table=True):
     id: int | None = Field(primary_key=True)
+    is_deleted: bool = Field(default=False)
 
 
 class MeasurementReportRead(MeasurementReportBase):
@@ -15,7 +16,7 @@ class MeasurementReportRead(MeasurementReportBase):
 
 
 class MeasurementReportUpdate(BaseModel):
-    id: int
-    device_id: int | None
-    interval_start_datetime: datetime.datetime | None
-    interval_end_datetime: datetime.datetime | None
+    id: int | None = None
+    device_id: int | None = None
+    interval_start_datetime: datetime.datetime | None = None
+    interval_end_datetime: datetime.datetime | None = None

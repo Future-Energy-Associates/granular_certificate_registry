@@ -22,6 +22,7 @@ class UserAccountLink(utils.ActiveRecord, table=True):
     account_id: int | None = Field(
         default=None, foreign_key="account.id", primary_key=True
     )
+    is_deleted: bool = Field(default=False)
 
 
 class User(UserBase, table=True):
@@ -34,9 +35,8 @@ class User(UserBase, table=True):
     accounts: List["Account"] | None = Relationship(
         back_populates="users", link_model=UserAccountLink
     )
-
     # organisation_id: int = Field(foreign_key="organisation.id")
-    # organisation: "Organisation" = Relationship(back_populates="users")
+    is_deleted: bool = Field(default=False)
 
 
 class UserRead(UserBase):
@@ -44,6 +44,9 @@ class UserRead(UserBase):
 
 
 class UserUpdate(BaseModel):
-    id: int
-    name: str | None
-    primary_contact: str | None
+    id: int | None = None
+    name: str | None = None
+    primary_contact: str | None = None
+    roles: List[str] | None = None
+    account_ids: List[int] | None = None
+    # organisation_id: int | None = None

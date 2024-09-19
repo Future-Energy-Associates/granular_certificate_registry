@@ -22,6 +22,7 @@ class Account(AccountBase, table=True):
         back_populates="accounts", link_model=UserAccountLink
     )
     devices: List["Device"] = Relationship(back_populates="account")
+    is_deleted: bool = Field(default=False)
 
 
 class AccountRead(AccountBase):
@@ -29,6 +30,6 @@ class AccountRead(AccountBase):
 
 
 class AccountUpdate(BaseModel):
-    id: int
-    account_name: str | None
-    user_id: int | None
+    id: int | None = None
+    account_name: str | None = None
+    user_id: int | None = None

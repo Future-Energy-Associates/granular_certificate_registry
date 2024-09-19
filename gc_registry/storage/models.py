@@ -20,6 +20,7 @@ class StorageChargeRecord(StorageChargeRecordBase, table=True):
         foreign_key="device.id",
         description="The Device ID of the Storage Device that is being charged.",
     )
+    is_deleted: bool = Field(default=False)
 
 
 class StorageDischargeRecord(StorageDischargeRecordBase, table=True):
@@ -39,6 +40,7 @@ class StorageDischargeRecord(StorageDischargeRecordBase, table=True):
         description="The unique ID of the Storage Charge Record that allocated the energy charged into this Storage Device (adjusted for losses) to this SDR.",
         foreign_key="storagechargerecord.scr_allocation_id",
     )
+    is_deleted: bool = Field(default=False)
 
 
 class StorageAction(StorageActionBase, table=True):
