@@ -4,7 +4,7 @@ from sqlmodel import Session
 
 from gc_registry import utils
 from gc_registry.authentication import services
-from gc_registry.core.database import db
+from gc_registry.core.database import cqrs, db
 from gc_registry.measurement import models
 
 # Router initialisation
@@ -41,15 +41,18 @@ def read_measurement(
 
 @router.patch("/measurement/{id}", response_model=models.MeasurementReportRead)
 def update_measurement(
+    measurement: models.MeasurementReportRead,
     measurement_update: models.MeasurementReportUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    write_session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    read_session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_measurement = models.MeasurementReport.by_id(measurement_update.id, session)
-    db_measurement.update(measurement_update, session)
+    measurement_updated = cqrs.update_database_entity(
+        measurement, measurement_update, write_session, read_session
+    )
 
     return utils.format_json_response(
-        db_measurement, headers, response_model=models.MeasurementReportRead
+        measurement_updated, headers, response_model=models.MeasurementReportRead
     )
 
 

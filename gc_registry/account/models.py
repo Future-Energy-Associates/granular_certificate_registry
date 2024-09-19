@@ -30,6 +30,5 @@ class AccountRead(AccountBase):
 
 
 class AccountUpdate(BaseModel):
-    id: int | None = None
     account_name: str | None = None
     user_id: int | None = None

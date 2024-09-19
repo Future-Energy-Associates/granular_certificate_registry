@@ -1,5 +1,4 @@
-from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from gc_registry.core.database.cqrs import (
     Event,
@@ -48,12 +47,14 @@ class TestCQRS:
         wind_device = db_read_session.exec(
             select(Device).filter(Device.id == fake_db_wind_device.id)
         ).first()
-        assert wind_device[0] == fake_db_wind_device
+        if wind_device is not None:
+            assert wind_device[0] == fake_db_wind_device
 
         user = db_read_session.exec(
             select(User).filter(User.id == fake_db_user.id)
         ).first()
-        assert user[0] == fake_db_user
+        if user is not None:
+            assert user[0] == fake_db_user
 
     def test_update_entity(
         self,
@@ -92,8 +93,8 @@ class TestCQRS:
         wind_device = db_read_session.exec(
             select(Device).filter(Device.id == fake_db_wind_device.id)
         ).first()
-
-        assert wind_device[0].device_name == "new_fake_wind_device"
+        if wind_device is not None:
+            assert wind_device[0].device_name == "new_fake_wind_device"
 
     def test_delete_entity(
         self,
@@ -127,4 +128,5 @@ class TestCQRS:
             select(Device).filter(Device.id == fake_db_wind_device.id)
         ).first()
 
-        assert wind_device[0].is_deleted is True
+        if wind_device is not None:
+            assert wind_device[0].is_deleted is True

@@ -1,8 +1,11 @@
 from datetime import datetime
 from enum import Enum
 
+from pydantic import BaseModel
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, Session, SQLModel
+
+from gc_registry.utils import ActiveRecord
 
 
 class EventTypes(str, Enum):
@@ -11,7 +14,7 @@ class EventTypes(str, Enum):
     DELETE = "DELETE"
 
 
-class Event(SQLModel, table=True):
+class Event(ActiveRecord, table=True):
     __tablename__ = "events"
     id: int = Field(primary_key=True)
     entity_id: int
@@ -39,7 +42,7 @@ def write_to_database(
     # Create a list of Event entries for this operation
     events = [
         Event(
-            entity_id=entity.id,
+            entity_id=entity.id,  # type: ignore
             entity_name=entity.__class__.__name__,
             event_type=EventTypes.CREATE,
         )
@@ -71,10 +74,12 @@ def write_to_database(
     write_session.commit()
     read_session.commit()
 
+    return entities
+
 
 def update_database_entity(
     entity: SQLModel,
-    update_entity: SQLModel,
+    update_entity: BaseModel,
     write_session: Session,
     read_session: Session,
 ):
@@ -87,7 +92,7 @@ def update_database_entity(
 
     # Create an Event entry for this operation
     event = Event(
-        entity_id=entity.id,
+        entity_id=entity.id,  # type: ignore
         entity_name=entity.__class__.__name__,
         event_type=EventTypes.UPDATE,
         attributes_before={
@@ -125,6 +130,8 @@ def update_database_entity(
     write_session.commit()
     read_session.commit()
 
+    return entity
+
 
 def delete_database_entity(
     entity: SQLModel, write_session: Session, read_session: Session
@@ -133,7 +140,7 @@ def delete_database_entity(
 
     # Create an Event entry for this operation
     event = Event(
-        entity_id=entity.id,
+        entity_id=entity.id,  # type: ignore
         entity_name=entity.__class__.__name__,
         event_type=EventTypes.DELETE,
     )
@@ -163,3 +170,5 @@ def delete_database_entity(
 
     write_session.commit()
     read_session.commit()
+
+    return entity

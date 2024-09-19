@@ -4,7 +4,7 @@ from sqlmodel import Session
 from gc_registry import utils
 from gc_registry.account import models
 from gc_registry.authentication import services
-from gc_registry.core.database import db
+from gc_registry.core.database import cqrs, db
 
 # Router initialisation
 router = APIRouter(tags=["Accounts"])
@@ -39,15 +39,18 @@ def read_account(
 
 @router.patch("/account/{id}", response_model=models.AccountRead)
 def update_account(
+    account: models.AccountRead,
     account_update: models.AccountUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    write_session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    read_session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_account = models.Account.by_id(account_update.id, session)
-    db_account.update(account_update, session)
+    account_updated = cqrs.update_database_entity(
+        account, account_update, write_session, read_session
+    )
 
     return utils.format_json_response(
-        db_account, headers, response_model=models.AccountRead
+        account_updated, headers, response_model=models.AccountRead
     )
 
 

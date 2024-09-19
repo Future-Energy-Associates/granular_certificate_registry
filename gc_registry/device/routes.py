@@ -4,7 +4,7 @@ from sqlmodel import Session
 
 from gc_registry import utils
 from gc_registry.authentication import services
-from gc_registry.core.database import db
+from gc_registry.core.database import cqrs, db
 from gc_registry.device import models
 
 # Router initialisation
@@ -41,15 +41,18 @@ def read_device(
 
 @router.patch("/device/{id}", response_model=models.DeviceRead)
 def update_device(
+    device: models.DeviceRead,
     device_update: models.DeviceUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    write_session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    read_session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
-    db_device = models.Device.by_id(device_update.id, session)
-    db_device.update(device_update, session)
+    device_updated = cqrs.update_database_entity(
+        device, device_update, write_session, read_session
+    )
 
     return utils.format_json_response(
-        db_device, headers, response_model=models.DeviceRead
+        device_updated, headers, response_model=models.DeviceRead
     )
 
 

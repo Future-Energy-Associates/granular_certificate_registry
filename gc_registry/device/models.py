@@ -30,7 +30,6 @@ class DeviceRead(DeviceBase):
 
 
 class DeviceUpdate(SQLModel):
-    id: int | None = None
     device_name: str | None = None
     grid: str | None = None
     energy_source: str | None = None
