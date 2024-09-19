@@ -1,5 +1,6 @@
 services:
   gc_registry:
+    image: gc_registry:latest
     restart: "${RESTART-no}"
     environment:
       - TC_HOST=host.docker.internal
