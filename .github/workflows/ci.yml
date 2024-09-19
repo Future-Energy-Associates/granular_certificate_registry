@@ -43,15 +43,20 @@ jobs:
             -v ${{ github.workspace }}/coverage:/app/coverage \
             gc_registry make ci
       
-      - name: List directory contents
-        run: ls -R ./coverage
+      - name: Check coverage directory
+        run: |
+          ls -la ./coverage
+          cat ./coverage/*
+
+      - name: Fix file permissions
+        run: sudo chown -R $USER:$USER ./coverage && chmod -R 644 ./coverage/*
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
 
         if: always()
         with:
-          junit_files: "./coverage/coverage.xml"
+          junit_files: "./coverage/junit.xml"
           comment_mode: always
           check_name: "Unit Tests Results"
 
