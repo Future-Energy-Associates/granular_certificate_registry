@@ -1,13 +1,10 @@
 from datetime import datetime
 from enum import Enum
 
-from fastapi import APIRouter, BackgroundTasks
-from sqlalchemy import JSON, Column, DateTime, Integer, String, func
+from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
 from gc_registry.core.database.db import db_name_to_client
-
-router = APIRouter(tags=["Sync"])
 
 
 class EventTypes(str, Enum):
@@ -69,13 +66,13 @@ def write_to_database(entities):
 def update_database_entity(entity):
     # Create an Event entry for this operation
 
-    with db_name_to_client["write"].yield_session() as write_session:
-        pass
+    # with db_name_to_client["write"].yield_session() as write_session:
 
-        # Write the entitry to the write database first
+    # Write the entitry to the write database first
 
-        # Write the Event to the write database
+    # Write the Event to the write database
 
     # if needed, transform the entity into its equivalent read DB representation
 
     # Write the entity to the read database
+    pass
