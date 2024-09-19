@@ -26,7 +26,7 @@ services:
     volumes:
       - postgres_data_write:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=gc_registry
+      - POSTGRES_DB=db_write
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
 
@@ -35,7 +35,7 @@ services:
     volumes:
       - postgres_data_read:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=gc_registry
+      - POSTGRES_DB=db_read
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
 

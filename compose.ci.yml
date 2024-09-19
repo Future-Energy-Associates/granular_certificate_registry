@@ -20,8 +20,16 @@ services:
       - host.docker.internal:host-gateway
     depends_on:
       - db_write
+      - db_read
 
   db_write:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=gc_registry
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+
+  db_read:
     image: postgres:13
     environment:
       - POSTGRES_DB=gc_registry
