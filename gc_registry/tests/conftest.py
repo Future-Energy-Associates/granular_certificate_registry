@@ -12,9 +12,9 @@ from gc_registry.device.models import Device
 from gc_registry.user.models import User
 
 
-def get_db_url():
+def get_db_url(target: str = "write") -> str:
     if "CI" in os.environ:
-        return "postgresql://postgres:password@db_write/gc_registry"
+        return f"postgresql://postgres:password@db_{target}/gc_registry"
     else:
         try:
             pg_container = PostgresContainer("postgres:15-alpine", driver="psycopg")
@@ -25,11 +25,26 @@ def get_db_url():
 
 
 @pytest.fixture(scope="session")
-def db_engine() -> Generator[Engine, None, None]:
+def db_write_engine() -> Generator[Engine, None, None]:
     """
     Creates ephemeral Postgres DB, creates base tables and exposes a scoped SQLModel Session
     """
-    url = get_db_url()
+    url = get_db_url("write")
+    if url is None:
+        pytest.skip("Unable to establish database connection")
+
+    db_engine = create_engine(url)
+    SQLModel.metadata.create_all(db_engine)
+    yield db_engine
+    db_engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def db_read_engine() -> Generator[Engine, None, None]:
+    """
+    Creates ephemeral Postgres DB, creates base tables and exposes a scoped SQLModel Session
+    """
+    url = get_db_url("read")
     if url is None:
         pytest.skip("Unable to establish database connection")
 
@@ -40,13 +55,31 @@ def db_engine() -> Generator[Engine, None, None]:
 
 
 @pytest.fixture(scope="function")
-def db_session(db_engine: Engine) -> Generator[Session, None, None]:
+def db_write_session(db_write_engine: Engine) -> Generator[Session, None, None]:
     """
     Returns a DB session wrapped in a transaction that rolls back all changes after each test
     See: https://docs.sqlalchemy.org/en/20/orm/session_transaction.html#joining-a-session-into-an-external-transaction-such-as-for-test-suites
     """
 
-    connection = db_engine.connect()
+    connection = db_write_engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection)
+
+    yield session
+
+    session.close()
+    transaction.rollback()
+    connection.close()
+
+
+@pytest.fixture(scope="function")
+def db_read_session(db_read_engine: Engine) -> Generator[Session, None, None]:
+    """
+    Returns a DB session wrapped in a transaction that rolls back all changes after each test
+    See: https://docs.sqlalchemy.org/en/20/orm/session_transaction.html#joining-a-session-into-an-external-transaction-such-as-for-test-suites
+    """
+
+    connection = db_read_engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection)
 
@@ -58,22 +91,27 @@ def db_session(db_engine: Engine) -> Generator[Session, None, None]:
 
 
 @pytest.fixture()
-def fake_db_user(db_session) -> User:
+def fake_db_user(db_write_session: Session, db_read_session: Session) -> User:
     user_dict = {
         "name": "fake_user",
         "primary_contact": "jake_fake@fakecorp.com",
+        "roles": ["admin"],
     }
 
-    user = User.model_validate(user_dict)
+    user_write = User.model_validate(user_dict)
+    user_read = User.model_validate(user_dict)
 
-    db_session.add(user)
-    db_session.commit()
+    db_write_session.add(user_write)
+    db_write_session.commit()
 
-    return user
+    db_read_session.add(user_read)
+    db_read_session.commit()
+
+    return user_write
 
 
 @pytest.fixture()
-def fake_db_account(db_session) -> Account:
+def fake_db_account(db_write_session: Session, db_read_session: Session) -> Account:
     account_dict = {
         "account_name": "fake_account",
         "account_type": "fake_account_type",
@@ -84,16 +122,20 @@ def fake_db_account(db_session) -> Account:
         "account_state": "NY",
     }
 
-    account = Account.model_validate(account_dict)
+    account_write = Account.model_validate(account_dict)
+    account_read = Account.model_validate(account_dict)
 
-    db_session.add(account)
-    db_session.commit()
+    db_write_session.add(account_write)
+    db_write_session.commit()
 
-    return account
+    db_read_session.add(account_read)
+    db_read_session.commit()
+
+    return account_write
 
 
 @pytest.fixture()
-def fake_db_wind_device(db_session, fake_db_account) -> Device:
+def fake_db_wind_device(db_write_session, fake_db_account) -> Device:
     device_dict = {
         "device_name": "fake_wind_device",
         "grid": "fake_grid",
@@ -109,18 +151,19 @@ def fake_db_wind_device(db_session, fake_db_account) -> Device:
         "commissioning_date": "2020-01-01",
         "operational_date": "2020-01-01",
         "peak_demand": 100,
+        "is_deleted": False,
     }
 
     wind_device = Device.model_validate(device_dict)
 
-    db_session.add(wind_device)
-    db_session.commit()
+    db_write_session.add(wind_device)
+    db_write_session.commit()
 
     return wind_device
 
 
 @pytest.fixture()
-def fake_db_solar_device(db_session, fake_db_account) -> Device:
+def fake_db_solar_device(db_write_session, fake_db_account) -> Device:
     device_dict = {
         "device_name": "fake_solar_device",
         "grid": "fake_grid",
@@ -136,11 +179,12 @@ def fake_db_solar_device(db_session, fake_db_account) -> Device:
         "commissioning_date": "2020-01-01",
         "operational_date": "2020-01-01",
         "peak_demand": 100,
+        "is_deleted": False,
     }
 
     solar_device = Device.model_validate(device_dict)
 
-    db_session.add(solar_device)
-    db_session.commit()
+    db_write_session.add(solar_device)
+    db_write_session.commit()
 
     return solar_device
