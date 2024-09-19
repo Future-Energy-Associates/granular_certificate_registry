@@ -24,7 +24,7 @@ def get_db_url():
             pytest.skip(f"Failed to start PostgreSQL container: {str(e)}")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def db_engine() -> Generator[Engine, None, None]:
     """
     Creates ephemeral Postgres DB, creates base tables and exposes a scoped SQLModel Session

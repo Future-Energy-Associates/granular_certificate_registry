@@ -36,24 +36,28 @@ jobs:
       - name: Build Docker container
         run: docker compose build
 
-      - name: Run CI tasks
-        run: docker compose -f compose.yml -f compose.ci.yml run -i -T --rm gc_registry make ci
+      - name: Run CI tasks with bind mount
+        run: |
+          mkdir -p ./coverage
+          docker compose -f compose.yml -f compose.ci.yml run -i -T --rm \
+            -v ${{ github.workspace }}/coverage:/app/coverage \
+            gc_registry make ci
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
 
         if: always()
         with:
-          junit_files: "./coverage.xml"
+          junit_files: "./coverage/coverage.xml"
           comment_mode: always
           check_name: "Unit Tests Results"
 
       - name: Write to Job Summary
-        run: cat ./coverage.xml >> $GITHUB_STEP_SUMMARY
+        run: cat ./coverage/coverage.xml >> $GITHUB_STEP_SUMMARY
 
       - name: Publish coverage as PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: Unit Tests Code Coverage
-          path: ./coverage.xml
+          path: ./coverage/coverage.xml
 
