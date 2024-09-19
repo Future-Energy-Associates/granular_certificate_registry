@@ -16,7 +16,7 @@ router = APIRouter(tags=["Users"])
 def create_user(
     user_base: models.UserBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
 ):
     db_user = models.User.create(user_base, session)
 
@@ -27,7 +27,7 @@ def create_user(
 def read_user(
     user_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
 ):
     db_user = models.User.by_id(user_id, session)
 
@@ -39,8 +39,8 @@ def update_user(
     user: models.UserRead,
     user_update: models.UserUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    write_session: Session = Depends(db.db_name_to_client["write"].yield_session),
-    read_session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    write_session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    read_session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
 ):
     user_updated = cqrs.update_database_entity(
         user, user_update, write_session, read_session
@@ -55,7 +55,7 @@ def update_user(
 def delete_user(
     user_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
 ):
     db_user = models.User.by_id(user_id, session)
     db_user.delete(session)

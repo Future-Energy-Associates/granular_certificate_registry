@@ -8,6 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .account.routes import router as account_router
 from .certificate.routes import router as certificate_router
+from .core.database import db
 from .device.routes import router as device_router
 from .measurement.routes import router as measurements_router
 from .organisation.routes import router as organisation_router

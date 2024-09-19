@@ -64,11 +64,14 @@ class DButils:
 
     def initiate_db_tables(self, schema_paths: list | None = None) -> None:
         if schema_paths is None:
+            print("No schema paths provided. Skipping table creation.")
             schema_paths = []
         if not database_exists(self.engine.url):
+            print("Database does not exist. Creating database...")
             create_database(self.engine.url)
 
         if len(schema_paths) > 0:
+            print("Creating tables for the provided schema paths...")
             tables = [
                 schema_path_to_class(schema_path).__table__
                 for schema_path in schema_paths
@@ -84,12 +87,13 @@ class DButils:
 # Initialising the DButil clients
 
 db_mapping = [
-    ("read", settings.DATABASE_URL_READ, schema_paths_read),
-    ("write", settings.DATABASE_URL_WRITE, schema_paths_write),
+    ("db_read", settings.DATABASE_URL_READ, schema_paths_read),
+    ("db_write", settings.DATABASE_URL_WRITE, schema_paths_write),
 ]
 
 db_name_to_client = {}
 
+print("Initialising the database clients....")
 for db_name, db_url, schema_paths in db_mapping:
     db_client = DButils(
         db_url=db_url,

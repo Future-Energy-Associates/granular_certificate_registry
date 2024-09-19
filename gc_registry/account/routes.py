@@ -15,7 +15,7 @@ router = APIRouter(tags=["Accounts"])
 def create_account(
     account_base: models.AccountBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
 ):
     db_account = models.Account.create(account_base, session)
 
@@ -28,7 +28,7 @@ def create_account(
 def read_account(
     account_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
 ):
     db_account = models.Account.by_id(account_id, session)
 
@@ -42,8 +42,8 @@ def update_account(
     account: models.AccountRead,
     account_update: models.AccountUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    write_session: Session = Depends(db.db_name_to_client["write"].yield_session),
-    read_session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    write_session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    read_session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
 ):
     account_updated = cqrs.update_database_entity(
         account, account_update, write_session, read_session
@@ -58,7 +58,7 @@ def update_account(
 def delete_account(
     account_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["write"].yield_session),
+    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
 ):
     db_account = models.Account.by_id(account_id, session)
     db_account.delete(session)

@@ -10,7 +10,7 @@ from gc_registry.user.models import User
 
 
 def seed_data():
-    client = db.db_name_to_client["write"]
+    client = db.db_name_to_client["db_write"]
     engine = client.engine
 
     print("Seeding the database with data....")
@@ -34,7 +34,7 @@ def seed_data():
         user_dict = {
             "primary_contact": "a_user@usermail.com",
             "name": "A User",
-            "role": ["Production User"],
+            "roles": ["Production User"],
         }
         user = User.model_validate(user_dict)
         session.add(user)
