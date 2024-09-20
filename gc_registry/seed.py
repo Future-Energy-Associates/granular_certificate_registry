@@ -70,11 +70,12 @@ def seed_data():
 
             # Use Elexon to get data from the Elexon API
 
-            data = client.get_dataset_in_datetime_range(
+            data_hh = client.get_dataset_in_datetime_range(
                 dataset, from_date, to_date, bmu_ids=[bmu_id]
             )
+            data_hourly = client.resample_hh_data_to_hourly(data_hh)
             certificate_bundles = client.map_generation_to_certificates(
-                data, account_id=account.id, device_id=device.id
+                data_hourly, account_id=account.id, device_id=device.id
             )
 
             for certificate_bundle in certificate_bundles:

@@ -65,6 +65,31 @@ class ElexonClient:
 
         return data
 
+    def resample_hh_data_to_hourly(self, data: list[dict]) -> pd.DataFrame:
+        data_hh_df = pd.DataFrame(data)
+        data_hh_df["start_time"] = pd.to_datetime(
+            data_hh_df.halfHourEndTime
+        ) - pd.Timedelta(minutes=30)
+
+        data_resampled_concat = []
+        for bmu_unit in data_hh_df.bmUnit.unique():
+            data_resampled_values = (
+                data_hh_df[data_hh_df.bmUnit == bmu_unit]
+                .set_index("start_time")
+                .quantity.resample("h")
+                .sum()
+            )
+            data_resampled_values.name = bmu_unit
+            data_resampled_concat.append(data_resampled_values)
+
+        data_resampled_concat = (
+            pd.concat(data_resampled_concat, axis=1)
+            .melt(ignore_index=False, var_name="bmUnit", value_name="quantity")
+            .reset_index()
+        )
+
+        return data_resampled_concat
+
     def map_generation_to_certificates(
         self,
         generation_data: list[dict],
@@ -107,12 +132,8 @@ class ElexonClient:
                 "device_capacity": 200,  # :TODO: Get the actual capacity for the BMUID
                 "device_location": (0.0, 0.0),
                 "device_type": "wind",
-                "production_starting_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                ),
-                "production_ending_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                ),  # Assuming half-hour interval
+                "production_starting_interval": data["start_time"],
+                "production_ending_interval": data["start_time"] + timedelta(hours=1),
                 "issuance_datestamp": datetime.utcnow().date(),
                 "expiry_datestamp": (
                     datetime.utcnow() + timedelta(days=365 * 3)
