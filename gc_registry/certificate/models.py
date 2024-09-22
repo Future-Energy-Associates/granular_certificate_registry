@@ -1,5 +1,4 @@
 import uuid
-from enum import Enum
 
 from sqlmodel import Field
 

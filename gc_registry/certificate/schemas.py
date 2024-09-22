@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 
 from pydantic import BaseModel
 from sqlalchemy import Column, Float
