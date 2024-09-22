@@ -1,12 +1,17 @@
+import datetime
 import json
 from typing import Union
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from sqlmodel import SQLModel, select
+from sqlmodel import Field, SQLModel, select
 
 
 class ActiveRecord(SQLModel):
+    created_at: datetime.datetime = Field(
+        default_factory=datetime.datetime.utcnow, nullable=False
+    )
+
     @classmethod
     def by_id(cls, id_: int, session):
         obj = session.get(cls, id_)
@@ -69,10 +74,14 @@ def sqlmodel_obj_to_json(sqlmodel_obj, response_model=None, replace_nan=True):
         return None
     elif isinstance(sqlmodel_obj, list):
         json_content = [
-            json.loads(parse_nans_to_null(elem.json(), replace_nan))
-            if response_model is None
-            else json.loads(
-                parse_nans_to_null(response_model.from_orm(elem).json(), replace_nan)
+            (
+                json.loads(parse_nans_to_null(elem.json(), replace_nan))
+                if response_model is None
+                else json.loads(
+                    parse_nans_to_null(
+                        response_model.from_orm(elem).json(), replace_nan
+                    )
+                )
             )
             for elem in sqlmodel_obj
         ]
