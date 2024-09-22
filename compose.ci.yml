@@ -6,10 +6,10 @@ services:
       - .env.ci
     environment:
       - TC_HOST=host.docker.internal
-      - POSTGRES_DB=gc_registry
+      - POSTGRES_DB=registry
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - DATABASE_URL=postgresql://postgres:password@db_write/gc_registry
+      - DATABASE_URL=postgresql://postgres:password@db_write/write
     build:
       context: .
       args:
@@ -24,6 +24,6 @@ services:
   db_write:
     image: postgres:13
     environment:
-      - POSTGRES_DB=gc_registry
+      - POSTGRES_DB=registry
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
