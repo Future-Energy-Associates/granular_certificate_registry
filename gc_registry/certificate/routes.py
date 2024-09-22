@@ -5,10 +5,12 @@ from gc_registry import utils
 from gc_registry.authentication import services
 from gc_registry.certificate.models import (
     GranularCertificateAction,
-    GranularCertificateActionResponse,
     GranularCertificateBundle,
-    GranularCertificateBundleBase,
-    GranularCertificateQueryResponse,
+)
+from gc_registry.certificate.schemas import (
+    GranularCertificateActionRead,
+    GranularCertificateBundleCreate,
+    GranularCertificateBundleRead,
 )
 from gc_registry.core.database import db
 
@@ -22,13 +24,13 @@ router = APIRouter(tags=["Certificates"])
     status_code=201,
 )
 def create_certificate_bundle(
-    certificate_bundle: GranularCertificateBundleBase,
+    certificate_bundle: GranularCertificateBundleCreate,
     headers: dict = Depends(services.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
     """Create a GC Bundle with the specified properties."""
     db_certificate_bundle = GranularCertificateBundle.create(
-        certificate_bundle, session
+        certificate_bundle.model_dump(), session
     )
 
     return utils.format_json_response(
@@ -40,7 +42,7 @@ def create_certificate_bundle(
 
 @router.post(
     "/certificates/transfer",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_transfer(
@@ -56,13 +58,13 @@ def certificate_bundle_transfer(
     return utils.format_json_response(
         db_certificate_action,
         headers,
-        response_model=GranularCertificateActionResponse,
+        response_model=GranularCertificateActionRead,
     )
 
 
 @router.get(
     "/certificates/query",
-    response_model=GranularCertificateQueryResponse,
+    response_model=GranularCertificateBundleRead,
     status_code=202,
 )
 def query_certificate_bundles(
@@ -78,13 +80,13 @@ def query_certificate_bundles(
     return utils.format_json_response(
         db_certificate_action,
         headers,
-        response_model=GranularCertificateQueryResponse,
+        response_model=GranularCertificateBundleRead,
     )
 
 
 @router.post(
     "/certificates/recurring_transfer",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_recurring_transfer(
@@ -100,13 +102,13 @@ def certificate_bundle_recurring_transfer(
     return utils.format_json_response(
         db_certificate_action,
         headers,
-        response_model=GranularCertificateActionResponse,
+        response_model=GranularCertificateActionRead,
     )
 
 
 @router.post(
     "/certificates/cancel",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_cancellation(
@@ -122,13 +124,13 @@ def certificate_bundle_cancellation(
     return utils.format_json_response(
         db_certificate_action,
         headers,
-        response_model=GranularCertificateActionResponse,
+        response_model=GranularCertificateActionRead,
     )
 
 
 @router.post(
     "/certificates/recurring_cancel",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_recurring_cancellation(
@@ -144,13 +146,13 @@ def certificate_bundle_recurring_cancellation(
     return utils.format_json_response(
         db_certificate_action,
         headers,
-        response_model=GranularCertificateActionResponse,
+        response_model=GranularCertificateActionRead,
     )
 
 
 @router.post(
     "/certificates/claim",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_claim(
@@ -168,13 +170,13 @@ def certificate_bundle_claim(
     return utils.format_json_response(
         db_certificate_action,
         headers,
-        response_model=GranularCertificateActionResponse,
+        response_model=GranularCertificateActionRead,
     )
 
 
 @router.post(
     "/certificates/withdraw",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_withdraw(
@@ -190,13 +192,13 @@ def certificate_bundle_withdraw(
     return utils.format_json_response(
         db_certificate_action,
         headers,
-        response_model=GranularCertificateActionResponse,
+        response_model=GranularCertificateActionRead,
     )
 
 
 @router.patch(
     "/certificates/update_mutables",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=201,
 )
 def update_certificate_mutables(
@@ -212,13 +214,13 @@ def update_certificate_mutables(
     return utils.format_json_response(
         db_certificate_action,
         headers,
-        response_model=GranularCertificateActionResponse,
+        response_model=GranularCertificateActionRead,
     )
 
 
 @router.post(
     "/certificates/reseve",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_reserve(
@@ -234,5 +236,5 @@ def certificate_bundle_reserve(
     return utils.format_json_response(
         db_certificate_action,
         headers,
-        response_model=GranularCertificateActionResponse,
+        response_model=GranularCertificateActionRead,
     )

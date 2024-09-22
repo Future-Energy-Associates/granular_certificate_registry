@@ -63,6 +63,7 @@ def seed_data():
                 "peak_demand": 100,
                 "location": "Some Location",
                 "account_id": account.id,
+                "is_storage": False,
             }
             device = Device.model_validate(device_dict)
             session.add(device)

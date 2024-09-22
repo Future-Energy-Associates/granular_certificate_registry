@@ -4,7 +4,9 @@ from sqlmodel import Session
 from gc_registry import utils
 from gc_registry.authentication import services
 from gc_registry.certificate.models import GranularCertificateBundle
-from gc_registry.certificate.schemas import GranularCertificateBundleBase
+from gc_registry.certificate.schemas import (
+    GranularCertificateBundleCreate,
+)
 from gc_registry.core.database import db
 from gc_registry.storage.models import (
     StorageAction,
@@ -171,7 +173,7 @@ def update_storage_mutables(
     status_code=200,
 )
 def issue_SDGC(
-    sdgc: GranularCertificateBundleBase,
+    sdgc: GranularCertificateBundleCreate,
     headers: dict = Depends(services.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
 ):
@@ -183,7 +185,7 @@ def issue_SDGC(
     by the storage_id and the discharging_start_datetime, which is inherited from the allocated SDR.
     """
 
-    db_sdgc = GranularCertificateBundle.create(sdgc, session)
+    db_sdgc = GranularCertificateBundle.create(sdgc.model_dump(), session)
 
     return utils.format_json_response(
         db_sdgc,

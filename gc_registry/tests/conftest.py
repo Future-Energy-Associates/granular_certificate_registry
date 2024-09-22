@@ -109,6 +109,7 @@ def fake_db_wind_device(db_session, fake_db_account) -> Device:
         "commissioning_date": "2020-01-01",
         "operational_date": "2020-01-01",
         "peak_demand": 100,
+        "is_storage": False,
     }
 
     wind_device = Device.model_validate(device_dict)
@@ -136,6 +137,7 @@ def fake_db_solar_device(db_session, fake_db_account) -> Device:
         "commissioning_date": "2020-01-01",
         "operational_date": "2020-01-01",
         "peak_demand": 100,
+        "is_storage": False,
     }
 
     solar_device = Device.model_validate(device_dict)

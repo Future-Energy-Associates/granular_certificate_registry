@@ -1,11 +1,13 @@
 import uuid
-from typing import List, Union
+from enum import Enum
 
 from sqlmodel import Field
 
+from gc_registry import utils
 from gc_registry.certificate.schemas import (
     GranularCertificateActionBase,
     GranularCertificateBundleBase,
+    GranularCertificateRegistryBase,
 )
 
 # issuance_id a unique non-sequential ID related to the issuance of the entire bundle.
@@ -15,7 +17,9 @@ from gc_registry.certificate.schemas import (
 # bundle will retain the original bundle issuance ID.
 
 
-class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
+class GranularCertificateBundle(
+    utils.ActiveRecord, GranularCertificateBundleBase, table=True
+):
     issuance_id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
@@ -30,7 +34,9 @@ class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
 # "transfer", "recurring_transfer", "cancel", "claim", "withdraw"
 
 
-class GranularCertificateAction(GranularCertificateActionBase, table=True):
+class GranularCertificateAction(
+    GranularCertificateActionBase, utils.ActiveRecord, table=True
+):
     action_id: int = Field(
         primary_key=True,
         default=None,
@@ -38,11 +44,11 @@ class GranularCertificateAction(GranularCertificateActionBase, table=True):
     )
 
 
-class GranularCertificateActionResponse(GranularCertificateActionBase):
-    action_response_status: str = Field(
-        description="Specifies whether the requested action has been accepted or rejected by the registry."
+class GranularCertificateRegistry(
+    GranularCertificateRegistryBase, utils.ActiveRecord, table=True
+):
+    id: int = Field(
+        primary_key=True,
+        default=None,
+        description="A unique ID assigned to this registry.",
     )
-
-
-class GranularCertificateQueryResponse(GranularCertificateActionResponse):
-    filtered_certificate_bundles: Union[List[GranularCertificateBundle], None]

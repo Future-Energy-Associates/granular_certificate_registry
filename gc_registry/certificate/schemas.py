@@ -1,12 +1,168 @@
 import datetime
 
+from pydantic import BaseModel
 from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, Field
 
-from gc_registry import utils
+
+class CertificateStatus(str, Enum):
+    ACTIVE = "Active"
+    CANCELLED = "Cancelled"
+    CLAIMED = "Claimed"
+    EXPIRED = "Expired"
+    WITHDRAWN = "Withdrawn"
+    LOCKED = "Locked"
+    RESERVED = "Reserved"
 
 
-class GranularCertificateBundleBase(utils.ActiveRecord):
+class GranularCertificateBundleBase(BaseModel):
+    """The GC Bundle is the primary unit of issuance and transfer within the EnergyTag standard, and only the Resgistry
+    Administrator role can create, update, or withdraw GC Bundles.
+
+    Requests to modify attributes including Account location, GC Bundle status, and Bundle splitting received from
+    other Account holders should only be applied by the Registry administrator once all necessary validations have been
+    performend.
+
+    Validations and action execution are to be applied using a single queuing system, with changes made to the GC Bundle
+    database applied with full ACID compliance. This ensures that all actions are applied in the order they are received,
+    the state of the database is consistent at all times, and any errors can be rectified by reversing linearly through
+    the queue.
+    """
+
+    ### Mutable Attributes ###
+    certificate_status: CertificateStatus = Field(
+        description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
+    )
+    account_id: int = Field(
+        foreign_key="account.id",
+        description="Each GC Bundle is assigned to a single unique Account e.g. production Device account or trading account",
+    )
+    bundle_id_range_start: int = Field(
+        description="""The individual Granular Certificates within this GC Bundle, each representing a
+                        contant volume of energy, generated within the production start and end time interval,
+                        is issued an ID in a format that can be represented sequentially and in a
+                        clearly ascending manner, displayed on the GC Bundle instance by start and end IDs indicating the minimum
+                        and maximum IDs contained within the Bundle, inclusive of both range end points and all integers
+                        within that range.""",
+        primary_key=True,
+    )
+    bundle_id_range_end: int = Field(
+        description="""The start and end range IDs of GC Bundles may change as they are split and transferred between Accounts,
+                       or partially cancelled.""",
+        primary_key=True,
+    )
+    bundle_quantity: int = Field(
+        description="""The quantity of Granular Certificates within this GC Bundle, according to a
+                        standardised energy volume per Granular Certificate, rounded down to the nearest Wh. Equal to
+                        (bundle_id_range_end - bundle_id_range_start + 1)."""
+    )
+
+    ### Bundle Characteristics ###
+    energy_carrier: str = Field(
+        description="The form of energy that the GC Bundle represents, for example: Electricity, Hydrogen, Ammonia. In the current version of the standard (v2), this field is always Electricity.",
+    )
+    energy_source: str = Field(
+        description="The fuel type used to generate the energy represented by the GC Bundle, for example: Solar, Wind, Biomass, Nuclear, Coal, Gas, Oil, Hydro.",
+    )
+    face_value: int = Field(
+        description="States the quantity of energy in Watt-hours (Wh) represented by each Granular Certificate within this GC Bundle.",
+    )
+    issuance_post_energy_carrier_conversion: bool = Field(
+        description="Indicate whether this GC Bundle have been issued following an energy conversion event, for example in a power to hydrogen facility.",
+    )
+
+    ### Production Device Characteristics ###
+    device_id: int = Field(
+        foreign_key="device.id",
+        description="Each GC Bundle is associated with a single production Device.",
+    )
+
+    ### Temporal Characteristics ###
+    production_starting_interval: datetime.datetime = Field(
+        description="""The datetime in UTC format indicating the start of the relevant production period.
+                        GC Bundles shall be issued over a maximum production period of one hour,
+                        under the assumption that the certificates represent an even distribution of power generation within that period.""",
+    )
+    production_ending_interval: datetime.datetime = Field(
+        description="The datetime in UTC format indicating the end of the relevant production period.",
+    )
+    issuance_datestamp: datetime.datetime = Field(
+        description="The date in UTC format (YYYY-MM-DD) indicating the date on which the Issuing Body delivered the GC Bundle to the production Device's registered Account.",
+    )
+    expiry_datestamp: datetime.datetime = Field(
+        description="The date in UTC format (YYYY-MM-DD) indicating the point at which the GC Bundle will be rendered invalid if they have not been cancelled. This expiry period can vary across Domains.",
+    )
+
+    ### Storage Characteristics ###
+    is_storage: int = Field(
+        description="Indicates whether the Device ID is associated with a storage Device.",
+    )
+    sdr_allocation_id: int | None = Field(
+        default=None,
+        description="The unique ID of the Storage Discharge Record that has been allocated to this GC Bundle.",
+        foreign_key="storagedischargerecord.sdr_allocation_id",
+    )
+    storage_efficiency_factor: float | None = Field(
+        default=None,
+        description="The efficiency factor of the storage Device that has discharged the energy represented by this GC Bundle.",
+    )
+
+
+class GranularCertificateBundleCreate(GranularCertificateBundleBase):
+    pass
+
+
+class GranularCertificateRegistryBase(BaseModel):
+    """
+    Attributes that detail the Issuing Body characteristics and legal status of the GC Bundle.
+    """
+
+    ### Issuing Body Characteristics ###
+    country_of_issuance: str = Field(
+        description="The Domain under which the Issuing Body of this GC Bundle has authority to issue.",
+    )
+    connected_grid_identification: str = Field(
+        description="A Domain-specific identifier indicating the infrastructure into which the energy has been injected.",
+    )
+    issuing_body: str = Field(
+        description="The Issuing Body that has issued this GC Bundle.",
+    )
+    legal_status: str | None = Field(
+        default=None,
+        description="May contain pertinent information on the Issuing Authority, where relevant.",
+    )
+    issuance_purpose: str | None = Field(
+        default=None,
+        description="May contain the purpose of the GC Bundle issuance, for example: Disclosure, Subsidy Support.",
+    )
+    support_received: str | None = Field(
+        default=None,
+        description="May contain information on any support received for the generation or investment into the production Device for which this GC Bundle have been issued.",
+    )
+    quality_scheme_reference: str | None = Field(
+        default=None,
+        description="May contain any references to quality schemes for which this GC Bundle were issued.",
+    )
+    dissemination_level: str | None = Field(
+        default=None,
+        description="Specifies whether the energy associated with this GC Bundle was self-consumed or injected into a private or public grid.",
+    )
+    issue_market_zone: str = Field(
+        description="References the bidding zone and/or market authority and/or price node within which the GC Bundle have been issued.",
+    )
+
+    ### Other Optional Characteristics ###
+    emissions_factor_production_device: float | None = Field(
+        default=None,
+        description="May indicate the emissions factor (kgCO2e/MWh) of the production Device at the datetime in which this GC Bundle was issued against.",
+    )
+    emissions_factor_source: str | None = Field(
+        default=None,
+        description="Includes a reference to the calculation methodology of the production Device emissions factor.",
+    )
+
+
+class GranularCertificateBundleRead(BaseModel):
     """The GC Bundle is the primary unit of issuance and transfer within the EnergyTag standard, and only the Resgistry
     Administrator role can create, update, or withdraw GC Bundles.
 
@@ -62,6 +218,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
         description="Indicate whether this GC Bundle have been issued following an energy conversion event, for example in a power to hydrogen facility.",
     )
     registry_configuration: int = Field(
+        default=1,
         description="""The configuration of the Registry that issued this GC Bundle; either 1, 2, or 3 at the time of writing (Standard v2). Enables tracking of related certificates
                         to aid auditing and error detection""",
     )
@@ -106,10 +263,8 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     )
 
     ### Storage Characteristics ###
-    storage_id: int | None = Field(
-        default=None,
-        foreign_key="device.id",
-        description="The Device ID of the storage Device that released the energy represented by the GC Bundle.",
+    is_storage: bool = Field(
+        description="Indicates whether the Device ID is associated with a storage Device.",
     )
     sdr_allocation_id: int | None = Field(
         default=None,
@@ -123,11 +278,6 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     discharging_end_datetime: datetime.datetime | None = Field(
         default=None,
         description="The UTC datetime at which the Storage Device ceased discharging energy represented by this SD-GC (inherited from the allocated SDR).",
-    )
-    storage_device_location: tuple[float, float] | None = Field(
-        default=None,
-        description="The GPS coordinates of the storage Device that has discharged the energy represented by this GC Bundle.",
-        sa_column=Column(ARRAY(Float)),
     )
     storage_efficiency_factor: float | None = Field(
         default=None,
@@ -179,7 +329,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     )
 
 
-class GranularCertificateActionBase(utils.ActiveRecord):
+class GranularCertificateActionBase(BaseModel):
     # TODO validate with an enum at the class definition level
     action_type: str = Field(
         description="The type of action to be performed on the GC Bundle.",
@@ -256,3 +406,9 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
     #     sa_column=Column(ARRAY(String(), String())),
     # )
+
+
+class GranularCertificateActionRead(GranularCertificateActionBase):
+    action_response_status: str = Field(
+        description="Specifies whether the requested action has been accepted or rejected by the registry."
+    )
