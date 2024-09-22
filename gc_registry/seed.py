@@ -13,7 +13,8 @@ def seed_data():
     client = db.db_name_to_client["write"]
     engine = client.engine
 
-    print("Seeding the database with data....")
+    print("Seeding the WRITE database with data....")
+
     bmu_ids = [
         "E_MARK-1",
         "E_MARK-2",

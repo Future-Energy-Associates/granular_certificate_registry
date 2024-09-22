@@ -1,12 +1,33 @@
 import importlib
 from typing import Any, Generator
 
-import numpy as np
-from sqlalchemy_utils import create_database, database_exists  # type: ignore
 from sqlmodel import Session, SQLModel, create_engine
 
-from gc_registry.core.database.config import schema_paths_read, schema_paths_write
+from gc_registry.account import models as account_models
+from gc_registry.authentication import models as authentication_models
+from gc_registry.certificate import models as certificate_models
+from gc_registry.device import models as device_models
+from gc_registry.measurement import models as measurement_models
+from gc_registry.organisation import models as organisation_models
 from gc_registry.settings import settings
+from gc_registry.storage import models as storage_models
+from gc_registry.user import models as user_models
+
+"""
+This section is used by Alembic to load the all the database related models
+"""
+
+__all__ = [
+    "SQLModel",
+    "user_models",
+    "authentication_models",
+    "organisation_models",
+    "account_models",
+    "device_models",
+    "certificate_models",
+    "storage_models",
+    "measurement_models",
+]
 
 
 # Defining utility functions and classes
@@ -17,15 +38,6 @@ def schema_path_to_class(schema_path):
     )
 
     return schema_class
-
-
-def df_to_records_without_nulls(df):
-    records = [
-        {k: v for k, v in record.items() if v is not None}
-        for record in df.replace(np.nan, None).to_dict("records")
-    ]
-
-    return records
 
 
 class DButils:
@@ -62,38 +74,19 @@ class DButils:
         with Session(self.engine) as session:
             yield session
 
-    def initiate_db_tables(self, schema_paths: list | None = None) -> None:
-        if schema_paths is None:
-            schema_paths = []
-        if not database_exists(self.engine.url):
-            create_database(self.engine.url)
-
-        if len(schema_paths) > 0:
-            tables = [
-                schema_path_to_class(schema_path).__table__
-                for schema_path in schema_paths
-            ]
-        else:
-            tables = None
-
-        SQLModel.metadata.create_all(self.engine, tables=tables)
-
-        return None
-
 
 # Initialising the DButil clients
-
 db_mapping = [
-    ("read", settings.DATABASE_URL_READ, schema_paths_read),
-    ("write", settings.DATABASE_URL_WRITE, schema_paths_write),
+    ("read", settings.DATABASE_URL_READ),
+    ("write", settings.DATABASE_URL_WRITE),
 ]
 
 db_name_to_client = {}
 
-for db_name, db_url, schema_paths in db_mapping:
+for db_name, db_url in db_mapping:
     db_client = DButils(
         db_url=db_url,
-        db_name=db_name,
+        db_name=settings.POSTGRES_DB,
         db_username=settings.POSTGRES_USER,
         db_password=settings.POSTGRES_PASSWORD,
         db_port=settings.DATABASE_PORT,
@@ -101,4 +94,3 @@ for db_name, db_url, schema_paths in db_mapping:
         env=settings.ENVIRONMENT,
     )
     db_name_to_client[db_name] = db_client
-    db_client.initiate_db_tables(schema_paths)
