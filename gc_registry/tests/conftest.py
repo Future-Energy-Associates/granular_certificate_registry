@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlmodel import Session, SQLModel
-from testcontainers.postgres import PostgresContainer
+from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
 from gc_registry.device.models import Device

@@ -1,9 +1,7 @@
 from datetime import datetime, timedelta
 
-import elexonpy
 import httpx
 import pandas as pd
-from elexonpy.api_client import ApiClient
 
 from gc_registry.certificate.models import GranularCertificateBundle
 
@@ -15,29 +13,6 @@ def datetime_to_settlement_period(dt: datetime) -> int:
 class ElexonClient:
     def __init__(self):
         self.base_url = "https://data.elexon.co.uk/bmrs/api/v1"
-        self.client = ApiClient()
-        self.bm_client_dynamic = elexonpy.BalancingMechanismDynamicApi()
-
-    def get_bm_physical_data_in_datetime_range(
-        self,
-        from_date: datetime,
-        to_date: datetime,
-        bmu_ids: list[str] | None = None,
-    ):
-        data = []
-        for half_hour_dt in pd.date_range(from_date, to_date, freq="30min"):
-            settlement_period = datetime_to_settlement_period(half_hour_dt)
-            if bmu_ids:
-                response = self.bm_client_dynamic.balancing_dynamic_all_get(
-                    half_hour_dt.date(), settlement_period, bm_unit=bmu_ids
-                )
-            else:
-                response = self.bm_client_dynamic.balancing_dynamic_all_get(
-                    half_hour_dt.date(), settlement_period
-                )
-            data.append(response)
-
-        return data
 
     def get_dataset_in_datetime_range(
         self,
@@ -67,14 +42,18 @@ class ElexonClient:
             }
             if bmu_ids:
                 params["bmUnit"] = bmu_ids
-            response = httpx.get(
-                f"{self.base_url}/datasets/{dataset}",
-                params=params,  # type: ignore
-            )
 
-            response.raise_for_status()
+            try:
+                response = httpx.get(
+                    f"{self.base_url}/datasets/{dataset}",
+                    params=params,  # type: ignore
+                )
 
-            data.extend(response.json()["data"])
+                response.raise_for_status()
+
+                data.extend(response.json()["data"])
+            except Exception as e:
+                print(f"Error fetching data for {half_hour_dt} for {bmu_ids}: {e}")
 
         return data
 
