@@ -38,6 +38,10 @@ class GranularCertificateBundleBase(BaseModel):
         foreign_key="account.id",
         description="Each GC Bundle is assigned to a single unique Account e.g. production Device account or trading account",
     )
+    registry_id: int = Field(
+        foreign_key="granularcertificateregistry.id",
+        description="Reference to the associated Granular Certificate Registry.",
+    )
     bundle_id_range_start: int = Field(
         description="""The individual Granular Certificates within this GC Bundle, each representing a
                         contant volume of energy, generated within the production start and end time interval,
@@ -178,7 +182,7 @@ class GranularCertificateBundleRead(BaseModel):
     """
 
     ### Mutable Attributes ###
-    certificate_status: str = Field(
+    certificate_status: CertificateStatus = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
     )
     account_id: int = Field(
@@ -393,7 +397,7 @@ class GranularCertificateActionBase(BaseModel):
     energy_source: str | None = Field(
         description="Filter GC Bundles based on the fuel type used by the production Device.",
     )
-    certificate_status: str | None = Field(
+    certificate_status: CertificateStatus | None = Field(
         description="""Filter on the status of the GC Bundles."""
     )
     id_to_update_to: int | None = Field(
