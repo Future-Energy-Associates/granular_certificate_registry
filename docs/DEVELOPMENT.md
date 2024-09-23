@@ -147,3 +147,5 @@ We use GitHub Actions to handle CI which runs on every push to the repository, r
 The CI workflow installs the same versions of Python/Poetry as the project and installs the development dependencies before running linting, type-checking and running the tests.
 
 if you have an active pull request associated with a branch on GitHub, a failure in any part of the workflow will notify you and prevent you from merging the pull request.
+
+The CI workflow runs [`gitleaks`](https://github.com/gitleaks/gitleaks-action?tab=readme-ov-file) to make sure that no secrets are accidently leaked.
