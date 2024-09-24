@@ -10,8 +10,8 @@ def test_registry():
     certificate_bundle_data = {
         "device_id": 1,
         "account_id": 1,
-        "start_datetime": datetime.datetime(2024, 1, 1, 0, 0, 0),
-        "end_datetime": datetime.datetime(2024, 1, 1, 0, 30, 0),
+        "production_starting_interval": datetime.datetime(2024, 1, 1, 0, 0, 0),
+        "production_ending_interval": datetime.datetime(2024, 1, 1, 0, 30, 0),
         "certificate_status": "active",
         "face_value": 88,
     }

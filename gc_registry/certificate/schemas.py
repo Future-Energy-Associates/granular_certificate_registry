@@ -1,4 +1,5 @@
 import datetime
+from pydantic import BaseModel
 
 from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, Field
@@ -6,7 +7,7 @@ from sqlmodel import ARRAY, Field
 from gc_registry import utils
 
 
-class GranularCertificateBundleBase(utils.ActiveRecord):
+class GranularCertificateBundleBase:
     """The GC Bundle is the primary unit of issuance and transfer within the EnergyTag standard, and only the Resgistry
     Administrator role can create, update, or withdraw GC Bundles.
 

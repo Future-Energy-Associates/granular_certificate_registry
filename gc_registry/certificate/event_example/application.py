@@ -18,18 +18,12 @@ class Registry(Application):
         self,
         device_id: int,
         account_id: int,
-        start_datetime: datetime.datetime,
-        end_datetime: datetime.datetime,
-        certificate_status: str,
-        face_value: float,
+        **kwargs,
     ):
         gcb = GranularCertificateBundle(
             device_id,
             account_id,
-            start_datetime,
-            end_datetime,
-            certificate_status,
-            face_value,
+            **kwargs,
         )
         self.save(gcb)
         return gcb.id
