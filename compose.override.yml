@@ -27,7 +27,9 @@ services:
     environment:
       - POSTGRES_DB=gc_registry
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=
+    ports:
+      - "5436:5432"
 
   db_read:
     image: postgres:13

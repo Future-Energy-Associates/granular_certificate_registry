@@ -69,6 +69,7 @@ elexonpy = "^1.0.9"
 httpx = "^0.27.2"
 types-requests = "^2.32.0.20240907"
 psycopg2 = "^2.9.9"
+eventsourcing = {extras = ["postgres"], version = "^9.3.2"}
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.2"
