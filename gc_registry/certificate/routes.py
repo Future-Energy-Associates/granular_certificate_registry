@@ -49,6 +49,7 @@ def certificate_bundle_transfer(
     session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
+
     db_certificate_action = GranularCertificateAction.create(
         certificate_bundle_action, session
     )
