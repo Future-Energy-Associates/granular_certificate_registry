@@ -1,28 +1,9 @@
-from datetime import datetime
-from enum import Enum
-
+from esdbclient import EventStoreDBClient
 from pydantic import BaseModel
-from sqlalchemy import JSON, Column
-from sqlmodel import Field, Session, SQLModel
+from sqlmodel import Session, SQLModel
 
-from gc_registry.utils import ActiveRecord
-
-
-class EventTypes(str, Enum):
-    CREATE = "CREATE"
-    UPDATE = "UPDATE"
-    DELETE = "DELETE"
-
-
-class Event(ActiveRecord, table=True):
-    __tablename__ = "events"
-    id: int = Field(primary_key=True)
-    entity_id: int
-    entity_name: str
-    event_type: EventTypes
-    attributes_before: dict | None = Field(sa_column=Column(JSON))
-    attributes_after: dict | None = Field(sa_column=Column(JSON))
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+from gc_registry.core.database.events import batch_create_events, create_event
+from gc_registry.core.models.base import EventTypes
 
 
 def transform_write_entities_to_read(entities: list[SQLModel] | SQLModel):
@@ -31,7 +12,10 @@ def transform_write_entities_to_read(entities: list[SQLModel] | SQLModel):
 
 
 def write_to_database(
-    entities: list[SQLModel] | SQLModel, write_session: Session, read_session: Session
+    entities: list[SQLModel] | SQLModel,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient | None = None,
 ):
     """Write the provided entities to the read and write databases, saving an
     Event entry for each entity."""
@@ -39,20 +23,10 @@ def write_to_database(
     if not isinstance(entities, list):
         entities = [entities]
 
-    # Create a list of Event entries for this operation
-    events = [
-        Event(
-            entity_id=entity.id,  # type: ignore
-            entity_name=entity.__class__.__name__,
-            event_type=EventTypes.CREATE,
-        )
-        for entity in entities
-    ]
-
     try:
         # Batch write the entities to the databases
         write_session.add_all(entities)
-        write_session.add_all(events)
+        [write_session.refresh(entity) for entity in entities]
 
     except Exception as e:
         print(f"Error during commit to write DB: {str(e)}")
@@ -71,10 +45,17 @@ def write_to_database(
         read_session.rollback()
         return
 
+    batch_create_events(
+        entity_ids=[entity.id for entity in entities],  # type: ignore
+        entity_names=[entity.__class__.__name__ for entity in entities],
+        event_type=EventTypes.CREATE,
+        esdb_client=esdb_client,
+    )
+
     write_session.commit()
     read_session.commit()
 
-    return entities
+    return
 
 
 def update_database_entity(
@@ -82,6 +63,7 @@ def update_database_entity(
     update_entity: BaseModel,
     write_session: Session,
     read_session: Session,
+    esdb_client: EventStoreDBClient | None = None,
 ):
     """Update the entity with the provided Model Update instance."""
 
@@ -90,22 +72,11 @@ def update_database_entity(
 
     update_data: dict = update_entity.model_dump(exclude_unset=True)
 
-    # Create an Event entry for this operation
-    event = Event(
-        entity_id=entity.id,  # type: ignore
-        entity_name=entity.__class__.__name__,
-        event_type=EventTypes.UPDATE,
-        attributes_before={
-            attr: entity.__getattribute__(attr) for attr in update_data.keys()
-        },
-        attributes_after=update_data,
-    )
-
     try:
         entity.sqlmodel_update(update_data)
 
         write_session.add(entity)
-        write_session.add(event)
+        write_session.refresh(entity)
 
     except Exception as e:
         print(f"Error during commit to write DB: {str(e)}")
@@ -115,6 +86,7 @@ def update_database_entity(
     try:
         read_entity = read_session.merge(entity)
         read_entity = transform_write_entities_to_read(read_entity)
+        read_entity.sqlmodel_update(update_data)
         read_entity_update_data: dict = read_entity.model_dump(exclude_unset=True)
 
         read_entity.sqlmodel_update(read_entity_update_data)
@@ -127,28 +99,40 @@ def update_database_entity(
         read_session.rollback()
         return
 
+    create_event(
+        entity_id=entity.id,  # type: ignore
+        entity_name=entity.__class__.__name__,
+        event_type=EventTypes.UPDATE,
+        attributes_before={
+            attr: entity.__getattribute__(attr) for attr in update_data.keys()
+        },
+        attributes_after=update_data,
+        esdb_client=esdb_client,
+    )
+
     write_session.commit()
     read_session.commit()
 
-    return entity
+    return
 
 
-def delete_database_entity(
-    entity: SQLModel, write_session: Session, read_session: Session
+def delete_database_entities(
+    entities: list[SQLModel] | SQLModel,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient | None = None,
 ):
-    """Perform a soft delete on the provided entity."""
+    """Perform a soft delete on the provided entities."""
 
-    # Create an Event entry for this operation
-    event = Event(
-        entity_id=entity.id,  # type: ignore
-        entity_name=entity.__class__.__name__,
-        event_type=EventTypes.DELETE,
-    )
+    if not isinstance(entities, list):
+        entities = [entities]
 
     try:
-        entity.is_deleted = True
-        write_session.add(entity)
-        write_session.add(event)
+        for entity in entities:
+            entity.is_deleted = True
+
+        write_session.add_all(entities)
+        [write_session.refresh(entity) for entity in entities]
 
     except Exception as e:
         print(f"Error during commit to write DB: {str(e)}")
@@ -156,11 +140,11 @@ def delete_database_entity(
         return
 
     try:
-        read_entity = read_session.merge(entity)
-        read_entity = transform_write_entities_to_read(read_entity)
-
-        read_entity.is_deleted = True
-        read_session.add(read_entity)
+        read_entities = transform_write_entities_to_read(entities)
+        read_entities = [read_session.merge(entity) for entity in read_entities]
+        for read_entity in read_entities:
+            read_entity.is_deleted = True
+        read_session.add_all(read_entities)
 
     except Exception as e:
         print(f"Error during commit to read DB: {str(e)}")
@@ -168,7 +152,14 @@ def delete_database_entity(
         read_session.rollback()
         return
 
+    batch_create_events(
+        entity_ids=[entity.id for entity in entities],  # type: ignore
+        entity_names=[entity.__class__.__name__ for entity in entities],
+        event_type=EventTypes.DELETE,
+        esdb_client=esdb_client,
+    )
+
     write_session.commit()
     read_session.commit()
 
-    return entity
+    return
