@@ -2,6 +2,7 @@ import os
 from typing import Generator
 
 import pytest
+from esdbclient import EventStoreDBClient, NewEvent, StreamState
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlmodel import Session, SQLModel
@@ -88,6 +89,21 @@ def db_read_session(db_read_engine: Engine) -> Generator[Session, None, None]:
     session.close()
     transaction.rollback()
     connection.close()
+
+
+@pytest.fixture(scope="function")
+def esdb_client() -> Generator[EventStoreDBClient, None, None]:
+    """Returns an instance of the EventStoreDBClient that rolls back the event
+    stream after each test.
+    """
+    client = EventStoreDBClient(uri="esdb://localhost:2113?tls=false")
+    client.append_event(
+        stream_name="events",
+        event=NewEvent(type="init", data=b"test_data"),
+        current_version=StreamState.NO_STREAM,
+    )
+    yield client
+    client.delete_stream("events", current_version=StreamState.EXISTS)
 
 
 @pytest.fixture()

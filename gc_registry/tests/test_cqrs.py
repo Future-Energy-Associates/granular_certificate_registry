@@ -1,8 +1,10 @@
+import json
+
+from esdbclient import EventStoreDBClient
 from sqlmodel import Session, select
 
 from gc_registry.core.database.cqrs import (
-    Event,
-    delete_database_entity,
+    delete_database_entities,
     update_database_entity,
     write_to_database,
 )
@@ -17,30 +19,35 @@ class TestCQRS:
         db_read_session: Session,
         fake_db_wind_device: Device,
         fake_db_user: User,
+        esdb_client: EventStoreDBClient,
     ):
         # Write entities to database
         write_to_database(
             entities=[fake_db_wind_device, fake_db_user],
             write_session=db_write_session,
             read_session=db_read_session,
+            esdb_client=esdb_client,
         )
 
         # Check that the events were created in the correct order
-        events = db_write_session.exec(select(Event)).all()
+        events = esdb_client.get_stream("events", stream_position=0)
 
-        assert len(events) == 2
+        # Init Event plus two CREATE events
+        assert len(events) == 3
 
-        assert events[0].entity_name == "Device"
-        assert events[0].event_type == "CREATE"
-        assert events[0].id == 1
-        assert events[0].entity_id == fake_db_wind_device.id
+        event_0_data = json.loads(events[1].data)
 
-        assert events[1].entity_name == "User"
-        assert events[1].event_type == "CREATE"
-        assert events[1].id == 2
-        assert events[1].entity_id == fake_db_user.id
+        assert events[1].type == "CREATE"
+        assert event_0_data["entity_name"] == "Device"
+        assert event_0_data["entity_id"] == fake_db_wind_device.id
 
-        assert events[0].timestamp < events[1].timestamp
+        event_1_data = json.loads(events[2].data)
+
+        assert events[2].type == "CREATE"
+        assert event_1_data["entity_name"] == "User"
+        assert event_1_data["entity_id"] == fake_db_user.id
+
+        assert event_0_data["timestamp"] < event_1_data["timestamp"]
 
         # Check that the read database contains the same as the write database
         wind_device = db_read_session.exec(
@@ -60,12 +67,14 @@ class TestCQRS:
         db_write_session: Session,
         db_read_session: Session,
         fake_db_wind_device: Device,
+        esdb_client: EventStoreDBClient,
     ):
         # Write entities to database first
         write_to_database(
             entities=fake_db_wind_device,
             write_session=db_write_session,
             read_session=db_read_session,
+            esdb_client=esdb_client,
         )
 
         # Update the device with new parameters
@@ -77,15 +86,16 @@ class TestCQRS:
             update_entity=device_update,
             write_session=db_write_session,
             read_session=db_read_session,
+            esdb_client=esdb_client,
         )
 
         # Check that the event item contains the correct information
-        events = db_write_session.exec(select(Event)).all()
-        event = events[-1]
+        events = esdb_client.get_stream("events", stream_position=0)
+        event_data = json.loads(events[-1].data)
 
-        assert event.event_type == "UPDATE"
-        assert event.attributes_before == {"device_name": "fake_wind_device"}
-        assert event.attributes_after == {"device_name": "new_fake_wind_device"}
+        assert events[-1].type == "UPDATE"
+        assert event_data["attributes_before"] == {"device_name": "fake_wind_device"}
+        assert event_data["attributes_after"] == {"device_name": "new_fake_wind_device"}
 
         # Check that the read database contains the updated device
         wind_device = db_read_session.exec(
@@ -99,26 +109,28 @@ class TestCQRS:
         db_write_session: Session,
         db_read_session: Session,
         fake_db_wind_device: Device,
+        esdb_client: EventStoreDBClient,
     ):
         # Write entities to database first
         write_to_database(
             entities=fake_db_wind_device,
             write_session=db_write_session,
             read_session=db_read_session,
+            esdb_client=esdb_client,
         )
 
         # Delete the device
-        delete_database_entity(
-            entity=fake_db_wind_device,
+        delete_database_entities(
+            entities=fake_db_wind_device,
             write_session=db_write_session,
             read_session=db_read_session,
+            esdb_client=esdb_client,
         )
 
         # Check that the event item contains the correct information
-        events = db_write_session.exec(select(Event)).all()
-        event = events[-1]
+        events = esdb_client.get_stream("events", stream_position=0)
 
-        assert event.event_type == "DELETE"
+        assert events[-1].type == "DELETE"
 
         # Check that the read database contains the updated device
         wind_device = db_read_session.exec(
