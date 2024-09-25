@@ -20,5 +20,7 @@ class Settings(BaseSettings):
     STATIC_DIR_FP: str
     MIDDLEWARE_SECRET_KEY: str
 
+    ESDB_CONNECTION_STRING: str
+
 
 settings = Settings()  # type: ignore
