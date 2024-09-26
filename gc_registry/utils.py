@@ -3,12 +3,14 @@ from typing import Union
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from sqlmodel import SQLModel, select
+from sqlmodel import Session, SQLModel, select
+
+from gc_registry.core.database import cqrs
 
 
 class ActiveRecord(SQLModel):
     @classmethod
-    def by_id(cls, id_: int, session):
+    def by_id(cls, id_: int, session: Session) -> SQLModel:
         obj = session.get(cls, id_)
         if obj is None:
             raise HTTPException(
@@ -17,11 +19,16 @@ class ActiveRecord(SQLModel):
         return obj
 
     @classmethod
-    def all(cls, session):
+    def all(cls, session: Session) -> list[SQLModel]:
         return session.exec(select(cls)).all()
 
     @classmethod
-    def create(cls, source: Union[dict, SQLModel], session):
+    def create(
+        cls,
+        source: Union[dict, SQLModel],
+        write_session: Session,
+        read_session: Session,
+    ) -> SQLModel:
         if isinstance(source, SQLModel):
             obj = cls.model_validate(source)
         elif isinstance(source, dict):
@@ -29,28 +36,38 @@ class ActiveRecord(SQLModel):
         else:
             raise ValueError(f"The input type {type(source)} can not be processed")
 
-        session.add(obj)
-        session.commit()
-        session.refresh(obj)
+        obj = cqrs.write_to_database(obj, write_session, read_session)
 
-        return obj
+        # TODO For now, this will only be run on one object at a time - batch method needed
+        return obj[0]
 
     def save(self, session):
         session.add(self)
         session.commit()
         session.refresh(self)
 
-    def update(self, source: Union[dict, SQLModel], session):
-        if isinstance(source, SQLModel):
-            source = source.model_dump(exclude_unset=True)
+    def update(
+        self,
+        update_entity: Union[dict, SQLModel],
+        write_session: Session,
+        read_session: Session,
+    ) -> SQLModel | None:
+        entity = cqrs.update_database_entity(
+            entity=self,
+            update_entity=update_entity,
+            write_session=write_session,
+            read_session=read_session,
+        )
 
-        for key, value in source.items():
-            setattr(self, key, value)
-        self.save(session)
+        return entity
 
-    def delete(self, session):
-        session.delete(self)
-        session.commit()
+    def delete(self, write_session: Session, read_session: Session) -> SQLModel | None:
+        entity = cqrs.delete_database_entities(
+            entities=self, write_session=write_session, read_session=read_session
+        )
+
+        # TODO For now, this will only be run on one object at a time - batch method needed
+        return entity[0]
 
 
 def parse_nans_to_null(json_str: str, replace_nan: bool = True):

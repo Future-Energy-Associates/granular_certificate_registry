@@ -16,7 +16,7 @@ def write_to_database(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient | None = None,
-):
+) -> list[SQLModel] | SQLModel | None:
     """Write the provided entities to the read and write databases, saving an
     Event entry for each entity."""
 
@@ -55,7 +55,7 @@ def write_to_database(
     write_session.commit()
     read_session.commit()
 
-    return
+    return entities
 
 
 def update_database_entity(
@@ -64,7 +64,7 @@ def update_database_entity(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient | None = None,
-):
+) -> SQLModel | None:
     """Update the entity with the provided Model Update instance."""
 
     # TODO I can't think of a performant way to bulk update whilst also
@@ -113,7 +113,7 @@ def update_database_entity(
     write_session.commit()
     read_session.commit()
 
-    return
+    return entity
 
 
 def delete_database_entities(
@@ -121,7 +121,7 @@ def delete_database_entities(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient | None = None,
-):
+) -> list[SQLModel] | SQLModel | None:
     """Perform a soft delete on the provided entities."""
 
     if not isinstance(entities, list):
@@ -162,4 +162,4 @@ def delete_database_entities(
     write_session.commit()
     read_session.commit()
 
-    return
+    return entities
