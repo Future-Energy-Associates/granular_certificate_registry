@@ -21,6 +21,7 @@ services:
     depends_on:
       - db_write
       - db_read
+      - eventstore.db
 
   db_write:
     image: postgres:13
@@ -37,26 +38,24 @@ services:
       - POSTGRES_PASSWORD=password
 
   eventstore.db:
-    image: eventstore/eventstore:release-v5
+    image: eventstore/eventstore:23.10.2-bookworm-slim
     environment:
       - EVENTSTORE_CLUSTER_SIZE=1
       - EVENTSTORE_RUN_PROJECTIONS=All
-      - EVENTSTORE_START_STANDARD_PROJECTIONS=True
-      - EVENTSTORE_DB=/var/lib/eventstore-data
-      - EVENTSTORE_INDEX=/var/lib/eventstore-index
-      - EVENTSTORE_LOG=/var/log/eventstore
-      - EVENTSTORE_EXT_TCP_PORT=1113
-      - EVENTSTORE_EXT_HTTP_PORT=2113
+      - EVENTSTORE_START_STANDARD_PROJECTIONS=true
+      - EVENTSTORE_HTTP_PORT=2113
+      - EVENTSTORE_INSECURE=true
+      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+      - EVENTSTORE_TELEMETRY_OPTOUT=true
+      - DOTNET_EnableWriteXorExecute=0
+      - EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS=localhost
+      - EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2113
     ports:
-      - "1113:1113"
       - "2113:2113"
     volumes:
       - type: volume
         source: eventstore-volume-data
-        target: /var/lib/eventstore-data
-      - type: volume
-        source: eventstore-volume-index
-        target: /var/lib/eventstore-index
+        target: /var/lib/eventstore
       - type: volume
         source: eventstore-volume-logs
         target: /var/log/eventstore

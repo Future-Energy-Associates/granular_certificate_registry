@@ -18,6 +18,7 @@ services:
     depends_on:
       - db_write
       - db_read
+      - eventstore.db
     ports:
       - "4200:4200"
 

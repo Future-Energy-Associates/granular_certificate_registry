@@ -12,6 +12,10 @@ from gc_registry.account.models import Account
 from gc_registry.device.models import Device
 from gc_registry.user.models import User
 
+from testcontainers.core.container import DockerContainer
+from testcontainers.core.image import DockerImage
+from testcontainers.core.waiting_utils import wait_for_logs
+
 
 def get_db_url(target: str = "write") -> str:
     if "CI" in os.environ:
@@ -23,6 +27,45 @@ def get_db_url(target: str = "write") -> str:
             return pg_container.get_connection_url()
         except Exception as e:
             pytest.skip(f"Failed to start PostgreSQL container: {str(e)}")
+
+
+def get_esdb_url() -> str:
+    if "CI" in os.environ:
+        return "esdb://localhost:2113?tls=false"
+    else:
+        try:
+            esdb_container = (
+                DockerContainer(image="eventstore/eventstore:23.10.2-bookworm-slim")
+                .with_exposed_ports(2113)
+                .with_bind_ports(2113, 2113)
+                .maybe_emulate_amd64()
+                .with_env("EVENTSTORE_RUN_PROJECTIONS", "All")
+                .with_env("EVENTSTORE_CLUSTER_SIZE", 1)
+                .with_env("EVENTSTORE_START_STANDARD_PROJECTIONS", True)
+                .with_env("EVENTSTORE_HTTP_PORT", 2113)
+                .with_env("EVENTSTORE_INSECURE", True)
+                .with_env("EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP", True)
+                .with_env("EVENTSTORE_TELEMETRY_OPTOUT", True)
+                .with_env("DOTNET_EnableWriteXorExecute", 0)
+                .with_env("EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS", "localhost")
+                .with_env("EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS", 2113)
+            )
+            esdb_container.start()
+            _delay = wait_for_logs(esdb_container, "Not waiting for conditions")
+            connection_string = (
+                "esdb://"
+                + esdb_container.get_docker_client().gateway_ip(
+                    esdb_container._container.id
+                )
+                + ":2113?tls=false"
+            )
+            print("Connection string: ", connection_string)
+            # return connection_string
+            return "esdb://localhost:2113?tls=false"
+
+        except Exception as e:
+            raise e
+            pytest.skip(f"Failed to start EventStoreDB container: {str(e)}")
 
 
 @pytest.fixture(scope="session")
@@ -91,12 +134,14 @@ def db_read_session(db_read_engine: Engine) -> Generator[Session, None, None]:
     connection.close()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def esdb_client() -> Generator[EventStoreDBClient, None, None]:
     """Returns an instance of the EventStoreDBClient that rolls back the event
     stream after each test.
     """
-    client = EventStoreDBClient(uri="esdb://localhost:2113?tls=false")
+    uri = get_esdb_url()
+
+    client = EventStoreDBClient(uri=uri)
     client.append_event(
         stream_name="events",
         event=NewEvent(type="init", data=b"test_data"),
