@@ -45,7 +45,7 @@ class ElexonClient:
         from_date: datetime,
         to_date: datetime,
         bmu_ids: list[str] | None = None,
-    ):
+    ) -> pd.DataFrame:
         data = []
         for half_hour_dt in pd.date_range(from_date, to_date, freq="30min"):
             params = {
@@ -63,10 +63,9 @@ class ElexonClient:
 
             data.extend(response.json()["data"])
 
-        return data
+        return pd.DataFrame(data)
 
-    def resample_hh_data_to_hourly(self, data: list[dict]) -> pd.DataFrame:
-        data_hh_df = pd.DataFrame(data)
+    def resample_hh_data_to_hourly(self, data_hh_df: pd.DataFrame) -> pd.DataFrame:
         data_hh_df["start_time"] = pd.to_datetime(
             data_hh_df.halfHourEndTime
         ) - pd.Timedelta(minutes=30)
@@ -92,15 +91,15 @@ class ElexonClient:
 
     def map_generation_to_certificates(
         self,
-        generation_data: list[dict],
+        generation_data: pd.DataFrame,
         account_id: int,
         device_id: str | None = None,
     ) -> list[GranularCertificateBundle]:
         # Filter out any rows where the quantity is less than or equal to zero (no generation)
-        generation_data = [x for x in generation_data if x["quantity"] > 0]
+        generation_data = generation_data.loc[generation_data["quantity"] > 0]
 
         mapped_data: list = []
-        for data in generation_data:
+        for _idx, data in generation_data.iterrows():
             bundle_wh = int(data["quantity"] * 1000)
 
             # Get existing "bundle_id_range_end" from the last item in mapped_data

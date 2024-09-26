@@ -73,6 +73,9 @@ def seed_data():
             data_hh = client.get_dataset_in_datetime_range(
                 dataset, from_date, to_date, bmu_ids=[bmu_id]
             )
+            if data_hh.empty:
+                print(f"No data found for {bmu_id}")
+                continue
             data_hourly = client.resample_hh_data_to_hourly(data_hh)
             certificate_bundles = client.map_generation_to_certificates(
                 data_hourly, account_id=account.id, device_id=device.id
