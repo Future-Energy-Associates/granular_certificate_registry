@@ -28,7 +28,7 @@ class ActiveRecord(SQLModel):
         source: Union[dict, SQLModel],
         write_session: Session,
         read_session: Session,
-    ) -> SQLModel:
+    ) -> None:
         if isinstance(source, SQLModel):
             obj = cls.model_validate(source)
         elif isinstance(source, dict):
@@ -36,10 +36,13 @@ class ActiveRecord(SQLModel):
         else:
             raise ValueError(f"The input type {type(source)} can not be processed")
 
-        obj = cqrs.write_to_database(obj, write_session, read_session)
+        print(f"Creating {cls.__name__}: {obj.model_dump_json()}")
+        cqrs.write_to_database(obj, write_session, read_session)
 
-        # TODO For now, this will only be run on one object at a time - batch method needed
-        return obj[0]
+        write_session.close()
+        read_session.close()
+
+        return
 
     def save(self, session):
         session.add(self)
@@ -51,23 +54,22 @@ class ActiveRecord(SQLModel):
         update_entity: Union[dict, SQLModel],
         write_session: Session,
         read_session: Session,
-    ) -> SQLModel | None:
-        entity = cqrs.update_database_entity(
+    ) -> None:
+        cqrs.update_database_entity(
             entity=self,
             update_entity=update_entity,
             write_session=write_session,
             read_session=read_session,
         )
 
-        return entity
+        return
 
-    def delete(self, write_session: Session, read_session: Session) -> SQLModel | None:
-        entity = cqrs.delete_database_entities(
+    def delete(self, write_session: Session, read_session: Session) -> None:
+        cqrs.delete_database_entities(
             entities=self, write_session=write_session, read_session=read_session
         )
 
-        # TODO For now, this will only be run on one object at a time - batch method needed
-        return entity[0]
+        return
 
 
 def parse_nans_to_null(json_str: str, replace_nan: bool = True):

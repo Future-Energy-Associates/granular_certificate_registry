@@ -59,8 +59,11 @@ class DButils:
         self.engine = create_engine(self.connection_str, pool_pre_ping=True)
 
     def yield_session(self) -> Generator[Any, Any, Any]:
-        with Session(self.engine) as session, session.begin():
+        with Session(self.engine) as session:
             yield session
+
+    async def get_session(self) -> Session:
+        return Session(self.engine)
 
     def initiate_db_tables(self, schema_paths: list | None = None) -> None:
         if schema_paths is None:
