@@ -5,9 +5,6 @@ from esdbclient import EventStoreDBClient, NewEvent, StreamState
 from gc_registry.core.models.base import Event, EventTypes
 from gc_registry.settings import settings
 
-# Initialise the ESDB client in startup
-client = EventStoreDBClient(uri=settings.ESDB_CONNECTION_STRING)
-
 
 def create_event(
     entity_id: int,
@@ -19,7 +16,7 @@ def create_event(
 ):
     """Create a single event and append it to the ESDB events stream."""
     if esdb_client is None:
-        esdb_client = client
+        esdb_client = EventStoreDBClient(uri=settings.ESDB_CONNECTION_STRING)
 
     event = Event(
         entity_id=entity_id,
@@ -55,7 +52,7 @@ def batch_create_events(
     the overhead of establishing a connection to the ESDB server.
     """
     if esdb_client is None:
-        esdb_client = client
+        esdb_client = EventStoreDBClient(uri=settings.ESDB_CONNECTION_STRING)
 
     # Create and delete events do not need before and after attribute dicts
     attributes_before = attributes_before or [None] * len(entity_ids)

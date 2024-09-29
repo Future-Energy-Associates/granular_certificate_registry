@@ -62,6 +62,10 @@ class DButils:
         with Session(self.engine) as session:
             yield session
 
+    def yield_twophase_session(self, write_object) -> Generator[Any, Any, Any]:
+        with Session(self.engine, twophase=True) as session:
+            yield session
+
     async def get_session(self) -> Session:
         return Session(self.engine)
 

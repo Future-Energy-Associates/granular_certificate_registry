@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Union
 
 from fastapi import HTTPException
@@ -6,16 +7,22 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session, SQLModel, select
 
 from gc_registry.core.database import cqrs
+from gc_registry.settings import settings
+
+logger = logging.getLogger(__name__)
+logger.setLevel(settings.LOG_LEVEL)
 
 
 class ActiveRecord(SQLModel):
     @classmethod
-    def by_id(cls, id_: int, session: Session) -> SQLModel:
+    def by_id(cls, id_: int, session: Session, close_session: bool = False) -> SQLModel:
         obj = session.get(cls, id_)
         if obj is None:
             raise HTTPException(
                 status_code=404, detail=f"{cls.__name__} with id {id_} not found"
             )
+        if close_session:
+            session.close()
         return obj
 
     @classmethod
@@ -36,7 +43,7 @@ class ActiveRecord(SQLModel):
         else:
             raise ValueError(f"The input type {type(source)} can not be processed")
 
-        print(f"Creating {cls.__name__}: {obj.model_dump_json()}")
+        logger.debug(f"Creating {cls.__name__}: {obj.model_dump_json()}")
         cqrs.write_to_database(obj, write_session, read_session)
 
         write_session.close()
@@ -55,16 +62,18 @@ class ActiveRecord(SQLModel):
         write_session: Session,
         read_session: Session,
     ) -> None:
-        cqrs.update_database_entity(
+        logger.debug(f"Updating {self.__class__.__name__}: {self.model_dump_json()}")
+        updated_entity = cqrs.update_database_entity(
             entity=self,
             update_entity=update_entity,
             write_session=write_session,
             read_session=read_session,
         )
 
-        return
+        return updated_entity
 
     def delete(self, write_session: Session, read_session: Session) -> None:
+        logger.debug(f"Deleting {self.__class__.__name__}: {self.model_dump_json()}")
         cqrs.delete_database_entities(
             entities=self, write_session=write_session, read_session=read_session
         )
