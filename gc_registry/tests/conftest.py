@@ -17,10 +17,12 @@ from gc_registry.user.models import User
 
 def get_db_url(target: str = "write") -> str:
     if "CI" in os.environ:
-        return f"postgresql://postgres:password@db_{target}/gc_registry"
+        return f"postgresql://postgres:password@db_{target}/db_{target}"
     else:
         try:
-            pg_container = PostgresContainer("postgres:15-alpine", driver="psycopg")
+            pg_container = PostgresContainer(
+                "postgres:15-alpine", driver="psycopg", dbname=f"db_{target}"
+            )
             pg_container.start()
             return pg_container.get_connection_url()
         except Exception as e:

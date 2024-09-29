@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_WARNING_MINS: int
 
-    STATIC_DIR_FP: str
     MIDDLEWARE_SECRET_KEY: str
 
     ESDB_CONNECTION_STRING: str

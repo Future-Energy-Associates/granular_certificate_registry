@@ -35,18 +35,14 @@ def seed_data():
         "name": "A User",
         "roles": ["Production User"],
     }
-    user = User.model_validate(user_dict)
-    cqrs.write_to_database(user, write_session, read_session)
-    read_session.refresh(user)
+    user = User.create(user_dict, write_session, read_session)
 
     # Create an Account to add the certificates to
     account_dict = {
         "account_name": "Test Account",
-        "users": [user],
+        "user_ids": [user.id],
     }
-    account = Account.model_validate(account_dict)
-    cqrs.write_to_database(account, write_session, read_session)
-    read_session.refresh(account)
+    account = Account.create(account_dict, write_session, read_session)
 
     for bmu_id in bmu_ids:
         device_dict = {
@@ -54,15 +50,13 @@ def seed_data():
             "grid": "National Grid",
             "energy_source": "wind",
             "technology_type": "wind",
-            "operational_date": datetime.datetime(2015, 1, 1, 0, 0, 0),
+            "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
             "capacity": 1000,
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": account.id,
         }
-        device = Device.model_validate(device_dict)
-        cqrs.write_to_database(device, write_session, read_session)
-        read_session.refresh(device)
+        device = Device.create(device_dict, write_session, read_session)
 
         # Use Elexon to get data from the Elexon API
 
@@ -76,6 +70,10 @@ def seed_data():
         certificate_bundles = client.map_generation_to_certificates(
             data_hourly, account_id=account.id, device_id=device.id
         )
+
+        if not certificate_bundles:
+            print(f"No certificate bundles found for {bmu_id}")
+            continue
 
         cqrs.write_to_database(certificate_bundles, write_session, read_session)
 
