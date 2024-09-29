@@ -44,12 +44,9 @@ class ActiveRecord(SQLModel):
             raise ValueError(f"The input type {type(source)} can not be processed")
 
         logger.debug(f"Creating {cls.__name__}: {obj.model_dump_json()}")
-        cqrs.write_to_database(obj, write_session, read_session)
+        created_entity = cqrs.write_to_database(obj, write_session, read_session)
 
-        write_session.close()
-        read_session.close()
-
-        return
+        return created_entity
 
     def save(self, session):
         session.add(self)
@@ -74,11 +71,11 @@ class ActiveRecord(SQLModel):
 
     def delete(self, write_session: Session, read_session: Session) -> None:
         logger.debug(f"Deleting {self.__class__.__name__}: {self.model_dump_json()}")
-        cqrs.delete_database_entities(
+        deleted_entity = cqrs.delete_database_entities(
             entities=self, write_session=write_session, read_session=read_session
         )
 
-        return
+        return deleted_entity
 
 
 def parse_nans_to_null(json_str: str, replace_nan: bool = True):

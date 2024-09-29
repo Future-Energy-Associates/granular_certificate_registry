@@ -16,9 +16,13 @@ from gc_registry.certificate.schemas import (
 
 
 class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
+    id: int | None = Field(
+        primary_key=True,
+        default=None,
+        description="An integer ID unique to this bundle within the registry.",
+    )
     issuance_id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
-        primary_key=True,
         description="""A unique identifier assigned to the GC Bundle at the time of issuance.
         If the bundle is split through partial transfer or cancellation, this issuance ID remains unchanged across each child GC Bundle.""",
     )
@@ -31,7 +35,7 @@ class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
 
 
 class GranularCertificateAction(GranularCertificateActionBase, table=True):
-    action_id: int = Field(
+    id: int | None = Field(
         primary_key=True,
         default=None,
         description="A unique ID assigned to this action.",
