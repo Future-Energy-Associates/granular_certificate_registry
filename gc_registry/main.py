@@ -15,9 +15,12 @@ from .settings import settings
 from .storage.routes import router as storage_router
 from .user.routes import router as user_router
 
+STATIC_DIR_FP = Path(__file__).parent / "static"
+
 descriptions = {}
 for desc in ["api", "certificate", "storage"]:
-    with open(Path(settings.STATIC_DIR_FP, "descriptions", f"{desc}.md"), "r") as file:
+    static_dir = STATIC_DIR_FP / "descriptions" / f"{desc}.md"
+    with open(static_dir, "r") as file:
         descriptions[desc] = markdown(file.read())
 
 tags_metadata = [
@@ -73,7 +76,7 @@ app.include_router(measurements_router, prefix="/measurement")
 
 openapi_data = app.openapi()
 
-templates = Jinja2Templates(directory=f"{settings.STATIC_DIR_FP}/templates")
+templates = Jinja2Templates(directory=STATIC_DIR_FP / "templates")
 
 
 @app.get("/", response_class=HTMLResponse, tags=["Core"])
