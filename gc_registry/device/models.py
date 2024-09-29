@@ -22,7 +22,6 @@ class Device(DeviceBase, table=True):
     )
     account_id: int = Field(foreign_key="account.id")
     account: "Account" = Relationship(back_populates="devices")
-    is_deleted: bool = Field(default=False)
 
 
 class DeviceRead(DeviceBase):

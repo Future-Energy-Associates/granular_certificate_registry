@@ -177,6 +177,7 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
         default=None,
         description="Includes a reference to the calculation methodology of the production Device emissions factor.",
     )
+    is_deleted: bool = Field(default=False)
 
 
 class GranularCertificateActionBase(utils.ActiveRecord):
@@ -251,6 +252,7 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     certificate_status_to_update_to: str | None = Field(
         description="Update the status of a GC Bundle."
     )
+    is_deleted: bool = Field(default=False)
     # TODO this currently can't pass Pydantic validation, need to revisit
     # sparse_filter_list: Tuple[str, str] | None = Field(
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",

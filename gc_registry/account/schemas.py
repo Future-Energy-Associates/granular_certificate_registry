@@ -13,3 +13,4 @@ class AccountBase(utils.ActiveRecord):
         description="The users registered to the account.",
         sa_column=Column(ARRAY(String())),
     )
+    is_deleted: bool = Field(default=False)

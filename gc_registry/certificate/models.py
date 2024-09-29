@@ -22,7 +22,6 @@ class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
         description="""A unique identifier assigned to the GC Bundle at the time of issuance.
         If the bundle is split through partial transfer or cancellation, this issuance ID remains unchanged across each child GC Bundle.""",
     )
-    is_deleted: bool = Field(default=False)
 
 
 # A Transfer object is specified by a User, and is stored in a transaction table that
@@ -37,7 +36,6 @@ class GranularCertificateAction(GranularCertificateActionBase, table=True):
         default=None,
         description="A unique ID assigned to this action.",
     )
-    is_deleted: bool = Field(default=False)
 
 
 class GranularCertificateActionResponse(GranularCertificateActionBase):

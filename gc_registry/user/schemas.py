@@ -17,3 +17,4 @@ class UserBase(utils.ActiveRecord):
                        to perform within the registry, according to the EnergyTag Standard.""",
         sa_column=Column(ARRAY(String())),
     )
+    is_deleted: bool = Field(default=False)

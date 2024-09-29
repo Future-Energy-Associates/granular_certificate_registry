@@ -36,7 +36,6 @@ class User(UserBase, table=True):
         back_populates="users", link_model=UserAccountLink
     )
     # organisation_id: int = Field(foreign_key="organisation.id")
-    is_deleted: bool = Field(default=False)
 
 
 class UserRead(UserBase):

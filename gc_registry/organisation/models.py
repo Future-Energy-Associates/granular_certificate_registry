@@ -9,7 +9,6 @@ from gc_registry.organisation.schemas import OrganisationBase
 
 class Organisation(OrganisationBase, table=True):
     id: int | None = Field(primary_key=True)
-    is_deleted: bool = Field(default=False)
     # users: list[User] = Relationship(back_populates="organisation")
 
 
