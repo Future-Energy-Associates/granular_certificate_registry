@@ -22,5 +22,7 @@ class Settings(BaseSettings):
 
     ESDB_CONNECTION_STRING: str
 
+    LOG_LEVEL: str
+
 
 settings = Settings()  # type: ignore

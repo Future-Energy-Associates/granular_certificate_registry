@@ -6,15 +6,13 @@ from esdbclient import EventStoreDBClient, NewEvent, StreamState
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlmodel import Session, SQLModel
+from testcontainers.core.container import DockerContainer
+from testcontainers.core.waiting_utils import wait_for_logs
 from testcontainers.postgres import PostgresContainer
 
 from gc_registry.account.models import Account
 from gc_registry.device.models import Device
 from gc_registry.user.models import User
-
-from testcontainers.core.container import DockerContainer
-from testcontainers.core.image import DockerImage
-from testcontainers.core.waiting_utils import wait_for_logs
 
 
 def get_db_url(target: str = "write") -> str:
@@ -64,7 +62,6 @@ def get_esdb_url() -> str:
             return "esdb://localhost:2113?tls=false"
 
         except Exception as e:
-            raise e
             pytest.skip(f"Failed to start EventStoreDB container: {str(e)}")
 
 
