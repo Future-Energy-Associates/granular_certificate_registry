@@ -18,9 +18,11 @@ def create_account(
     write_session: Session = Depends(db.db_name_to_client["db_write"].get_session),
     read_session: Session = Depends(db.db_name_to_client["db_read"].get_session),
 ):
-    models.Account.create(account_base, write_session, read_session)
+    account_created = models.Account.create(account_base, write_session, read_session)
 
-    return {"message": f"Account {account_base.account_name} created successfully."}
+    return utils.format_json_response(
+        account_created, headers=None, response_model=models.AccountRead
+    )
 
 
 @router.get("/{account_id}", response_model=models.AccountRead)
@@ -60,6 +62,8 @@ def delete_account(
     read_session: Session = Depends(db.db_name_to_client["db_read"].get_session),
 ):
     account = models.Account.by_id(account_id, write_session)
-    _account_deleted = account.delete(write_session, read_session)
+    account_deleted = account.delete(write_session, read_session)
 
-    return {"message": f"Account {account_id} deleted successfully."}
+    return utils.format_json_response(
+        account_deleted, headers=None, response_model=None
+    )

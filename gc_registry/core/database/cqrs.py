@@ -61,7 +61,7 @@ def write_to_database(
     write_session.commit()
     read_session.commit()
 
-    return
+    return read_entities[0]
 
 
 def update_database_entity(
@@ -170,4 +170,4 @@ def delete_database_entities(
     write_session.commit()
     read_session.commit()
 
-    return
+    return entities[0]

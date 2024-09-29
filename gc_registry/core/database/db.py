@@ -113,5 +113,4 @@ for db_name, db_url, schema_paths in db_mapping:
     )
     db_name_to_client[db_name] = db_client
 
-    if __name__ == "__main__":
-        db_client.initiate_db_tables(schema_paths)
+    db_client.initiate_db_tables(schema_paths)
