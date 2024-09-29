@@ -11,7 +11,7 @@ router = APIRouter(tags=["Accounts"])
 
 
 ### Account ###
-@router.post("/account", status_code=201)
+@router.post("/create", status_code=201)
 def create_account(
     account_base: models.AccountBase,
     # headers: dict = Depends(services.validate_user_and_get_headers),
@@ -23,7 +23,7 @@ def create_account(
     return {"message": f"Account {account_base.account_name} created successfully."}
 
 
-@router.get("/account/{account_id}", response_model=models.AccountRead)
+@router.get("/{account_id}", response_model=models.AccountRead)
 def read_account(
     account_id: int,
     # headers: dict = Depends(services.validate_user_and_get_headers),
@@ -36,7 +36,7 @@ def read_account(
     )
 
 
-@router.patch("/account/{account_id}", response_model=models.AccountRead)
+@router.patch("/update/{account_id}", response_model=models.AccountRead)
 def update_account(
     account_id: int,
     account_update: models.AccountUpdate,
@@ -52,7 +52,7 @@ def update_account(
     )
 
 
-@router.delete("/account/{account_id}", status_code=204)
+@router.delete("/delete/{account_id}", status_code=204)
 def delete_account(
     account_id: int,
     # headers: dict = Depends(services.validate_user_and_get_headers),

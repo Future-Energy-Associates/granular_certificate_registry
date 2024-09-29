@@ -63,13 +63,13 @@ app = FastAPI(
 app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
 
 # app.include_router(authentication.router)
-app.include_router(certificate_router, prefix="/certificates")
+app.include_router(certificate_router, prefix="/certificate")
 app.include_router(storage_router, prefix="/storage")
-app.include_router(organisation_router, prefix="/organisations")
-app.include_router(user_router, prefix="/users")
-app.include_router(account_router, prefix="/accounts")
-app.include_router(device_router, prefix="/devices")
-app.include_router(measurements_router, prefix="/measurements")
+app.include_router(organisation_router, prefix="/organisation")
+app.include_router(user_router, prefix="/user")
+app.include_router(account_router, prefix="/account")
+app.include_router(device_router, prefix="/device")
+app.include_router(measurements_router, prefix="/measurement")
 
 openapi_data = app.openapi()
 
