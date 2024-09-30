@@ -10,6 +10,7 @@ from gc_registry.certificate.models import (
     GranularCertificateBundleBase,
     GranularCertificateQueryResponse,
 )
+from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db
 
 # Router initialisation
@@ -23,17 +24,18 @@ router = APIRouter(tags=["Certificates"])
 )
 def create_certificate_bundle(
     certificate_bundle: GranularCertificateBundleBase,
-    headers: dict = Depends(services.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    nonce: str = None,
 ):
     """Create a GC Bundle with the specified properties."""
     db_certificate_bundle = GranularCertificateBundle.create(
         certificate_bundle, session
     )
+    db_certificate_bundle.hash = create_bundle_hash(db_certificate_bundle, nonce)
 
     return utils.format_json_response(
         db_certificate_bundle,
-        headers,
+        headers=None,
         response_model=GranularCertificateBundle,
     )
 
