@@ -1,7 +1,8 @@
+import datetime
 import uuid
 from typing import List, Union
 
-from sqlmodel import Field
+from sqlmodel import Field, SQLModel
 
 from gc_registry.certificate.schemas import (
     GranularCertificateActionBase,
@@ -15,12 +16,17 @@ from gc_registry.certificate.schemas import (
 # bundle will retain the original bundle issuance ID.
 
 
-class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
-    issuance_id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
+class TemporalBase(SQLModel):
+    created_at: datetime.datetime = Field(default=datetime.datetime.utcnow())
+
+
+class GranularCertificateBundle(
+    GranularCertificateBundleBase, TemporalBase, table=True
+):
+    id: uuid.UUID = Field(
         primary_key=True,
-        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
-        If the bundle is split through partial transfer or cancellation, this issuance ID remains unchanged across each child GC Bundle.""",
+        default=uuid.uuid4,
+        description="A unique ID assigned to this certificate bundle.",
     )
 
 
@@ -30,7 +36,9 @@ class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
 # "transfer", "recurring_transfer", "cancel", "claim", "withdraw"
 
 
-class GranularCertificateAction(GranularCertificateActionBase, table=True):
+class GranularCertificateAction(
+    GranularCertificateActionBase, TemporalBase, table=True
+):
     action_id: int = Field(
         primary_key=True,
         default=None,
