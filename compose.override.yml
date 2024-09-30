@@ -35,6 +35,8 @@ services:
     image: postgres:13
     volumes:
       - postgres_data_read:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     environment:
       - POSTGRES_DB=db_read
       - POSTGRES_USER=postgres
