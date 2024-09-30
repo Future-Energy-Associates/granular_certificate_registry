@@ -6,13 +6,43 @@ from esdbclient import EventStoreDBClient, NewEvent, StreamState
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlmodel import Session, SQLModel
+from starlette.testclient import TestClient
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 from testcontainers.postgres import PostgresContainer
 
 from gc_registry.account.models import Account
 from gc_registry.device.models import Device
+from gc_registry.main import app
 from gc_registry.user.models import User
+
+
+@pytest.fixture(scope="module")
+def api_client(
+    db_write_session: Session, db_read_session: Session
+) -> Generator[TestClient, None, None]:
+    """API Client for testing routes"""
+
+    def get_db_session_override() -> Session:
+        class DBSession:
+            def __init__(self, session: Session):
+                self.session = session
+
+            async def get_session(self) -> Session:
+                return self.session
+
+        db_name_to_client = {
+            "db_write": DBSession(db_write_session),
+            "db_read": DBSession(db_read_session),
+        }
+
+        return db_name_to_client
+
+    # Set dependency overrides
+    app.dependency_overrides["get_db_name_to_client"] = get_db_session_override
+
+    with TestClient(app) as client:
+        yield client
 
 
 def get_db_url(target: str = "write") -> str:

@@ -92,25 +92,53 @@ class DButils:
 
 
 # Initialising the DButil clients
-
-db_mapping = [
-    ("db_read", settings.DATABASE_URL_READ, schema_paths_read),
-    ("db_write", settings.DATABASE_URL_WRITE, schema_paths_write),
-]
-
 db_name_to_client = {}
 
-print("Initialising the database clients....")
-for db_name, db_url, schema_paths in db_mapping:
-    db_client = DButils(
-        db_url=db_url,
-        db_name=db_name,
-        db_username=settings.POSTGRES_USER,
-        db_password=settings.POSTGRES_PASSWORD,
-        db_port=settings.DATABASE_PORT,
-        db_test_fp=settings.DB_TEST_FP,
-        env=settings.ENVIRONMENT,
-    )
-    db_name_to_client[db_name] = db_client
 
-    db_client.initiate_db_tables(schema_paths)
+def get_db_name_to_client():
+    global db_name_to_client
+
+    if db_name_to_client == {}:
+        db_mapping = [
+            ("db_read", settings.DATABASE_URL_READ, schema_paths_read),
+            ("db_write", settings.DATABASE_URL_WRITE, schema_paths_write),
+        ]
+
+        print("Initialising the database clients....")
+        for db_name, db_url, schema_paths in db_mapping:
+            db_client = DButils(
+                db_url=db_url,
+                db_name=db_name,
+                db_username=settings.POSTGRES_USER,
+                db_password=settings.POSTGRES_PASSWORD,
+                db_port=settings.DATABASE_PORT,
+                db_test_fp=settings.DB_TEST_FP,
+                env=settings.ENVIRONMENT,
+            )
+            db_name_to_client[db_name] = db_client
+
+            db_client.initiate_db_tables(schema_paths=schema_paths)
+
+    return db_name_to_client
+
+
+def get_read_session():
+    def _get_session() -> Generator[Session, None, None]:
+        session = db_name_to_client["db_read"].get_session()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    return _get_session
+
+
+def get_write_session():
+    def _get_session() -> Generator[Session, None, None]:
+        session = db_name_to_client["db_write"].get_session()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    return _get_session

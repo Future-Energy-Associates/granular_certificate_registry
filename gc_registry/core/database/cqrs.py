@@ -170,4 +170,4 @@ def delete_database_entities(
     write_session.commit()
     read_session.commit()
 
-    return entities[0]
+    return read_entities[0]
