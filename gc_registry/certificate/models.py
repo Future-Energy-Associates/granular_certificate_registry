@@ -21,10 +21,10 @@ class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
         default=None,
         description="An integer ID unique to this bundle within the registry.",
     )
-    issuance_id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
+    issuance_id: str = Field(
         description="""A unique identifier assigned to the GC Bundle at the time of issuance.
-        If the bundle is split through partial transfer or cancellation, this issuance ID remains unchanged across each child GC Bundle.""",
+        If the bundle is split through partial transfer or cancellation, this issuance ID 
+        remains unchanged across each child GC Bundle.""",
     )
     hash: str = Field(
         description="""A unique hash assigned to this bundle at the time of issuance,
