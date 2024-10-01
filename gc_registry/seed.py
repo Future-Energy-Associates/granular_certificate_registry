@@ -1,15 +1,17 @@
 import datetime
 
 from gc_registry.account.models import Account
-from gc_registry.core.database import cqrs, db
+from gc_registry.core.database import cqrs, db, events
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
 from gc_registry.user.models import User
 
 
 def seed_data():
-    write_session = next(db.db_name_to_client["db_write"].yield_session())
-    read_session = next(db.db_name_to_client["db_read"].yield_session())
+    _ = db.get_db_name_to_client()
+    write_session = db.get_write_session()
+    read_session = db.get_read_session()
+    esdb_client = events.get_esdb_client()
 
     print("Seeding the database with data....")
     bmu_ids = [
@@ -33,14 +35,14 @@ def seed_data():
         "name": "A User",
         "roles": ["Production User"],
     }
-    user = User.create(user_dict, write_session, read_session)
+    user = User.create(user_dict, write_session, read_session, esdb_client)
 
     # Create an Account to add the certificates to
     account_dict = {
         "account_name": "Test Account",
         "user_ids": [user.id],
     }
-    account = Account.create(account_dict, write_session, read_session)
+    account = Account.create(account_dict, write_session, read_session, esdb_client)
 
     for bmu_id in bmu_ids:
         device_dict = {
@@ -54,7 +56,7 @@ def seed_data():
             "location": "Some Location",
             "account_id": account.id,
         }
-        device = Device.create(device_dict, write_session, read_session)
+        device = Device.create(device_dict, write_session, read_session, esdb_client)
 
         # Use Elexon to get data from the Elexon API
 
@@ -73,7 +75,9 @@ def seed_data():
             print(f"No certificate bundles found for {bmu_id}")
             continue
 
-        cqrs.write_to_database(certificate_bundles, write_session, read_session)
+        cqrs.write_to_database(
+            certificate_bundles, write_session, read_session, esdb_client
+        )
 
     print("Seeding complete!")
 

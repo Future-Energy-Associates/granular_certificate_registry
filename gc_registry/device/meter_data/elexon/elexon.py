@@ -143,6 +143,7 @@ class ElexonClient:
                 "issue_market_zone": "Great Britain",
                 "emissions_factor_production_device": 0.0,
                 "emissions_factor_source": "Some Data Source",
+                "hash": "Some Hash",
             }
 
             # Validate and append the transformed data

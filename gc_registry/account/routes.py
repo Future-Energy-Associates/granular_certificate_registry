@@ -48,7 +48,7 @@ def update_account(
 
 
 @router.delete(
-    "/delete/{account_id}", status_code=204, response_model=models.AccountRead
+    "/delete/{account_id}", status_code=200, response_model=models.AccountRead
 )
 def delete_account(
     account_id: int,

@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, Field
@@ -19,6 +20,13 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     the state of the database is consistent at all times, and any errors can be rectified by reversing linearly through
     the queue.
     """
+
+    issuance_id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
+        If the bundle is split through partial transfer or cancellation, this issuance ID
+        remains unchanged across each child GC Bundle.""",
+    )
 
     ### Mutable Attributes ###
     certificate_status: str = Field(
@@ -174,6 +182,12 @@ class GranularCertificateBundleBase(utils.ActiveRecord):
     emissions_factor_source: str | None = Field(
         default=None,
         description="Includes a reference to the calculation methodology of the production Device emissions factor.",
+    )
+    hash: str = Field(
+        default=None,
+        description="""A unique hash assigned to this bundle at the time of issuance,
+        formed from the sha256 of the bundle's properties and, if the result of a bundle
+        split, a nonce taken from the hash of the parent bundle.""",
     )
     is_deleted: bool = Field(default=False)
 
