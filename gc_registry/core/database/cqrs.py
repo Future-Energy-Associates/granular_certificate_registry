@@ -69,7 +69,7 @@ def update_database_entity(
     update_entity: BaseModel,
     write_session: Session,
     read_session: Session,
-    esdb_client: EventStoreDBClient | None = None,
+    esdb_client: EventStoreDBClient,
 ) -> None:
     """Update the entity with the provided Model Update instance."""
 
@@ -126,7 +126,7 @@ def delete_database_entities(
     entities: list[SQLModel] | SQLModel,
     write_session: Session,
     read_session: Session,
-    esdb_client: EventStoreDBClient | None = None,
+    esdb_client: EventStoreDBClient,
 ) -> None:
     """Perform a soft delete on the provided entities."""
 

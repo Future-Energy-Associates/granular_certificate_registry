@@ -15,31 +15,36 @@ from gc_registry.account.models import Account
 from gc_registry.device.models import Device
 from gc_registry.main import app
 from gc_registry.user.models import User
+from gc_registry.core.database import db
+from gc_registry.core.database import events
 
 
 @pytest.fixture()
 def api_client(
-    db_write_session: Session, db_read_session: Session
+    db_write_session: Session, db_read_session: Session, esdb_client: EventStoreDBClient
 ) -> Generator[TestClient, None, None]:
     """API Client for testing routes"""
 
-    def get_db_session_override() -> Session:
-        class DBSession:
-            def __init__(self, session: Session):
-                self.session = session
+    def get_write_session_override():
+        return db_write_session
 
-            def yield_session(self) -> Generator[Any, Any, Any]:
-                yield self.session
+    def get_read_session_override():
+        return db_read_session
 
-        db_name_to_client = {
-            "db_write": DBSession(db_write_session),
-            "db_read": DBSession(db_read_session),
+    def get_db_name_to_client_override():
+        return {
+            "write": db_write_session,
+            "read": db_read_session,
         }
 
-        return db_name_to_client
+    def get_esdb_client_override():
+        return esdb_client
 
     # Set dependency overrides
-    app.dependency_overrides["get_db_name_to_client"] = get_db_session_override
+    app.dependency_overrides[db.get_write_session] = get_write_session_override
+    app.dependency_overrides[db.get_read_session] = get_read_session_override
+    app.dependency_overrides[db.get_db_name_to_client] = get_db_name_to_client_override
+    app.dependency_overrides[events.get_esdb_client] = get_esdb_client_override
 
     with TestClient(app) as client:
         yield client

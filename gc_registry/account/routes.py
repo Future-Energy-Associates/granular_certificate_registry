@@ -1,8 +1,9 @@
+from esdbclient import EventStoreDBClient
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
 from gc_registry.account import models, services
-from gc_registry.core.database import db
+from gc_registry.core.database import db, events
 
 # Router initialisation
 router = APIRouter(tags=["Accounts"])
@@ -14,11 +15,13 @@ def create_account(
     account_base: models.AccountBase,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     # services.validate_account(account_base, read_session)
-    print("create_account")
-    account = models.Account.create(account_base, write_session, read_session)
-    print("account:", account)
+    account = models.Account.create(
+        account_base, write_session, read_session, esdb_client
+    )
+
     return account
 
 
@@ -38,11 +41,11 @@ def update_account(
     account_update: models.AccountUpdate,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    account = models.Account.by_id(account_id, write_session())
-    services.validate_account(account_update, read_session())
+    account = models.Account.by_id(account_id, write_session)
 
-    return account.update(account_update, write_session(), read_session())
+    return account.update(account_update, write_session, read_session, esdb_client)
 
 
 @router.delete("/delete/{account_id}", status_code=204)
@@ -50,6 +53,7 @@ def delete_account(
     account_id: int,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    account = models.Account.by_id(account_id, write_session())
-    return account.delete(write_session(), read_session())
+    account = models.Account.by_id(account_id, write_session)
+    return account.delete(write_session, read_session, esdb_client)

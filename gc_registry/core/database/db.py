@@ -130,9 +130,9 @@ def get_session(target: str) -> Generator[Session, None, None]:
             session.close()
 
 
-def get_write_session() -> Generator[Session, None, None]:
+def get_write_session() -> Session:
     return next(get_session("db_write"))
 
 
-def get_read_session() -> Generator[Session, None, None]:
+def get_read_session() -> Session:
     return next(get_session("db_read"))

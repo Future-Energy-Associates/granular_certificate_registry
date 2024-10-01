@@ -30,4 +30,4 @@ class AccountRead(AccountBase):
 
 class AccountUpdate(BaseModel):
     account_name: str | None = None
-    user_id: int | None = None
+    user_ids: List[int] | None = None

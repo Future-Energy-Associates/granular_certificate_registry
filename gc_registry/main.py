@@ -8,7 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .account.routes import router as account_router
 from .certificate.routes import router as certificate_router
-from .core.database.db import get_db_name_to_client, get_read_session, get_write_session
+from .core.database.db import get_db_name_to_client
 from .device.routes import router as device_router
 from .measurement.routes import router as measurements_router
 from .organisation.routes import router as organisation_router
@@ -71,37 +71,30 @@ app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
 app.include_router(
     certificate_router,
     prefix="/certificate",
-    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     storage_router,
     prefix="/storage",
-    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     organisation_router,
     prefix="/organisation",
-    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     user_router,
     prefix="/user",
-    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     account_router,
     prefix="/account",
-    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     device_router,
     prefix="/device",
-    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     measurements_router,
     prefix="/measurement",
-    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 
 openapi_data = app.openapi()

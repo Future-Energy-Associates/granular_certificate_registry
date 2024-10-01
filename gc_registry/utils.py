@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Union
 
+from esdbclient import EventStoreDBClient
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from sqlmodel import Session, SQLModel, select
@@ -35,6 +36,7 @@ class ActiveRecord(SQLModel):
         source: Union[dict, SQLModel],
         write_session: Session,
         read_session: Session,
+        esdb_client: EventStoreDBClient,
     ) -> None:
         if isinstance(source, SQLModel):
             obj = cls.model_validate(source)
@@ -44,7 +46,9 @@ class ActiveRecord(SQLModel):
             raise ValueError(f"The input type {type(source)} can not be processed")
 
         logger.debug(f"Creating {cls.__name__}: {obj.model_dump_json()}")
-        created_entity = cqrs.write_to_database(obj, write_session, read_session)
+        created_entity = cqrs.write_to_database(
+            obj, write_session, read_session, esdb_client
+        )
 
         return created_entity
 
