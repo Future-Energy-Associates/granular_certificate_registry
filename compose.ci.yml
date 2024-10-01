@@ -59,3 +59,10 @@ services:
       - type: volume
         source: eventstore-volume-logs
         target: /var/log/eventstore
+
+volumes:
+  gc_registry:
+  postgres_data_write:
+  postgres_data_read:
+  eventstore-volume-data:
+  eventstore-volume-logs:
