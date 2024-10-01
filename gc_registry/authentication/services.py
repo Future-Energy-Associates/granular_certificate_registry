@@ -179,7 +179,7 @@ def refresh(oauth_token: str = Depends(oauth2_scheme)):
 def logout(
     request: Request,
     oauth_token: str = Depends(oauth2_scheme),
-    session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     is_token_blacklisted(oauth_token)
 

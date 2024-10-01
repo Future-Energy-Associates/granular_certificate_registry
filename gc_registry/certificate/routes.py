@@ -24,7 +24,7 @@ router = APIRouter(tags=["Certificates"])
 )
 def create_certificate_bundle(
     certificate_bundle: GranularCertificateBundleBase,
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
     nonce: str = None,
 ):
     """Create a GC Bundle with the specified properties."""
@@ -59,7 +59,7 @@ def create_certificate_bundle(
 def certificate_bundle_transfer(
     certificate_bundle_action: GranularCertificateAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
 
@@ -82,7 +82,7 @@ def certificate_bundle_transfer(
 def query_certificate_bundles(
     certificate_bundle_query: GranularCertificateAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    session: Session = Depends(db.get_read_session),
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""
     db_certificate_action = GranularCertificateAction.create(
@@ -104,7 +104,7 @@ def query_certificate_bundles(
 def certificate_bundle_recurring_transfer(
     certificate_bundle_action: GranularCertificateAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """Set up a protocol that transfers a fixed number of certificates matching the provided search criteria to a given target Account once per time period."""
     db_certificate_action = GranularCertificateAction.create(
@@ -126,7 +126,7 @@ def certificate_bundle_recurring_transfer(
 def certificate_bundle_cancellation(
     certificate_bundle_action: GranularCertificateAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """Cancel a fixed number of certificates matched to the given filter parameters within the specified Account."""
     db_certificate_action = GranularCertificateAction.create(
@@ -148,7 +148,7 @@ def certificate_bundle_cancellation(
 def certificate_bundle_recurring_cancellation(
     certificate_bundle_action: GranularCertificateAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """Set up a protocol that cancels a fixed number of certificates matching the provided search criteria within a given Account once per time period."""
     db_certificate_action = GranularCertificateAction.create(
@@ -170,7 +170,7 @@ def certificate_bundle_recurring_cancellation(
 def certificate_bundle_claim(
     certificate_bundle_action: GranularCertificateAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """Claim a fixed number of cancelled certificates matching the provided search criteria within a given Account,
     if the User is specified as the Beneficiary of those cancelled GCs. For more information on the claim process,
@@ -194,7 +194,7 @@ def certificate_bundle_claim(
 def certificate_bundle_withdraw(
     certificate_bundle_action: GranularCertificateAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of certificates from the specified Account matching the provided search criteria."""
     db_certificate_action = GranularCertificateAction.create(
@@ -216,7 +216,7 @@ def certificate_bundle_withdraw(
 def certificate_bundle_reserve(
     certificate_bundle_action: GranularCertificateAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """Label a fixed number of certificates as Reserved from the specified Account matching the provided search criteria."""
     db_certificate_action = GranularCertificateAction.create(

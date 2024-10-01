@@ -31,7 +31,7 @@ router = APIRouter(tags=["Storage"])
 def create_SCR(
     scr: StorageChargeRecordBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """Create a Storage Charge Record with the specified properties."""
     db_scr = StorageChargeRecord.create(scr, session)
@@ -51,7 +51,7 @@ def create_SCR(
 def query_SCR(
     scr_query: StorageAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    session: Session = Depends(db.get_read_session),
 ):
     """Return all SCRs from the specified Account that match the provided search criteria."""
     scr_action = StorageAction.create(scr_query, session)
@@ -73,7 +73,7 @@ def query_SCR(
 def create_SDR(
     sdr: StorageDischargeRecordBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """Create a Storage Discharge Record with the specified properties."""
     db_sdr = StorageDischargeRecord.create(sdr, session)
@@ -93,7 +93,7 @@ def create_SDR(
 def query_SDR(
     sdr_query: StorageAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    session: Session = Depends(db.get_read_session),
 ):
     """Return all SDRs from the specified Account that match the provided search criteria."""
     sdr_action = StorageAction.create(sdr_query, session)
@@ -113,7 +113,7 @@ def query_SDR(
 def SCR_withdraw(
     storage_action_base: StorageAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SCRs from the specified Account matching the provided search criteria."""
     scr_action = StorageAction.create(storage_action_base, session)
@@ -133,7 +133,7 @@ def SCR_withdraw(
 def SDR_withdraw(
     storage_action_base: StorageAction,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SDRs from the specified Account matching the provided search criteria."""
     sdr_action = StorageAction.create(storage_action_base, session)
@@ -153,7 +153,7 @@ def SDR_withdraw(
 def issue_SDGC(
     sdgc: GranularCertificateBundleBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     """A GC Bundle that has been issued following the verification of a cancelled GC Bundle and the proper allocation of a pair
     of Storage Charge and Discharge Records. The GC Bundle is issued to the Account of the Storage Device, and is identical to

@@ -71,37 +71,37 @@ app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
 app.include_router(
     certificate_router,
     prefix="/certificate",
-    dependencies=[Depends(get_read_session), Depends(get_write_session)],
+    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     storage_router,
     prefix="/storage",
-    dependencies=[Depends(get_read_session), Depends(get_write_session)],
+    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     organisation_router,
     prefix="/organisation",
-    dependencies=[Depends(get_read_session), Depends(get_write_session)],
+    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     user_router,
     prefix="/user",
-    dependencies=[Depends(get_read_session), Depends(get_write_session)],
+    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     account_router,
     prefix="/account",
-    dependencies=[Depends(get_read_session), Depends(get_write_session)],
+    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     device_router,
     prefix="/device",
-    dependencies=[Depends(get_read_session), Depends(get_write_session)],
+    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 app.include_router(
     measurements_router,
     prefix="/measurement",
-    dependencies=[Depends(get_read_session), Depends(get_write_session)],
+    # dependencies=[Depends(get_read_session), Depends(get_write_session)],
 )
 
 openapi_data = app.openapi()

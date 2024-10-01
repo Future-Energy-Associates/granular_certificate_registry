@@ -17,7 +17,7 @@ router = APIRouter(tags=["Devices"])
 def create_device(
     device_base: models.DeviceBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     db_device = models.Device.create(device_base, session)
 
@@ -30,7 +30,7 @@ def create_device(
 def read_device(
     device_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    session: Session = Depends(db.get_read_session),
 ):
     db_device = models.Device.by_id(device_id, session)
 
@@ -44,8 +44,8 @@ def update_device(
     device: models.DeviceRead,
     device_update: models.DeviceUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    write_session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
-    read_session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
 ):
     device_updated = cqrs.update_database_entity(
         device, device_update, write_session, read_session
@@ -60,7 +60,7 @@ def update_device(
 def delete_device(
     device_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     db_device = models.Device.by_id(device_id, session)
     db_device.delete(session)

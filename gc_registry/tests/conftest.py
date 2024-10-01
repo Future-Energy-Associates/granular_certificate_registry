@@ -1,5 +1,5 @@
 import os
-from typing import Generator
+from typing import Any, Generator
 
 import pytest
 from esdbclient import EventStoreDBClient, NewEvent, StreamState
@@ -17,7 +17,7 @@ from gc_registry.main import app
 from gc_registry.user.models import User
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def api_client(
     db_write_session: Session, db_read_session: Session
 ) -> Generator[TestClient, None, None]:
@@ -28,8 +28,8 @@ def api_client(
             def __init__(self, session: Session):
                 self.session = session
 
-            async def get_session(self) -> Session:
-                return self.session
+            def yield_session(self) -> Generator[Any, Any, Any]:
+                yield self.session
 
         db_name_to_client = {
             "db_write": DBSession(db_write_session),

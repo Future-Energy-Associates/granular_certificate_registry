@@ -17,7 +17,7 @@ router = APIRouter(tags=["Measurements"])
 def create_measurement(
     measurement_base: models.MeasurementReportBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     db_measurement = models.MeasurementReport.create(measurement_base, session)
 
@@ -30,7 +30,7 @@ def create_measurement(
 def read_measurement(
     measurement_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    session: Session = Depends(db.get_read_session),
 ):
     db_measurement = models.MeasurementReport.by_id(measurement_id, session)
 
@@ -44,8 +44,8 @@ def update_measurement(
     measurement: models.MeasurementReportRead,
     measurement_update: models.MeasurementReportUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    write_session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
-    read_session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
 ):
     measurement_updated = cqrs.update_database_entity(
         measurement, measurement_update, write_session, read_session
@@ -60,7 +60,7 @@ def update_measurement(
 def delete_measurement(
     measurement_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     db_measurement = models.MeasurementReport.by_id(measurement_id, session)
     db_measurement.delete(session)

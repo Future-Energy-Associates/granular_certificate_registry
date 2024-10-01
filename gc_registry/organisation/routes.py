@@ -15,7 +15,7 @@ router = APIRouter(tags=["Organisations"])
 def create_organisation(
     organisation_base: models.OrganisationBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     db_organisation = models.Organisation.create(organisation_base, session)
 
@@ -28,7 +28,7 @@ def create_organisation(
 def read_organisation(
     organisation_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    session: Session = Depends(db.get_read_session),
 ):
     db_organisation = models.Organisation.by_id(organisation_id, session)
 
@@ -42,8 +42,8 @@ def update_organisation(
     organisation: models.OrganisationRead,
     organisation_update: models.OrganisationUpdate,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    write_session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
-    read_session: Session = Depends(db.db_name_to_client["db_read"].yield_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
 ):
     organisation_updated = cqrs.update_database_entity(
         organisation, organisation_update, write_session, read_session
@@ -58,7 +58,7 @@ def update_organisation(
 def delete_organisation(
     organisation_id: int,
     headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["db_write"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     db_organisation = models.Organisation.by_id(organisation_id, session)
     db_organisation.delete(session)

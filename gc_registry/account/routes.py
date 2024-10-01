@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from gc_registry import utils
-from gc_registry.account import models
-from gc_registry.authentication import services
+from gc_registry.account import models, services
 from gc_registry.core.database import db
 
 # Router initialisation
@@ -11,20 +9,17 @@ router = APIRouter(tags=["Accounts"])
 
 
 ### Account ###
-@router.post("/create", status_code=201)
+@router.post("/create", status_code=201, response_model=models.AccountRead)
 def create_account(
     account_base: models.AccountBase,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
 ):
-    # validation
-    services.validate(account_base)
-
-    account_created = models.Account.create(account_base, write_session, read_session)
-
-    return utils.format_json_response(
-        account_created, headers=None, response_model=models.AccountRead
-    )
+    # services.validate_account(account_base, read_session)
+    print("create_account")
+    account = models.Account.create(account_base, write_session, read_session)
+    print("account:", account)
+    return account
 
 
 @router.get("/{account_id}", response_model=models.AccountRead)
@@ -34,9 +29,7 @@ def read_account(
 ):
     account = models.Account.by_id(account_id, read_session)
 
-    return utils.format_json_response(
-        account, headers=None, response_model=models.AccountRead
-    )
+    return account
 
 
 @router.patch("/update/{account_id}", response_model=models.AccountRead)
@@ -46,12 +39,10 @@ def update_account(
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
 ):
-    account = models.Account.by_id(account_id, write_session)
-    account_updated = account.update(account_update, write_session, read_session)
+    account = models.Account.by_id(account_id, write_session())
+    services.validate_account(account_update, read_session())
 
-    return utils.format_json_response(
-        account_updated, headers=None, response_model=models.AccountRead
-    )
+    return account.update(account_update, write_session(), read_session())
 
 
 @router.delete("/delete/{account_id}", status_code=204)
@@ -60,9 +51,5 @@ def delete_account(
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
 ):
-    account = models.Account.by_id(account_id, write_session)
-    account_deleted = account.delete(write_session, read_session)
-
-    return utils.format_json_response(
-        account_deleted, headers=None, response_model=None
-    )
+    account = models.Account.by_id(account_id, write_session())
+    return account.delete(write_session(), read_session())

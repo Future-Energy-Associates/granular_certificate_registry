@@ -59,14 +59,14 @@ class DButils:
         self.engine = create_engine(self.connection_str, pool_pre_ping=True)
 
     def yield_session(self) -> Generator[Any, Any, Any]:
-        with Session(self.engine) as session:
+        with Session(self.engine) as session, session.begin():
             yield session
 
     def yield_twophase_session(self, write_object) -> Generator[Any, Any, Any]:
         with Session(self.engine, twophase=True) as session:
             yield session
 
-    async def get_session(self) -> Session:
+    def get_session(self) -> Session:
         return Session(self.engine)
 
     def initiate_db_tables(self, schema_paths: list | None = None) -> None:
@@ -122,23 +122,17 @@ def get_db_name_to_client():
     return db_name_to_client
 
 
-def get_read_session():
-    def _get_session() -> Generator[Session, None, None]:
-        session = db_name_to_client["db_read"].get_session()
+def get_session(target: str) -> Generator[Session, None, None]:
+    with next(db_name_to_client[target].yield_session()) as session:
         try:
             yield session
         finally:
             session.close()
 
-    return _get_session
+
+def get_write_session() -> Generator[Session, None, None]:
+    return next(get_session("db_write"))
 
 
-def get_write_session():
-    def _get_session() -> Generator[Session, None, None]:
-        session = db_name_to_client["db_write"].get_session()
-        try:
-            yield session
-        finally:
-            session.close()
-
-    return _get_session
+def get_read_session() -> Generator[Session, None, None]:
+    return next(get_session("db_read"))
