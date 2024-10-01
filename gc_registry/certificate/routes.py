@@ -1,3 +1,4 @@
+from esdbclient import EventStoreDBClient
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
@@ -11,212 +12,186 @@ from gc_registry.certificate.models import (
     GranularCertificateQueryResponse,
 )
 from gc_registry.certificate.services import create_bundle_hash
-from gc_registry.core.database import db
+from gc_registry.core.database import db, events
 
 # Router initialisation
 router = APIRouter(tags=["Certificates"])
 
 
 @router.post(
-    "/certificates/create",
+    "/create",
     response_model=GranularCertificateBundle,
     status_code=201,
 )
 def create_certificate_bundle(
     certificate_bundle: GranularCertificateBundleBase,
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
     nonce: str = None,
 ):
     """Create a GC Bundle with the specified properties."""
     db_certificate_bundle = GranularCertificateBundle.create(
-        certificate_bundle, session
+        certificate_bundle, write_session, read_session, esdb_client
     )
 
     # Bundle hash is the sha256 of the bundle's properties and, if the result of a bundle split,
     # a nonce taken from the hash of the parent bundle.
     db_certificate_bundle.hash = create_bundle_hash(db_certificate_bundle, nonce)
 
-    return utils.format_json_response(
-        db_certificate_bundle,
-        headers=None,
-        response_model=GranularCertificateBundle,
-    )
+    return db_certificate_bundle
 
 
 @router.post(
-    "/certificates/transfer",
+    "/transfer",
     response_model=GranularCertificateActionResponse,
     status_code=202,
 )
 def certificate_bundle_transfer(
     certificate_bundle_action: GranularCertificateAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
 
     db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, session
+        certificate_bundle_action, write_session, read_session, esdb_client
     )
 
-    return utils.format_json_response(
-        db_certificate_action,
-        headers,
-        response_model=GranularCertificateActionResponse,
-    )
+    return db_certificate_action
 
 
 @router.get(
-    "/certificates/query",
+    "/query",
     response_model=GranularCertificateQueryResponse,
     status_code=202,
 )
 def query_certificate_bundles(
     certificate_bundle_query: GranularCertificateAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""
     db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_query, session
+        certificate_bundle_query, write_session, read_session, esdb_client
     )
 
-    return utils.format_json_response(
-        db_certificate_action,
-        headers,
-        response_model=GranularCertificateQueryResponse,
-    )
+    return db_certificate_action
 
 
 @router.post(
-    "/certificates/recurring_transfer",
+    "/recurring_transfer",
     response_model=GranularCertificateActionResponse,
     status_code=202,
 )
 def certificate_bundle_recurring_transfer(
     certificate_bundle_action: GranularCertificateAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Set up a protocol that transfers a fixed number of certificates matching the provided search criteria to a given target Account once per time period."""
     db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, session
+        certificate_bundle_action, write_session, read_session, esdb_client
     )
 
-    return utils.format_json_response(
-        db_certificate_action,
-        headers,
-        response_model=GranularCertificateActionResponse,
-    )
+    return db_certificate_action
 
 
 @router.post(
-    "/certificates/cancel",
+    "/cancel",
     response_model=GranularCertificateActionResponse,
     status_code=202,
 )
 def certificate_bundle_cancellation(
     certificate_bundle_action: GranularCertificateAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Cancel a fixed number of certificates matched to the given filter parameters within the specified Account."""
     db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, session
+        certificate_bundle_action, write_session, read_session, esdb_client
     )
 
-    return utils.format_json_response(
-        db_certificate_action,
-        headers,
-        response_model=GranularCertificateActionResponse,
-    )
+    return db_certificate_action
 
 
 @router.post(
-    "/certificates/recurring_cancel",
+    "/recurring_cancel",
     response_model=GranularCertificateActionResponse,
     status_code=202,
 )
 def certificate_bundle_recurring_cancellation(
     certificate_bundle_action: GranularCertificateAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Set up a protocol that cancels a fixed number of certificates matching the provided search criteria within a given Account once per time period."""
     db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, session
+        certificate_bundle_action, write_session, read_session, esdb_client
     )
 
-    return utils.format_json_response(
-        db_certificate_action,
-        headers,
-        response_model=GranularCertificateActionResponse,
-    )
+    return db_certificate_action
 
 
 @router.post(
-    "/certificates/claim",
+    "/claim",
     response_model=GranularCertificateActionResponse,
     status_code=202,
 )
 def certificate_bundle_claim(
     certificate_bundle_action: GranularCertificateAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Claim a fixed number of cancelled certificates matching the provided search criteria within a given Account,
     if the User is specified as the Beneficiary of those cancelled GCs. For more information on the claim process,
     please see page 15 of the EnergyTag GC Scheme Standard document."""
     db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, session
+        certificate_bundle_action, write_session, read_session, esdb_client
     )
 
-    return utils.format_json_response(
-        db_certificate_action,
-        headers,
-        response_model=GranularCertificateActionResponse,
-    )
+    return db_certificate_action
 
 
 @router.post(
-    "/certificates/withdraw",
+    "/withdraw",
     response_model=GranularCertificateActionResponse,
     status_code=202,
 )
 def certificate_bundle_withdraw(
     certificate_bundle_action: GranularCertificateAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """(Issuing Body only) - Withdraw a fixed number of certificates from the specified Account matching the provided search criteria."""
     db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, session
+        certificate_bundle_action, write_session, read_session, esdb_client
     )
 
-    return utils.format_json_response(
-        db_certificate_action,
-        headers,
-        response_model=GranularCertificateActionResponse,
-    )
+    return db_certificate_action
 
 
 @router.post(
-    "/certificates/reseve",
+    "/reseve",
     response_model=GranularCertificateActionResponse,
     status_code=202,
 )
 def certificate_bundle_reserve(
     certificate_bundle_action: GranularCertificateAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Label a fixed number of certificates as Reserved from the specified Account matching the provided search criteria."""
     db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, session
+        certificate_bundle_action, write_session, read_session, esdb_client
     )
 
-    return utils.format_json_response(
-        db_certificate_action,
-        headers,
-        response_model=GranularCertificateActionResponse,
-    )
+    return db_certificate_action

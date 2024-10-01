@@ -1,9 +1,8 @@
+from esdbclient import EventStoreDBClient
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from gc_registry import utils
-from gc_registry.authentication import services
-from gc_registry.core.database import cqrs, db
+from gc_registry.core.database import db, events
 from gc_registry.organisation import models
 
 # Router initialisation
@@ -11,58 +10,51 @@ router = APIRouter(tags=["Organisations"])
 
 
 # organisation
-@router.post("/organisation", response_model=models.OrganisationRead)
+@router.post("/create", response_model=models.OrganisationRead)
 def create_organisation(
     organisation_base: models.OrganisationBase,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
-):
-    db_organisation = models.Organisation.create(organisation_base, session)
-
-    return utils.format_json_response(
-        db_organisation, headers, response_model=models.OrganisationRead
-    )
-
-
-@router.get("/organisation/{id}", response_model=models.OrganisationRead)
-def read_organisation(
-    organisation_id: int,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_read_session),
-):
-    db_organisation = models.Organisation.by_id(organisation_id, session)
-
-    return utils.format_json_response(
-        db_organisation, headers, response_model=models.OrganisationRead
-    )
-
-
-@router.patch("/organisation/{id}", response_model=models.OrganisationRead)
-def update_organisation(
-    organisation: models.OrganisationRead,
-    organisation_update: models.OrganisationUpdate,
-    headers: dict = Depends(services.validate_user_and_get_headers),
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    organisation_updated = cqrs.update_database_entity(
-        organisation, organisation_update, write_session, read_session
+    organisation = models.Organisation.create(
+        organisation_base, write_session, read_session, esdb_client
     )
 
-    return utils.format_json_response(
-        organisation_updated, headers, response_model=models.OrganisationRead
+    return organisation
+
+
+@router.get("/{organisation_id}", response_model=models.OrganisationRead)
+def read_organisation(
+    organisation_id: int,
+    read_session: Session = Depends(db.get_read_session),
+):
+    organisation = models.Organisation.by_id(organisation_id, read_session)
+
+    return organisation
+
+
+@router.patch("/update/{organisation_id}", response_model=models.OrganisationRead)
+def update_organisation(
+    organisation_id: int,
+    organisation_update: models.OrganisationUpdate,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+):
+    organisation = models.Organisation.by_id(organisation_id, read_session)
+
+    return organisation.update(
+        organisation_update, write_session, read_session, esdb_client
     )
 
 
-@router.delete("/organisation/{id}", response_model=models.OrganisationRead)
+@router.delete("/delete/{organisation_id}", response_model=models.OrganisationRead)
 def delete_organisation(
     organisation_id: int,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    db_organisation = models.Organisation.by_id(organisation_id, session)
-    db_organisation.delete(session)
-
-    return utils.format_json_response(
-        db_organisation, headers, response_model=models.OrganisationRead
-    )
+    organisation = models.Organisation.by_id(organisation_id, write_session)
+    return organisation.delete(write_session, read_session, esdb_client)

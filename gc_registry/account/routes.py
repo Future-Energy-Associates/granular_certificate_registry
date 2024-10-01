@@ -9,7 +9,6 @@ from gc_registry.core.database import db, events
 router = APIRouter(tags=["Accounts"])
 
 
-### Account ###
 @router.post("/create", status_code=201, response_model=models.AccountRead)
 def create_account(
     account_base: models.AccountBase,
@@ -48,7 +47,9 @@ def update_account(
     return account.update(account_update, write_session, read_session, esdb_client)
 
 
-@router.delete("/delete/{account_id}", status_code=204)
+@router.delete(
+    "/delete/{account_id}", status_code=204, response_model=models.AccountRead
+)
 def delete_account(
     account_id: int,
     write_session: Session = Depends(db.get_write_session),

@@ -1,70 +1,57 @@
 # Imports
+from esdbclient import EventStoreDBClient
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from gc_registry import utils
 from gc_registry.authentication import services
-from gc_registry.core.database import cqrs, db
+from gc_registry.core.database import db, events
 from gc_registry.device import models
 
 # Router initialisation
 router = APIRouter(tags=["Devices"])
 
-### Device ###
 
-
-@router.post("/device", response_model=models.DeviceRead)
+@router.post("/create", response_model=models.DeviceRead)
 def create_device(
     device_base: models.DeviceBase,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
-):
-    db_device = models.Device.create(device_base, session)
-
-    return utils.format_json_response(
-        db_device, headers, response_model=models.DeviceRead
-    )
-
-
-@router.get("/device/{id}", response_model=models.DeviceRead)
-def read_device(
-    device_id: int,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_read_session),
-):
-    db_device = models.Device.by_id(device_id, session)
-
-    return utils.format_json_response(
-        db_device, headers, response_model=models.DeviceRead
-    )
-
-
-@router.patch("/device/{id}", response_model=models.DeviceRead)
-def update_device(
-    device: models.DeviceRead,
-    device_update: models.DeviceUpdate,
-    headers: dict = Depends(services.validate_user_and_get_headers),
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    device_updated = cqrs.update_database_entity(
-        device, device_update, write_session, read_session
-    )
+    device = models.Device.create(device_base, write_session, read_session, esdb_client)
 
-    return utils.format_json_response(
-        device_updated, headers, response_model=models.DeviceRead
-    )
+    return device
 
 
-@router.delete("/device/{id}", response_model=models.DeviceRead)
+@router.get("/{device_id}", response_model=models.DeviceRead)
+def read_device(
+    device_id: int,
+    read_session: Session = Depends(db.get_read_session),
+):
+    device = models.Device.by_id(device_id, read_session)
+
+    return device
+
+
+@router.patch("/update/{device_id}", response_model=models.DeviceRead)
+def update_device(
+    device_id: int,
+    device_update: models.DeviceUpdate,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+):
+    device = models.Device.by_id(device_id, read_session)
+
+    return device.update(device_update, write_session, read_session, esdb_client)
+
+
+@router.delete("/delete/{device_id}", response_model=models.DeviceRead)
 def delete_device(
     device_id: int,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.get_write_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    db_device = models.Device.by_id(device_id, session)
-    db_device.delete(session)
-
-    return utils.format_json_response(
-        db_device, headers, response_model=models.DeviceRead
-    )
+    device = models.Device.by_id(device_id, write_session)
+    return device.delete(write_session, read_session, esdb_client)
