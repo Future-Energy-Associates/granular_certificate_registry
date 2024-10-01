@@ -1,5 +1,5 @@
 import os
-from typing import Any, Generator
+from typing import Generator
 
 import pytest
 from esdbclient import EventStoreDBClient, NewEvent, StreamState
@@ -12,11 +12,10 @@ from testcontainers.core.waiting_utils import wait_for_logs
 from testcontainers.postgres import PostgresContainer
 
 from gc_registry.account.models import Account
+from gc_registry.core.database import db, events
 from gc_registry.device.models import Device
 from gc_registry.main import app
 from gc_registry.user.models import User
-from gc_registry.core.database import db
-from gc_registry.core.database import events
 
 
 @pytest.fixture()

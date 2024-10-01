@@ -2,8 +2,6 @@ from esdbclient import EventStoreDBClient
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from gc_registry import utils
-from gc_registry.authentication import services
 from gc_registry.certificate.models import (
     GranularCertificateAction,
     GranularCertificateActionResponse,

@@ -3,7 +3,6 @@ from esdbclient import EventStoreDBClient
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from gc_registry.authentication import services
 from gc_registry.core.database import db, events
 from gc_registry.device import models
 

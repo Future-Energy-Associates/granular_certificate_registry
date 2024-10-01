@@ -1,7 +1,5 @@
 import datetime
 
-from sqlmodel import Session
-
 from gc_registry.account.models import Account
 from gc_registry.core.database import cqrs, db
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient

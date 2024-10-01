@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
 from gc_registry.account.models import Account
-from gc_registry.user.models import User, UserAccountLink
+from gc_registry.user.models import User
 
 
 def validate_account(account, read_session):
