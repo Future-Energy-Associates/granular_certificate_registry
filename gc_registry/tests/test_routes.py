@@ -14,7 +14,7 @@ class TestRoutes:
     def test_create_entity(self, api_client):
         """Test that entities can be created in the database via their FastAPI routes."""
 
-        new_account = AccountBase(account_name="Test Account")
+        new_account = AccountBase(account_name="Test Account", user_ids=[1, 2, 3])
 
         created_account = api_client.post(
             "account/create", data=new_account.model_dump_json()
@@ -25,8 +25,12 @@ class TestRoutes:
         created_account_from_db = Account(**created_account_from_db.json())
 
         assert (
-            created_account == new_account
-        ), f"Expected {new_account} but got {created_account}"
+            created_account.account_name == created_account_from_db.account_name
+        ), f"Expected {new_account.account_name} but got {created_account.account_name}"
+
+        assert (
+            created_account.user_ids == created_account_from_db.user_ids
+        ), f"Expected {created_account.user_ids} but got {created_account_from_db.user_ids}"
 
     def test_update_entity(self, api_client, fake_db_account: Account):
         """Test that entities can be updated in the database via their FastAPI routes."""
@@ -39,11 +43,11 @@ class TestRoutes:
         )
         updated_account = AccountUpdate(**updated_account.json())
 
-        updated_account_from_db = api_client.get(f"account/{updated_account.id}")
+        updated_account_from_db = api_client.get(f"account/{fake_db_account.id}")
         updated_account_from_db = Account(**updated_account_from_db.json())
 
         assert (
-            updated_account_from_db.name == updated_account.name
+            updated_account_from_db.account_name == updated_account.account_name
         ), f"Expected {updated_account} but got {updated_account_from_db}"
 
     def test_delete_entity(self, api_client, fake_db_account: Account):

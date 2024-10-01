@@ -62,6 +62,7 @@ class ActiveRecord(SQLModel):
         update_entity: Union[dict, SQLModel],
         write_session: Session,
         read_session: Session,
+        esdb_client: EventStoreDBClient,
     ) -> None:
         logger.debug(f"Updating {self.__class__.__name__}: {self.model_dump_json()}")
         updated_entity = cqrs.update_database_entity(
@@ -69,14 +70,23 @@ class ActiveRecord(SQLModel):
             update_entity=update_entity,
             write_session=write_session,
             read_session=read_session,
+            esdb_client=esdb_client,
         )
 
         return updated_entity
 
-    def delete(self, write_session: Session, read_session: Session) -> None:
+    def delete(
+        self,
+        write_session: Session,
+        read_session: Session,
+        esdb_client: EventStoreDBClient,
+    ) -> None:
         logger.debug(f"Deleting {self.__class__.__name__}: {self.model_dump_json()}")
         deleted_entity = cqrs.delete_database_entities(
-            entities=self, write_session=write_session, read_session=read_session
+            entities=self,
+            write_session=write_session,
+            read_session=read_session,
+            esdb_client=esdb_client,
         )
 
         return deleted_entity
