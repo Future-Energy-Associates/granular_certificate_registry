@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import elexonpy
 import httpx
@@ -17,6 +17,7 @@ class ElexonClient:
         self.base_url = "https://data.elexon.co.uk/bmrs/api/v1"
         self.client = ApiClient()
         self.bm_client_dynamic = elexonpy.BalancingMechanismDynamicApi()
+        self.bm_client_static = elexonpy.BalancingMechanismPhysicalApi()
 
     def get_bm_physical_data_in_datetime_range(
         self,
@@ -39,15 +40,16 @@ class ElexonClient:
 
         return data
 
-    def get_dataset_in_datetime_range(
+    def get_sp_dataset_in_datetime_range(
         self,
         dataset,
         from_date: datetime,
         to_date: datetime,
         bmu_ids: list[str] | None = None,
+        frequency: str = "30min",
     ):
         data = []
-        for half_hour_dt in pd.date_range(from_date, to_date, freq="30min"):
+        for half_hour_dt in pd.date_range(from_date, to_date, freq=frequency):
             params = {
                 "settlementDate": half_hour_dt.date(),
                 "settlementPeriod": datetime_to_settlement_period(half_hour_dt),
@@ -64,6 +66,25 @@ class ElexonClient:
             data.extend(response.json()["data"])
 
         return data
+
+    def get_asset_dataset_in_datetime_range(
+        self,
+        dataset,
+        from_date: date,
+        to_date: date,
+    ):
+        params = {
+            "publishDateTimeFrom": from_date,
+            "publishDateTimeTo": to_date,
+        }
+        response = httpx.get(
+            f"{self.base_url}/datasets/{dataset}",
+            params=params,  # type: ignore
+        )
+
+        response.raise_for_status()
+
+        return response.json()
 
     def map_generation_to_certificates(
         self,
