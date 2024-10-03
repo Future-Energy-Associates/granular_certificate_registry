@@ -17,7 +17,7 @@ def write_to_database(
     entities: list[SQLModel] | SQLModel,
     write_session: Session,
     read_session: Session,
-    esdb_client: EventStoreDBClient | None = None,
+    esdb_client: EventStoreDBClient,
 ) -> list[SQLModel] | SQLModel | None:
     """Write the provided entities to the read and write databases, saving an
     Event entry for each entity."""
