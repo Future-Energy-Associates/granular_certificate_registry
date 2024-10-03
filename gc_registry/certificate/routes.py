@@ -26,6 +26,7 @@ def create_certificate_bundle(
     certificate_bundle: GranularCertificateBundleBase,
     headers: dict = Depends(services.validate_user_and_get_headers),
     session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    nonce: str = None,
 ):
     """Create a GC Bundle with the specified properties."""
     db_certificate_bundle = GranularCertificateBundle.create(
