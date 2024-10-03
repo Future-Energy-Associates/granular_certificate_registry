@@ -26,16 +26,11 @@ def create_certificate_bundle(
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
-    nonce: str = None,
 ):
     """Create a GC Bundle with the specified properties."""
     db_certificate_bundle = GranularCertificateBundle.create(
         certificate_bundle, write_session, read_session, esdb_client
     )
-
-    # Bundle hash is the sha256 of the bundle's properties and, if the result of a bundle split,
-    # a nonce taken from the hash of the parent bundle.
-    db_certificate_bundle.hash = create_bundle_hash(db_certificate_bundle, nonce)
 
     return db_certificate_bundle
 
