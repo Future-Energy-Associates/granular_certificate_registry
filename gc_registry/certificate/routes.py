@@ -10,6 +10,7 @@ from gc_registry.certificate.models import (
     GranularCertificateBundleBase,
     GranularCertificateQueryResponse,
 )
+from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db
 
 # Router initialisation
@@ -30,6 +31,10 @@ def create_certificate_bundle(
     db_certificate_bundle = GranularCertificateBundle.create(
         certificate_bundle, session
     )
+
+    # Bundle hash is the sha256 of the bundle's properties and, if the result of a bundle split,
+    # a nonce taken from the hash of the parent bundle.
+    db_certificate_bundle.hash = create_bundle_hash(db_certificate_bundle, nonce)
 
     return utils.format_json_response(
         db_certificate_bundle,
