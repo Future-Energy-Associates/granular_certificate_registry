@@ -1,4 +1,3 @@
-import uuid
 from typing import List, Union
 
 from sqlmodel import Field
