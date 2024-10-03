@@ -75,7 +75,7 @@ def seed_data():
             print(f"No certificate bundles found for {bmu_id}")
             continue
 
-        cqrs.write_to_database(
+        _ = cqrs.write_to_database(
             certificate_bundles, write_session, read_session, esdb_client
         )
 

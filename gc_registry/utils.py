@@ -1,10 +1,11 @@
 import json
 import logging
-from typing import Union
+from typing import Any, Tuple, Type, Union
 
 from esdbclient import EventStoreDBClient
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from sqlmodel import Session, SQLModel, select
 
 from gc_registry.core.database import cqrs
@@ -16,7 +17,12 @@ logger.setLevel(settings.LOG_LEVEL)
 
 class ActiveRecord(SQLModel):
     @classmethod
-    def by_id(cls, id_: int, session: Session, close_session: bool = False) -> SQLModel:
+    def by_id(
+        cls: Type["ActiveRecord"],
+        id_: int,
+        session: Session,
+        close_session: bool = False,
+    ) -> "ActiveRecord":
         obj = session.get(cls, id_)
         if obj is None:
             raise HTTPException(
@@ -37,7 +43,7 @@ class ActiveRecord(SQLModel):
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
-    ) -> None:
+    ) -> list[SQLModel] | SQLModel | None:
         if isinstance(source, SQLModel):
             obj = cls.model_validate(source)
         elif isinstance(source, dict):
@@ -59,11 +65,11 @@ class ActiveRecord(SQLModel):
 
     def update(
         self,
-        update_entity: Union[dict, SQLModel],
+        update_entity: BaseModel,
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
-    ) -> None:
+    ) -> list[SQLModel] | None:
         logger.debug(f"Updating {self.__class__.__name__}: {self.model_dump_json()}")
         updated_entity = cqrs.update_database_entity(
             entity=self,
@@ -80,7 +86,7 @@ class ActiveRecord(SQLModel):
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
-    ) -> None:
+    ) -> list[SQLModel | Tuple[str, Any]] | None:
         logger.debug(f"Deleting {self.__class__.__name__}: {self.model_dump_json()}")
         deleted_entity = cqrs.delete_database_entities(
             entities=self,
@@ -108,10 +114,14 @@ def sqlmodel_obj_to_json(sqlmodel_obj, response_model=None, replace_nan=True):
         return None
     elif isinstance(sqlmodel_obj, list):
         json_content = [
-            json.loads(parse_nans_to_null(elem.json(), replace_nan))
-            if response_model is None
-            else json.loads(
-                parse_nans_to_null(response_model.from_orm(elem).json(), replace_nan)
+            (
+                json.loads(parse_nans_to_null(elem.json(), replace_nan))
+                if response_model is None
+                else json.loads(
+                    parse_nans_to_null(
+                        response_model.from_orm(elem).json(), replace_nan
+                    )
+                )
             )
             for elem in sqlmodel_obj
         ]

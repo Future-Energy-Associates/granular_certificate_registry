@@ -92,7 +92,7 @@ class DButils:
 
 
 # Initialising the DButil clients
-db_name_to_client = {}
+db_name_to_client: dict[str, Any] = {}
 
 
 def get_db_name_to_client():

@@ -1,3 +1,4 @@
+
 from gc_registry.account.models import Account, AccountBase, AccountUpdate
 
 
@@ -37,11 +38,11 @@ class TestRoutes:
 
         updated_account = AccountUpdate(account_name="Test Account UPDATED")
 
-        updated_account = api_client.patch(
+        updated_account_response = api_client.patch(
             f"account/update/{fake_db_account.id}",
             data=updated_account.model_dump_json(),
         )
-        updated_account = AccountUpdate(**updated_account.json())
+        updated_account = AccountUpdate(**updated_account_response.json())
 
         updated_account_from_db = api_client.get(f"account/{fake_db_account.id}")
         updated_account_from_db = Account(**updated_account_from_db.json())

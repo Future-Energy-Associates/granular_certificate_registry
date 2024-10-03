@@ -22,7 +22,7 @@ class TestCQRS:
         esdb_client: EventStoreDBClient,
     ):
         # Write entities to database
-        write_to_database(
+        _ = write_to_database(
             entities=[fake_db_wind_device, fake_db_user],
             write_session=db_write_session,
             read_session=db_read_session,
@@ -70,7 +70,7 @@ class TestCQRS:
         esdb_client: EventStoreDBClient,
     ):
         # Write entities to database first
-        write_to_database(
+        _ = write_to_database(
             entities=fake_db_wind_device,
             write_session=db_write_session,
             read_session=db_read_session,
@@ -112,7 +112,7 @@ class TestCQRS:
         esdb_client: EventStoreDBClient,
     ):
         # Write entities to database first
-        write_to_database(
+        _ = write_to_database(
             entities=fake_db_wind_device,
             write_session=db_write_session,
             read_session=db_read_session,

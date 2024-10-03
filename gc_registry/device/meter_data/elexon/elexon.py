@@ -81,13 +81,13 @@ class ElexonClient:
             data_resampled_values.name = bmu_unit
             data_resampled_concat.append(data_resampled_values)
 
-        data_resampled_concat = (
+        data_resampled = (
             pd.concat(data_resampled_concat, axis=1)
             .melt(ignore_index=False, var_name="bmUnit", value_name="quantity")
             .reset_index()
         )
 
-        return data_resampled_concat
+        return data_resampled
 
     def map_generation_to_certificates(
         self,

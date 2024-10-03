@@ -1,3 +1,5 @@
+from typing import Any, Tuple
+
 from esdbclient import EventStoreDBClient
 from pydantic import BaseModel
 from sqlmodel import Session, SQLModel
@@ -16,7 +18,7 @@ def write_to_database(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient | None = None,
-) -> None:
+) -> list[SQLModel] | SQLModel | None:
     """Write the provided entities to the read and write databases, saving an
     Event entry for each entity."""
 
@@ -29,12 +31,13 @@ def write_to_database(
         write_session.flush()
 
         # Refresh write entites prior to conversion to read entities
-        [write_session.refresh(entity) for entity in entities]
+        for entity in entities:
+            write_session.refresh(entity)
 
     except Exception as e:
         print(f"Error during commit to write DB: {str(e)}")
         write_session.rollback()
-        return
+        return None
 
     try:
         # if needed, transform the entity into its equivalent read DB representation
@@ -49,7 +52,7 @@ def write_to_database(
         print(f"Error during commit to read DB: {str(e)}")
         write_session.rollback()
         read_session.rollback()
-        return
+        return None
 
     batch_create_events(
         entity_ids=[entity.id for entity in entities],  # type: ignore
@@ -61,7 +64,7 @@ def write_to_database(
     write_session.commit()
     read_session.commit()
 
-    return read_entities[0]
+    return list(read_entities)
 
 
 def update_database_entity(
@@ -70,7 +73,7 @@ def update_database_entity(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> None:
+) -> list[SQLModel] | None:
     """Update the entity with the provided Model Update instance."""
 
     # TODO I can't think of a performant way to bulk update whilst also
@@ -92,7 +95,7 @@ def update_database_entity(
     except Exception as e:
         print(f"Error during commit to write DB: {str(e)}")
         write_session.rollback()
-        return
+        return None
 
     try:
         read_entity = transform_write_entities_to_read(entity)
@@ -105,7 +108,7 @@ def update_database_entity(
         print(f"Error during commit to read DB: {str(e)}")
         write_session.rollback()
         read_session.rollback()
-        return
+        return None
 
     create_event(
         entity_id=entity.id,  # type: ignore
@@ -119,7 +122,7 @@ def update_database_entity(
     write_session.commit()
     read_session.commit()
 
-    return read_entity
+    return list(read_entity)
 
 
 def delete_database_entities(
@@ -127,7 +130,7 @@ def delete_database_entities(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> None:
+) -> list[SQLModel | Tuple[str, Any]] | None:
     """Perform a soft delete on the provided entities."""
 
     if not isinstance(entities, list):
@@ -139,12 +142,13 @@ def delete_database_entities(
 
         write_session.add_all(entities)
         write_session.flush()
-        [write_session.refresh(entity) for entity in entities]
+        for entity in entities:
+            write_session.refresh(entity)
 
     except Exception as e:
         print(f"Error during commit to write DB: {str(e)}")
         write_session.rollback()
-        return
+        return None
 
     try:
         read_entities = transform_write_entities_to_read(entities)
@@ -158,7 +162,7 @@ def delete_database_entities(
         print(f"Error during commit to read DB: {str(e)}")
         write_session.rollback()
         read_session.rollback()
-        return
+        return None
 
     batch_create_events(
         entity_ids=[entity.id for entity in entities],  # type: ignore
@@ -170,4 +174,4 @@ def delete_database_entities(
     write_session.commit()
     read_session.commit()
 
-    return read_entities[0]
+    return list(read_entities)

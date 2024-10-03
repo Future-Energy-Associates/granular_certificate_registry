@@ -46,10 +46,14 @@ def create_SCR(
 )
 def query_SCR(
     scr_query: StorageAction,
+    write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Return all SCRs from the specified Account that match the provided search criteria."""
-    scr_action = StorageAction.create(scr_query, read_session)
+    scr_action = StorageAction.create(
+        scr_query, write_session, read_session, esdb_client
+    )
 
     return scr_action
 
@@ -80,10 +84,14 @@ def create_SDR(
 )
 def query_SDR(
     sdr_query: StorageAction,
+    write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Return all SDRs from the specified Account that match the provided search criteria."""
-    sdr_action = StorageAction.create(sdr_query, read_session)
+    sdr_action = StorageAction.create(
+        sdr_query, write_session, read_session, esdb_client
+    )
 
     return sdr_action
 

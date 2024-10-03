@@ -9,7 +9,6 @@ from gc_registry.certificate.models import (
     GranularCertificateBundleBase,
     GranularCertificateQueryResponse,
 )
-from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
 
 # Router initialisation
