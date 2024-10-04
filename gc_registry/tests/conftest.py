@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Generator
 
@@ -15,6 +16,7 @@ from gc_registry.account.models import Account
 from gc_registry.core.database import db, events
 from gc_registry.device.models import Device
 from gc_registry.main import app
+from gc_registry.settings import settings
 from gc_registry.user.models import User
 
 
@@ -49,9 +51,10 @@ def api_client(
         yield client
 
 
-def get_db_url(target: str = "write") -> str:
-    if "CI" in os.environ:
-        return f"postgresql://postgres:password@db_{target}/db_{target}"
+def get_db_url(target: str = "write") -> str | None:
+    if os.environ["ENVIRONMENT"] == "CI":
+        url = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@db_{target}/{settings.POSTGRES_DB}"
+        return url
     else:
         try:
             pg_container = PostgresContainer(
@@ -60,12 +63,13 @@ def get_db_url(target: str = "write") -> str:
             pg_container.start()
             return pg_container.get_connection_url()
         except Exception as e:
-            pytest.skip(f"Failed to start PostgreSQL container: {str(e)}")
+            logging.error(f"Failed to start PostgreSQL container: {str(e)}")
+            return None
 
 
-def get_esdb_url() -> str:
-    if "CI" in os.environ:
-        return "esdb://localhost:2113?tls=false"
+def get_esdb_url() -> str | None:
+    if os.environ["ENVIRONMENT"] == "CI":
+        return f"esdb://{os.environ['ESDB_CONNECTION_STRING']}:2113?tls=false"
     else:
         try:
             esdb_container = (
@@ -98,7 +102,8 @@ def get_esdb_url() -> str:
             return "esdb://localhost:2113?tls=false"
 
         except Exception as e:
-            pytest.skip(f"Failed to start EventStoreDB container: {str(e)}")
+            print(f"Failed to start EventStoreDB container: {str(e)}")
+            return None
 
 
 @pytest.fixture(scope="session")
@@ -108,7 +113,7 @@ def db_write_engine() -> Generator[Engine, None, None]:
     """
     url = get_db_url("write")
     if url is None:
-        pytest.skip("Unable to establish database connection")
+        raise ValueError("No db url for write")
 
     db_engine = create_engine(url)
     SQLModel.metadata.create_all(db_engine)
@@ -123,7 +128,7 @@ def db_read_engine() -> Generator[Engine, None, None]:
     """
     url = get_db_url("read")
     if url is None:
-        pytest.skip("Unable to establish database connection")
+        raise ValueError("No db url for read")
 
     db_engine = create_engine(url)
     SQLModel.metadata.create_all(db_engine)

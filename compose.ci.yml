@@ -6,10 +6,8 @@ services:
       - .env.ci
     environment:
       - TC_HOST=host.docker.internal
-      - POSTGRES_DB=gc_registry
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - DATABASE_URL=postgresql://postgres:password@db_write/gc_registry
+      - ENVIRONMENT=CI
+
     build:
       context: .
       args:
@@ -26,16 +24,16 @@ services:
   db_write:
     image: postgres:13
     environment:
-      - POSTGRES_DB=gc_registry
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
   db_read:
     image: postgres:13
     environment:
-      - POSTGRES_DB=gc_registry
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
   eventstore.db:
     image: eventstore/eventstore:23.10.2-bookworm-slim

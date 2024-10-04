@@ -1,4 +1,3 @@
-
 from gc_registry.account.models import Account, AccountBase, AccountUpdate
 
 

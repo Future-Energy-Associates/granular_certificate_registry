@@ -28,8 +28,8 @@ services:
       - postgres_data_write:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=db_write
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
   db_read:
     image: postgres:13
@@ -39,8 +39,8 @@ services:
       - "5432:5432"
     environment:
       - POSTGRES_DB=db_read
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
   eventstore.db:
     image: eventstore/eventstore:23.10.2-bookworm-slim
