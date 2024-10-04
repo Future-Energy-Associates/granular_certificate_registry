@@ -3,6 +3,7 @@ import os
 from typing import Generator
 
 import pytest
+from dotenv import load_dotenv
 from esdbclient import EventStoreDBClient, NewEvent, StreamState
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
@@ -18,6 +19,8 @@ from gc_registry.device.models import Device
 from gc_registry.main import app
 from gc_registry.settings import settings
 from gc_registry.user.models import User
+
+load_dotenv()
 
 
 @pytest.fixture()
