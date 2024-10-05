@@ -3,6 +3,7 @@ import json
 from esdbclient import EventStoreDBClient
 from sqlmodel import Session, select
 
+from gc_registry.account.models import Account
 from gc_registry.core.database.cqrs import (
     delete_database_entities,
     update_database_entity,
@@ -18,6 +19,7 @@ class TestCQRS:
         db_write_session: Session,
         db_read_session: Session,
         fake_db_wind_device: Device,
+        fake_db_account: Account,
         fake_db_user: User,
         esdb_client: EventStoreDBClient,
     ):
@@ -67,6 +69,7 @@ class TestCQRS:
         db_write_session: Session,
         db_read_session: Session,
         fake_db_wind_device: Device,
+        fake_db_account: Account,
         esdb_client: EventStoreDBClient,
     ):
         # Write entities to database first
@@ -109,6 +112,7 @@ class TestCQRS:
         db_write_session: Session,
         db_read_session: Session,
         fake_db_wind_device: Device,
+        fake_db_account: Account,
         esdb_client: EventStoreDBClient,
     ):
         # Write entities to database first

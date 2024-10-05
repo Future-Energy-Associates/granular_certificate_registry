@@ -100,15 +100,15 @@ def get_db_name_to_client():
 
     if db_name_to_client == {}:
         db_mapping = [
-            ("db_read", settings.DATABASE_URL_READ, schema_paths_read),
-            ("db_write", settings.DATABASE_URL_WRITE, schema_paths_write),
+            ("db_read", settings.DATABASE_HOST_READ, schema_paths_read),
+            ("db_write", settings.DATABASE_HOST_WRITE, schema_paths_write),
         ]
 
         print("Initialising the database clients....")
-        for db_name, db_url, schema_paths in db_mapping:
+        for db_name, db_host, schema_paths in db_mapping:
             db_client = DButils(
-                db_url=db_url,
-                db_name=db_name,
+                db_url=db_host,
+                db_name=settings.POSTGRES_DB,
                 db_username=settings.POSTGRES_USER,
                 db_password=settings.POSTGRES_PASSWORD,
                 db_port=settings.DATABASE_PORT,

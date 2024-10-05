@@ -1,5 +1,5 @@
 from esdbclient import EventStoreDBClient
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from gc_registry.account import models
@@ -17,9 +17,13 @@ def create_account(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     # services.validate_account(account_base, read_session)
-    account = models.Account.create(
+    accounts = models.Account.create(
         account_base, write_session, read_session, esdb_client
     )
+    if not accounts:
+        raise HTTPException(status_code=500, detail="Could not create Account")
+
+    account = accounts[0].model_dump()
 
     return account
 
@@ -42,9 +46,16 @@ def update_account(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    account = models.Account.by_id(account_id, write_session)
-
-    return account.update(account_update, write_session, read_session, esdb_client)
+    try:
+        account = models.Account.by_id(account_id, write_session)
+        updated_account = account.update(
+            account_update, write_session, read_session, esdb_client
+        )
+        if not updated_account:
+            raise ValueError(f"Account id {account_id} not found")
+        return updated_account.model_dump()
+    except Exception:
+        raise HTTPException(status_code=404, detail="Could not update Account")
 
 
 @router.delete(
@@ -56,5 +67,13 @@ def delete_account(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    account = models.Account.by_id(account_id, write_session)
-    return account.delete(write_session, read_session, esdb_client)
+    try:
+        account = models.Account.by_id(account_id, write_session)
+        accounts = account.delete(write_session, read_session, esdb_client)
+        if not accounts:
+            raise ValueError(f"Account id {account_id} not found")
+        return accounts[0].model_dump()
+    except Exception:
+        raise HTTPException(
+            status_code=404, detail="Could not delete Account not found"
+        )

@@ -1,5 +1,3 @@
-from typing import Any, Tuple
-
 from esdbclient import EventStoreDBClient
 from pydantic import BaseModel
 from sqlmodel import Session, SQLModel
@@ -18,7 +16,7 @@ def write_to_database(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> list[SQLModel] | SQLModel | None:
+) -> list[SQLModel] | None:
     """Write the provided entities to the read and write databases, saving an
     Event entry for each entity."""
 
@@ -64,7 +62,10 @@ def write_to_database(
     write_session.commit()
     read_session.commit()
 
-    return list(read_entities)
+    for entity in read_entities:
+        read_session.refresh(entity)
+
+    return read_entities
 
 
 def update_database_entity(
@@ -73,7 +74,7 @@ def update_database_entity(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> list[SQLModel] | None:
+) -> SQLModel | None:
     """Update the entity with the provided Model Update instance."""
 
     # TODO I can't think of a performant way to bulk update whilst also
@@ -122,7 +123,9 @@ def update_database_entity(
     write_session.commit()
     read_session.commit()
 
-    return list(read_entity)
+    read_session.refresh(read_entity)
+
+    return read_entity
 
 
 def delete_database_entities(
@@ -130,7 +133,7 @@ def delete_database_entities(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> list[SQLModel | Tuple[str, Any]] | None:
+) -> list[SQLModel] | None:
     """Perform a soft delete on the provided entities."""
 
     if not isinstance(entities, list):
@@ -174,4 +177,7 @@ def delete_database_entities(
     write_session.commit()
     read_session.commit()
 
-    return list(read_entities)
+    for entity in read_entities:
+        read_session.refresh(entity)
+
+    return read_entities

@@ -27,7 +27,7 @@ services:
     volumes:
       - postgres_data_write:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=db_write
+      - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
@@ -38,7 +38,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=db_read
+      - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 

@@ -55,8 +55,9 @@ def api_client(
 
 
 def get_db_url(target: str = "write") -> str | None:
+    logging.error(f"ENVIRONMENT: {os.environ['ENVIRONMENT']}")
     if os.environ["ENVIRONMENT"] == "CI":
-        url = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@db_{target}/{settings.POSTGRES_DB}"
+        url = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@db_{target}:{settings.DATABASE_PORT}/{settings.POSTGRES_DB}"
         return url
     else:
         try:
@@ -71,6 +72,7 @@ def get_db_url(target: str = "write") -> str | None:
 
 
 def get_esdb_url() -> str | None:
+    logging.error(f"ENVIRONMENT: {os.environ['ENVIRONMENT']}")
     if os.environ["ENVIRONMENT"] == "CI":
         return f"esdb://{os.environ['ESDB_CONNECTION_STRING']}:2113?tls=false"
     else:
