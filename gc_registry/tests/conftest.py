@@ -235,7 +235,9 @@ def fake_db_account(db_write_session: Session, db_read_session: Session) -> Acco
     db_read_session.add(account_read)
     db_read_session.commit()
 
-    return account_write
+    db_read_session.refresh(account_read)
+
+    return account_read
 
 
 @pytest.fixture()
