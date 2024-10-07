@@ -67,27 +67,32 @@ class TestCQRS:
 
         event_0_data = json.loads(events[1].data)
 
+        assert created_entities is not None
+
         assert events[1].type == "CREATE"
         assert event_0_data["entity_name"] == "Device"
-        assert event_0_data["entity_id"] == created_entities[0].id
+        assert created_entities[0].id is not None  # type: ignore
+        assert event_0_data["entity_id"] == created_entities[0].id  # type: ignore
 
         event_1_data = json.loads(events[2].data)
 
         assert events[2].type == "CREATE"
         assert event_1_data["entity_name"] == "User"
-        assert event_1_data["entity_id"] == created_entities[1].id
+        assert event_1_data["entity_id"] == created_entities[1].id  # type: ignore
 
         assert event_0_data["timestamp"] < event_1_data["timestamp"]
 
         # Check that the read database contains the same as the write database
+        assert fake_db_wind_device.id is not None
         wind_device = db_read_session.exec(
-            select(Device).filter(Device.id == fake_db_wind_device.id)
+            select(Device).filter(Device.id == fake_db_wind_device.id)  # type: ignore
         ).first()
         if wind_device is not None:
             assert wind_device == fake_db_wind_device
 
+        assert fake_db_user.id is not None
         user = db_read_session.exec(
-            select(User).filter(User.id == fake_db_user.id)
+            select(User).filter(User.id == fake_db_user.id)  # type: ignore
         ).first()
         if user is not None:
             assert user == fake_db_user
@@ -101,6 +106,7 @@ class TestCQRS:
         esdb_client: EventStoreDBClient,
     ):
         # Get the existing device from the database
+        assert fake_db_wind_device.id is not None
         existing_entity = Device.by_id(fake_db_wind_device.id, db_write_session)
 
         # Update the device with new parameters
@@ -139,6 +145,7 @@ class TestCQRS:
         esdb_client: EventStoreDBClient,
     ):
         # Get the existing device from the database
+        assert fake_db_wind_device.id is not None
         existing_entity = Device.by_id(fake_db_wind_device.id, db_write_session)
 
         # Delete the device
