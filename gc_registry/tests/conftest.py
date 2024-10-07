@@ -19,6 +19,7 @@ from gc_registry.device.models import Device
 from gc_registry.main import app
 from gc_registry.settings import settings
 from gc_registry.user.models import User
+from gc_registry.utils import ActiveRecord
 
 load_dotenv()
 
@@ -194,6 +195,29 @@ def esdb_client() -> Generator[EventStoreDBClient, None, None]:
     client.delete_stream("events", current_version=StreamState.EXISTS)
 
 
+def add_entity_to_write_and_read(
+    entity: ActiveRecord, write_session: Session, read_session: Session
+):
+    # Write entities to database first using the write session
+    write_session.add(entity)
+    write_session.commit()
+    write_session.refresh(entity)
+
+    # check that the entity has an ID
+    assert entity.id is not None  # type: ignore
+
+    # validate the entity
+    entity_read = entity.model_validate(entity.model_dump())
+
+    assert entity_read.id == entity.id  # type: ignore
+
+    read_session.add(entity_read)
+    read_session.commit()
+    read_session.refresh(entity_read)
+
+    return entity_read
+
+
 @pytest.fixture()
 def fake_db_user(db_write_session: Session, db_read_session: Session) -> User:
     user_dict = {
@@ -203,15 +227,12 @@ def fake_db_user(db_write_session: Session, db_read_session: Session) -> User:
     }
 
     user_write = User.model_validate(user_dict)
-    user_read = User.model_validate(user_dict)
 
-    db_write_session.add(user_write)
-    db_write_session.commit()
+    user_read = add_entity_to_write_and_read(
+        user_write, db_write_session, db_read_session
+    )
 
-    db_read_session.add(user_read)
-    db_read_session.commit()
-
-    return user_write
+    return user_read
 
 
 @pytest.fixture()
@@ -227,21 +248,18 @@ def fake_db_account(db_write_session: Session, db_read_session: Session) -> Acco
     }
 
     account_write = Account.model_validate(account_dict)
-    account_read = Account.model_validate(account_dict)
 
-    db_write_session.add(account_write)
-    db_write_session.commit()
-
-    db_read_session.add(account_read)
-    db_read_session.commit()
-
-    db_read_session.refresh(account_read)
+    account_read = add_entity_to_write_and_read(
+        account_write, db_write_session, db_read_session
+    )
 
     return account_read
 
 
 @pytest.fixture()
-def fake_db_wind_device(db_write_session, fake_db_account) -> Device:
+def fake_db_wind_device(
+    db_write_session: Session, db_read_session: Session, fake_db_account: Account
+) -> Device:
     device_dict = {
         "device_name": "fake_wind_device",
         "grid": "fake_grid",
@@ -262,14 +280,17 @@ def fake_db_wind_device(db_write_session, fake_db_account) -> Device:
 
     wind_device = Device.model_validate(device_dict)
 
-    db_write_session.add(wind_device)
-    db_write_session.commit()
+    device_read = add_entity_to_write_and_read(
+        wind_device, db_write_session, db_read_session
+    )
 
-    return wind_device
+    return device_read
 
 
 @pytest.fixture()
-def fake_db_solar_device(db_write_session, fake_db_account) -> Device:
+def fake_db_solar_device(
+    db_write_session: Session, db_read_session: Session, fake_db_account: Account
+) -> Device:
     device_dict = {
         "device_name": "fake_solar_device",
         "grid": "fake_grid",
@@ -290,7 +311,8 @@ def fake_db_solar_device(db_write_session, fake_db_account) -> Device:
 
     solar_device = Device.model_validate(device_dict)
 
-    db_write_session.add(solar_device)
-    db_write_session.commit()
+    device_read = add_entity_to_write_and_read(
+        solar_device, db_write_session, db_read_session
+    )
 
-    return solar_device
+    return device_read

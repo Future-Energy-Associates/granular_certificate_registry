@@ -34,7 +34,8 @@ def read_account(
     read_session: Session = Depends(db.get_read_session),
 ):
     account = models.Account.by_id(account_id, read_session)
-
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
     return account
 
 
@@ -48,6 +49,11 @@ def update_account(
 ):
     try:
         account = models.Account.by_id(account_id, write_session)
+        if not account:
+            raise HTTPException(
+                status_code=404, detail=f"Account ID not found: {account_id}"
+            )
+
         updated_account = account.update(
             account_update, write_session, read_session, esdb_client
         )
@@ -55,7 +61,10 @@ def update_account(
             raise ValueError(f"Account id {account_id} not found")
         return updated_account.model_dump()
     except Exception:
-        raise HTTPException(status_code=404, detail="Could not update Account")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Account id {account_id} not found: updated_account",
+        )
 
 
 @router.delete(

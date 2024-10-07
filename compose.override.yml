@@ -5,9 +5,8 @@ services:
     environment:
       - TC_HOST=host.docker.internal
     volumes:
-      - ./:/app
+      - ./:/code
       - /var/run/docker.sock:/var/run/docker.sock
-      - "./:/gc_registry"
     build:
       context: .
       args:

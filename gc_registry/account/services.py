@@ -1,7 +1,14 @@
 from fastapi import HTTPException
+from sqlalchemy import select
 
 from gc_registry.account.models import Account
 from gc_registry.user.models import User
+
+
+def get_account_by_id(account_id, read_session):
+    stmt = select(Account).where(Account.id == account_id)
+    account = read_session.exec(stmt).first()
+    return account
 
 
 def validate_account(account, read_session):

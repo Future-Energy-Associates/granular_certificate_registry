@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Type, Union
+from typing import Type, TypeVar, Union
 
 from esdbclient import EventStoreDBClient
 from fastapi import HTTPException
@@ -15,14 +15,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(settings.LOG_LEVEL)
 
 
+T = TypeVar("T", bound="ActiveRecord")
+
+
 class ActiveRecord(SQLModel):
     @classmethod
     def by_id(
-        cls: Type["ActiveRecord"],
+        cls: Type[T],
         id_: int,
         session: Session,
         close_session: bool = False,
-    ) -> "ActiveRecord":
+    ) -> T:
         obj = session.get(cls, id_)
         if obj is None:
             raise HTTPException(
