@@ -33,7 +33,9 @@ def write_to_database(
             write_session.refresh(entity)
 
     except Exception as e:
-        print(f"Error during commit to write DB: {str(e)}")
+        print(
+            f"Error during commit to write DB: {str(e)}, session ID {id(write_session)}"
+        )
         write_session.rollback()
         return None
 
@@ -82,8 +84,9 @@ def update_database_entity(
 
     before_data = {
         attr: entity.__getattribute__(attr)
-        for attr in entity.model_dump(exclude_unset=True)
+        for attr in update_entity.model_dump(exclude_unset=True)
     }
+
     update_data: dict = update_entity.model_dump(exclude_unset=True)
 
     try:

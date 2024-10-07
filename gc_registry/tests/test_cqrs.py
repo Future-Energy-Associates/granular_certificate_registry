@@ -23,9 +23,37 @@ class TestCQRS:
         fake_db_user: User,
         esdb_client: EventStoreDBClient,
     ):
+        device_dict = {
+            "device_name": "fake_wind_device_2",
+            "grid": "fake_grid",
+            "energy_source": "wind",
+            "technology_type": "wind",
+            "capacity": 3000,
+            "account_id": fake_db_account.id,
+            "device_type": "wind",
+            "is_renewable": True,
+            "fuel_source": "wind",
+            "location": "USA",
+            "capacity_mw": 100,
+            "commissioning_date": "2020-01-01",
+            "operational_date": "2020-01-01",
+            "peak_demand": 100,
+            "is_deleted": False,
+        }
+
+        # device_dict = fake_db_wind_device.model_dump()
+        wind_device = Device.model_validate(device_dict)
+        # wind_device.device_name = None
+        wind_device.device_name = "fake_wind_device 2"
+
+        user_dict = fake_db_user.model_dump()
+        user_dict["name"] = "fake_user_2"
+        user_dict["id"] = None
+        user = User.model_validate(user_dict)
+
         # Write entities to database
-        _ = write_to_database(
-            entities=[fake_db_wind_device, fake_db_user],
+        created_entities = write_to_database(
+            entities=[wind_device, user],
             write_session=db_write_session,
             read_session=db_read_session,
             esdb_client=esdb_client,
@@ -41,13 +69,13 @@ class TestCQRS:
 
         assert events[1].type == "CREATE"
         assert event_0_data["entity_name"] == "Device"
-        assert event_0_data["entity_id"] == fake_db_wind_device.id
+        assert event_0_data["entity_id"] == created_entities[0].id
 
         event_1_data = json.loads(events[2].data)
 
         assert events[2].type == "CREATE"
         assert event_1_data["entity_name"] == "User"
-        assert event_1_data["entity_id"] == fake_db_user.id
+        assert event_1_data["entity_id"] == created_entities[1].id
 
         assert event_0_data["timestamp"] < event_1_data["timestamp"]
 
@@ -72,20 +100,15 @@ class TestCQRS:
         fake_db_account: Account,
         esdb_client: EventStoreDBClient,
     ):
-        # Write entities to database first
-        _ = write_to_database(
-            entities=fake_db_wind_device,
-            write_session=db_write_session,
-            read_session=db_read_session,
-            esdb_client=esdb_client,
-        )
+        # Get the existing device from the database
+        existing_entity = Device.by_id(fake_db_wind_device.id, db_write_session)
 
         # Update the device with new parameters
         device_update = DeviceUpdate(device_name="new_fake_wind_device")
 
         # Update the device with new parameters
         update_database_entity(
-            entity=fake_db_wind_device,
+            entity=existing_entity,
             update_entity=device_update,
             write_session=db_write_session,
             read_session=db_read_session,
@@ -97,8 +120,8 @@ class TestCQRS:
         event_data = json.loads(events[-1].data)
 
         assert events[-1].type == "UPDATE"
-        assert event_data["attributes_before"] == {"device_name": "fake_wind_device"}
-        assert event_data["attributes_after"] == {"device_name": "new_fake_wind_device"}
+        assert event_data["attributes_before"]["device_name"] == "fake_wind_device"
+        assert event_data["attributes_after"]["device_name"] == "new_fake_wind_device"
 
         # Check that the read database contains the updated device
         wind_device = db_read_session.exec(
@@ -115,17 +138,12 @@ class TestCQRS:
         fake_db_account: Account,
         esdb_client: EventStoreDBClient,
     ):
-        # Write entities to database first
-        _ = write_to_database(
-            entities=fake_db_wind_device,
-            write_session=db_write_session,
-            read_session=db_read_session,
-            esdb_client=esdb_client,
-        )
+        # Get the existing device from the database
+        existing_entity = Device.by_id(fake_db_wind_device.id, db_write_session)
 
         # Delete the device
         delete_database_entities(
-            entities=fake_db_wind_device,
+            entities=existing_entity,
             write_session=db_write_session,
             read_session=db_read_session,
             esdb_client=esdb_client,

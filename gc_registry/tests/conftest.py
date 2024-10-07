@@ -211,6 +211,7 @@ def add_entity_to_write_and_read(
 
     assert entity_read.id == entity.id  # type: ignore
 
+    # read_entity = read_session.merge(read_entity)
     read_session.add(entity_read)
     read_session.commit()
     read_session.refresh(entity_read)
@@ -283,6 +284,8 @@ def fake_db_wind_device(
     device_read = add_entity_to_write_and_read(
         wind_device, db_write_session, db_read_session
     )
+
+    print("device_read", device_read)
 
     return device_read
 
