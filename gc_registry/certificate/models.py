@@ -6,7 +6,7 @@ from gc_registry import utils
 from gc_registry.certificate.schemas import (
     GranularCertificateActionBase,
     GranularCertificateBundleBase,
-    GranularCertificateRegistryBase,
+    IssuanceMetaDataBase,
 )
 
 # issuance_id a unique non-sequential ID related to the issuance of the entire bundle.
@@ -40,9 +40,7 @@ class GranularCertificateAction(GranularCertificateActionBase, table=True):
     )
 
 
-class GranularCertificateRegistry(
-    GranularCertificateRegistryBase, utils.ActiveRecord, table=True
-):
+class IssuanceMetaData(IssuanceMetaDataBase, utils.ActiveRecord, table=True):
     id: int = Field(
         primary_key=True,
         default=None,

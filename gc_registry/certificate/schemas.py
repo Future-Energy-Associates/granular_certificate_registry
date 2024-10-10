@@ -40,9 +40,9 @@ class GranularCertificateBundleBase(BaseModel):
         foreign_key="account.id",
         description="Each GC Bundle is assigned to a single unique Account e.g. production Device account or trading account",
     )
-    registry_id: int = Field(
-        foreign_key="granularcertificateregistry.id",
-        description="Reference to the associated Granular Certificate Registry.",
+    metadata_id: int = Field(
+        foreign_key="issuancemetadata.id",
+        description="Reference to the associated issuance metadata",
     )
     bundle_id_range_start: int = Field(
         description="""The individual Granular Certificates within this GC Bundle, each representing a
@@ -78,6 +78,16 @@ class GranularCertificateBundleBase(BaseModel):
         description="Indicate whether this GC Bundle have been issued following an energy conversion event, for example in a power to hydrogen facility.",
     )
 
+    ### Other Optional Characteristics ###
+    emissions_factor_production_device: float | None = Field(
+        default=None,
+        description="May indicate the emissions factor (kgCO2e/MWh) of the production Device at the datetime in which this GC Bundle was issued against.",
+    )  # :TODO: Look at marginal emissions factor on metadata definition - could this be moved to EmissionsFactor table?
+    emissions_factor_source: str | None = Field(
+        default=None,
+        description="Includes a reference to the calculation methodology of the production Device emissions factor.",
+    )
+
     ### Production Device Characteristics ###
     device_id: int = Field(
         foreign_key="device.id",
@@ -92,9 +102,6 @@ class GranularCertificateBundleBase(BaseModel):
     )
     production_ending_interval: datetime.datetime = Field(
         description="The datetime in UTC format indicating the end of the relevant production period.",
-    )
-    issuance_datestamp: datetime.datetime = Field(
-        description="The date in UTC format (YYYY-MM-DD) indicating the date on which the Issuing Body delivered the GC Bundle to the production Device's registered Account.",
     )
     expiry_datestamp: datetime.datetime = Field(
         description="The date in UTC format (YYYY-MM-DD) indicating the point at which the GC Bundle will be rendered invalid if they have not been cancelled. This expiry period can vary across Domains.",
@@ -119,7 +126,7 @@ class GranularCertificateBundleCreate(GranularCertificateBundleBase):
     pass
 
 
-class GranularCertificateRegistryBase(BaseModel):
+class IssuanceMetaDataBase(BaseModel):
     """
     Attributes that detail the Issuing Body characteristics and legal status of the GC Bundle.
     """
@@ -156,16 +163,6 @@ class GranularCertificateRegistryBase(BaseModel):
     )
     issue_market_zone: str = Field(
         description="References the bidding zone and/or market authority and/or price node within which the GC Bundle have been issued.",
-    )
-
-    ### Other Optional Characteristics ###
-    emissions_factor_production_device: float | None = Field(
-        default=None,
-        description="May indicate the emissions factor (kgCO2e/MWh) of the production Device at the datetime in which this GC Bundle was issued against.",
-    )
-    emissions_factor_source: str | None = Field(
-        default=None,
-        description="Includes a reference to the calculation methodology of the production Device emissions factor.",
     )
 
 
@@ -259,9 +256,6 @@ class GranularCertificateBundleRead(BaseModel):
     )
     production_ending_interval: datetime.datetime = Field(
         description="The datetime in UTC format indicating the end of the relevant production period.",
-    )
-    issuance_datestamp: datetime.datetime = Field(
-        description="The date in UTC format (YYYY-MM-DD) indicating the date on which the Issuing Body delivered the GC Bundle to the production Device's registered Account.",
     )
     expiry_datestamp: datetime.datetime = Field(
         description="The date in UTC format (YYYY-MM-DD) indicating the point at which the GC Bundle will be rendered invalid if they have not been cancelled. This expiry period can vary across Domains.",
