@@ -1,3 +1,5 @@
+import datetime
+
 from gc_registry.account.models import Account, AccountBase, AccountUpdate
 
 
@@ -7,9 +9,24 @@ class TestRoutes:
         fake_db_account_from_db = api_client.get(f"account/{fake_db_account.id}")
         fake_db_account_from_db = Account(**fake_db_account_from_db.json())
 
+        different_fields = [
+            {
+                "from_conftest": {field: fake_db_account.__dict__[field]},
+                "from_db": {field: fake_db_account_from_db.__dict__[field]},
+            }
+            for field in fake_db_account.__dict__
+            if fake_db_account.__dict__[field]
+            != fake_db_account_from_db.__dict__[field]
+            if field != "_sa_instance_state"
+        ]
+
+        fake_db_account_from_db.created_at = datetime.datetime.fromisoformat(
+            fake_db_account_from_db.created_at
+        )
+
         assert (
             fake_db_account_from_db == fake_db_account
-        ), f"Expected {fake_db_account} but got {fake_db_account_from_db}"
+        ), f"Objects did not maych. Different fields: {different_fields}"
 
     def test_create_entity(self, api_client):
         """Test that entities can be created in the database via their FastAPI routes."""

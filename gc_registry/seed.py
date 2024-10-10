@@ -56,6 +56,7 @@ def seed_data():
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": account.id,
+            "is_storage": False,
         }
         device = Device.create(device_dict, write_session, read_session, esdb_client)
 

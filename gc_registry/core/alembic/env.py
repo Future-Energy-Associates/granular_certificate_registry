@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-from gc_registry.core.database.db import db_name_to_client
+from gc_registry.core.database.db import get_db_name_to_client
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -14,6 +14,9 @@ config = context.config
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+
+db_name_to_client = get_db_name_to_client()
 
 DB_URL = db_name_to_client["db_write"].connection_str
 config.set_main_option("sqlalchemy.url", DB_URL)

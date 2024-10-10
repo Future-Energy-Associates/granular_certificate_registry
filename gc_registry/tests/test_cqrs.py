@@ -39,6 +39,7 @@ class TestCQRS:
             "operational_date": "2020-01-01",
             "peak_demand": 100,
             "is_deleted": False,
+            "is_storage": False,
         }
 
         # device_dict = fake_db_wind_device.model_dump()

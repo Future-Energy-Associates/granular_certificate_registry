@@ -45,28 +45,26 @@ class DButils:
         self,
         db_username: str | None = None,
         db_password: str | None = None,
-        db_url: str | None = None,
+        db_host: str | None = None,
         db_port: int | None = None,
         db_name: str | None = None,
-        db_test_fp: str | None = None,
-        env: str | None = "STAGE",
+        db_test_fp: str = "gc_registry_test.db",
+        test: bool = False,
     ):
         self._db_username = db_username
         self._db_password = db_password
-        self._db_url = db_url
+        self._db_host = db_host
         self._db_port = db_port
         self._db_name = db_name
         self._db_test_fp = db_test_fp
 
-        if env == "PROD":
-            self.connection_str = (
-                f"postgresql://{self._db_username}:{self._db_password}@{self._db_url}:"
-                f"{self._db_port}/{self._db_name}"
-            )
-        elif env == "STAGE":
+        if test:
             self.connection_str = f"sqlite:///{self._db_test_fp}"
         else:
-            raise ValueError("`ENVIRONMENT` must be one of: `PROD` or `STAGE`")
+            self.connection_str = (
+                f"postgresql://{self._db_username}:{self._db_password}@{self._db_host}:"
+                f"{self._db_port}/{self._db_name}"
+            )
 
         self.engine = create_engine(self.connection_str, pool_pre_ping=True)
 
@@ -98,13 +96,13 @@ def get_db_name_to_client():
         print("Initialising the database clients....")
         for db_name, db_host in db_mapping:
             db_client = DButils(
-                db_url=db_host,
+                db_host=db_host,
                 db_name=settings.POSTGRES_DB,
                 db_username=settings.POSTGRES_USER,
                 db_password=settings.POSTGRES_PASSWORD,
                 db_port=settings.DATABASE_PORT,
                 db_test_fp=settings.DB_TEST_FP,
-                env=settings.ENVIRONMENT,
+                test=False,
             )
             db_name_to_client[db_name] = db_client
 
