@@ -22,7 +22,6 @@ class GranularCertificateBundle(
     issuance_id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
-        default=None,
         description="An integer ID unique to this bundle within the registry.",
     )
 
