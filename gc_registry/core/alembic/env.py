@@ -68,10 +68,11 @@ def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
+
 for host in ["db_read", "db_write"]:
     DB_URL = db_name_to_client[host].connection_str
     config.set_main_option("sqlalchemy.url", DB_URL)
-    
+
     if context.is_offline_mode():
         run_migrations_offline()
     else:
