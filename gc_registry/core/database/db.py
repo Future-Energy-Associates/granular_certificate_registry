@@ -71,26 +71,78 @@ class DButils:
         self.engine = create_engine(self.connection_str, pool_pre_ping=True)
 
     def yield_session(self) -> Generator[Any, Any, Any]:
-        with Session(self.engine) as session:
+        with Session(self.engine) as session, session.begin():
             yield session
+
+    def yield_twophase_session(self, write_object) -> Generator[Any, Any, Any]:
+        with Session(self.engine, twophase=True) as session:
+            yield session
+
+    def get_session(self) -> Session:
+        return Session(self.engine)
+
+    def initiate_db_tables(self, schema_paths: list | None = None) -> None:
+        if schema_paths is None:
+            print("No schema paths provided. Skipping table creation.")
+            schema_paths = []
+        if not database_exists(self.engine.url):
+            print("Database does not exist. Creating database...")
+            create_database(self.engine.url)
+
+        if len(schema_paths) > 0:
+            print("Creating tables for the provided schema paths...")
+            tables = [
+                schema_path_to_class(schema_path).__table__
+                for schema_path in schema_paths
+            ]
+        else:
+            tables = None
+
+        SQLModel.metadata.create_all(self.engine, tables=tables)
+
+        return None
 
 
 # Initialising the DButil clients
-db_mapping = [
-    ("read", settings.DATABASE_URL_READ),
-    ("write", settings.DATABASE_URL_WRITE),
-]
+db_name_to_client: dict[str, Any] = {}
 
-db_name_to_client = {}
 
-for db_name, db_url in db_mapping:
-    db_client = DButils(
-        db_url=db_url,
-        db_name=settings.POSTGRES_DB,
-        db_username=settings.POSTGRES_USER,
-        db_password=settings.POSTGRES_PASSWORD,
-        db_port=settings.DATABASE_PORT,
-        db_test_fp=settings.DB_TEST_FP,
-        env=settings.ENVIRONMENT,
-    )
-    db_name_to_client[db_name] = db_client
+def get_db_name_to_client():
+    global db_name_to_client
+
+    if db_name_to_client == {}:
+        db_mapping = [
+            ("db_read", settings.DATABASE_HOST_READ, schema_paths_read),
+            ("db_write", settings.DATABASE_HOST_WRITE, schema_paths_write),
+        ]
+
+        print("Initialising the database clients....")
+        for db_name, db_host, schema_paths in db_mapping:
+            db_client = DButils(
+                db_url=db_host,
+                db_name=settings.POSTGRES_DB,
+                db_username=settings.POSTGRES_USER,
+                db_password=settings.POSTGRES_PASSWORD,
+                db_port=settings.DATABASE_PORT,
+                db_test_fp=settings.DB_TEST_FP,
+                env=settings.ENVIRONMENT,
+            )
+            db_name_to_client[db_name] = db_client
+
+    return db_name_to_client
+
+
+def get_session(target: str) -> Generator[Session, None, None]:
+    with next(db_name_to_client[target].yield_session()) as session:
+        try:
+            yield session
+        finally:
+            session.close()
+
+
+def get_write_session() -> Session:
+    return next(get_session("db_write"))
+
+
+def get_read_session() -> Session:
+    return next(get_session("db_read"))

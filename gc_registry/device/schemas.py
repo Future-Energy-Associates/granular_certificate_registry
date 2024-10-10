@@ -19,3 +19,4 @@ class DeviceBase(utils.ActiveRecord):
         description="The account to which the device is registered, and into which GC Bundles will be issued for energy produced by this Device.",
         foreign_key="account.id",
     )
+    is_deleted: bool = Field(default=False)

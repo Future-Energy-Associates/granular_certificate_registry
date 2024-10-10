@@ -22,7 +22,7 @@ typecheck:
 
 .PHONY: test
 test:
-	docker compose run --rm gc_registry pytest --cov-report term --cov-report html --cov=gc_registry
+	docker compose run --no-deps --rm gc_registry pytest --cov-report term --cov-report html --cov=gc_registry
 
 .PHONY: test.local
 test.local:

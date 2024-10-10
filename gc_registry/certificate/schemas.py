@@ -1,5 +1,6 @@
 import datetime
 from enum import Enum
+import uuid
 
 from pydantic import BaseModel
 from sqlalchemy import Column, Float
@@ -29,6 +30,13 @@ class GranularCertificateBundleBase(BaseModel):
     the state of the database is consistent at all times, and any errors can be rectified by reversing linearly through
     the queue.
     """
+
+    issuance_id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
+        If the bundle is split through partial transfer or cancellation, this issuance ID
+        remains unchanged across each child GC Bundle.""",
+    )
 
     ### Mutable Attributes ###
     certificate_status: CertificateStatus = Field(
@@ -196,12 +204,10 @@ class GranularCertificateBundleRead(BaseModel):
                         clearly ascending manner, displayed on the GC Bundle instance by start and end IDs indicating the minimum
                         and maximum IDs contained within the Bundle, inclusive of both range end points and all integers
                         within that range.""",
-        primary_key=True,
     )
     bundle_id_range_end: int = Field(
         description="""The start and end range IDs of GC Bundles may change as they are split and transferred between Accounts,
                        or partially cancelled.""",
-        primary_key=True,
     )
     bundle_quantity: int = Field(
         description="""The quantity of Granular Certificates within this GC Bundle, according to a
@@ -332,6 +338,13 @@ class GranularCertificateBundleRead(BaseModel):
         default=None,
         description="Includes a reference to the calculation methodology of the production Device emissions factor.",
     )
+    hash: str = Field(
+        default=None,
+        description="""A unique hash assigned to this bundle at the time of issuance,
+        formed from the sha256 of the bundle's properties and, if the result of a bundle
+        split, a nonce taken from the hash of the parent bundle.""",
+    )
+    is_deleted: bool = Field(default=False)
 
 
 class GranularCertificateActionBase(BaseModel):
@@ -406,6 +419,7 @@ class GranularCertificateActionBase(BaseModel):
     certificate_status_to_update_to: str | None = Field(
         description="Update the status of a GC Bundle."
     )
+    is_deleted: bool = Field(default=False)
     # TODO this currently can't pass Pydantic validation, need to revisit
     # sparse_filter_list: Tuple[str, str] | None = Field(
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",

@@ -1,4 +1,5 @@
 import uuid
+from typing import List, Union
 
 from sqlmodel import Field
 
@@ -22,8 +23,8 @@ class GranularCertificateBundle(
     issuance_id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
-        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
-        If the bundle is split through partial transfer or cancellation, this issuance ID remains unchanged across each child GC Bundle.""",
+        default=None,
+        description="An integer ID unique to this bundle within the registry.",
     )
 
 
@@ -33,10 +34,8 @@ class GranularCertificateBundle(
 # "transfer", "recurring_transfer", "cancel", "claim", "withdraw"
 
 
-class GranularCertificateAction(
-    GranularCertificateActionBase, utils.ActiveRecord, table=True
-):
-    action_id: int = Field(
+class GranularCertificateAction(GranularCertificateActionBase, table=True):
+    id: int | None = Field(
         primary_key=True,
         default=None,
         description="A unique ID assigned to this action.",

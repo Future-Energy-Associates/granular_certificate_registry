@@ -15,7 +15,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-DB_URL = db_name_to_client["write"].connection_str
+DB_URL = db_name_to_client["db_write"].connection_str
 config.set_main_option("sqlalchemy.url", DB_URL)
 
 # add your model's MetaData object here
