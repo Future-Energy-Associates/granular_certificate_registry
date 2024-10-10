@@ -137,13 +137,13 @@ def downgrade() -> None:
     op.add_column(
         "granularcertificatebundle",
         sa.Column(
-            "quality_scheme_reference", sa.VARCHAR(), autoincrement=False, nullable=True
+            "quality_scheme_reference", sa.VARCHAR(),  nullable=True
         ),
     )
     op.add_column(
         "granularcertificatebundle",
         sa.Column(
-            "country_of_issuance", sa.VARCHAR(), autoincrement=False, nullable=False
+            "country_of_issuance", sa.VARCHAR(),  nullable=False
         ),
     )
     op.add_column(
@@ -151,7 +151,7 @@ def downgrade() -> None:
         sa.Column(
             "discharging_end_datetime",
             postgresql.TIMESTAMP(),
-            autoincrement=False,
+            
             nullable=True,
         ),
     )
@@ -160,7 +160,7 @@ def downgrade() -> None:
         sa.Column(
             "discharging_start_datetime",
             postgresql.TIMESTAMP(),
-            autoincrement=False,
+            
             nullable=True,
         ),
     )
@@ -169,42 +169,41 @@ def downgrade() -> None:
         sa.Column(
             "device_location",
             postgresql.ARRAY(sa.DOUBLE_PRECISION(precision=53)),
-            autoincrement=False,
             nullable=True,
         ),
     )
     op.add_column(
         "granularcertificatebundle",
         sa.Column(
-            "device_technology_type", sa.VARCHAR(), autoincrement=False, nullable=False
+            "device_technology_type", sa.VARCHAR(), nullable=False
         ),
     )
     op.add_column(
         "granularcertificatebundle",
-        sa.Column("device_capacity", sa.INTEGER(), autoincrement=False, nullable=False),
+        sa.Column("device_capacity", sa.INTEGER(),  nullable=False),
     )
     op.add_column(
         "granularcertificatebundle",
         sa.Column(
-            "emissions_factor_source", sa.VARCHAR(), autoincrement=False, nullable=True
+            "emissions_factor_source", sa.VARCHAR(),  nullable=True
         ),
     )
     op.add_column(
         "granularcertificatebundle",
-        sa.Column("device_name", sa.VARCHAR(), autoincrement=False, nullable=False),
+        sa.Column("device_name", sa.VARCHAR(),  nullable=False),
     )
     op.add_column(
         "granularcertificatebundle",
-        sa.Column("issuance_purpose", sa.VARCHAR(), autoincrement=False, nullable=True),
+        sa.Column("issuance_purpose", sa.VARCHAR(),  nullable=True),
     )
     op.add_column(
         "granularcertificatebundle",
-        sa.Column("device_type", sa.VARCHAR(), autoincrement=False, nullable=False),
+        sa.Column("device_type", sa.VARCHAR(),  nullable=False),
     )
     op.add_column(
         "granularcertificatebundle",
         sa.Column(
-            "issue_market_zone", sa.VARCHAR(), autoincrement=False, nullable=False
+            "issue_market_zone", sa.VARCHAR(),  nullable=False
         ),
     )
     op.add_column(
@@ -212,14 +211,14 @@ def downgrade() -> None:
         sa.Column(
             "connected_grid_identification",
             sa.VARCHAR(),
-            autoincrement=False,
+            
             nullable=False,
         ),
     )
     op.add_column(
         "granularcertificatebundle",
         sa.Column(
-            "dissemination_level", sa.VARCHAR(), autoincrement=False, nullable=True
+            "dissemination_level", sa.VARCHAR(),  nullable=True
         ),
     )
     op.add_column(
@@ -227,18 +226,18 @@ def downgrade() -> None:
         sa.Column(
             "storage_device_location",
             postgresql.ARRAY(sa.DOUBLE_PRECISION(precision=53)),
-            autoincrement=False,
+            
             nullable=True,
         ),
     )
     op.add_column(
         "granularcertificatebundle",
-        sa.Column("legal_status", sa.VARCHAR(), autoincrement=False, nullable=True),
+        sa.Column("legal_status", sa.VARCHAR(),  nullable=True),
     )
     op.add_column(
         "granularcertificatebundle",
         sa.Column(
-            "registry_configuration", sa.INTEGER(), autoincrement=False, nullable=False
+            "registry_configuration", sa.INTEGER(),  nullable=False
         ),
     )
     op.add_column(
@@ -246,30 +245,30 @@ def downgrade() -> None:
         sa.Column(
             "emissions_factor_production_device",
             sa.DOUBLE_PRECISION(precision=53),
-            autoincrement=False,
+            
             nullable=True,
         ),
     )
     op.add_column(
         "granularcertificatebundle",
-        sa.Column("issuing_body", sa.VARCHAR(), autoincrement=False, nullable=False),
+        sa.Column("issuing_body", sa.VARCHAR(),  nullable=False),
     )
     op.add_column(
         "granularcertificatebundle",
         sa.Column(
             "device_production_start_date",
             postgresql.TIMESTAMP(),
-            autoincrement=False,
+            
             nullable=False,
         ),
     )
     op.add_column(
         "granularcertificatebundle",
-        sa.Column("support_received", sa.VARCHAR(), autoincrement=False, nullable=True),
+        sa.Column("support_received", sa.VARCHAR(),  nullable=True),
     )
     op.add_column(
         "granularcertificatebundle",
-        sa.Column("storage_id", sa.INTEGER(), autoincrement=False, nullable=True),
+        sa.Column("storage_id", sa.INTEGER(),  nullable=True),
     )
     op.drop_constraint(
         "gcregistry_registry_id_fkey", "granularcertificatebundle", type_="foreignkey"
