@@ -18,9 +18,6 @@ if config.config_file_name is not None:
 
 db_name_to_client = get_db_name_to_client()
 
-DB_URL = db_name_to_client["db_write"].connection_str
-config.set_main_option("sqlalchemy.url", DB_URL)
-
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
@@ -71,8 +68,11 @@ def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
+for host in ["db_read", "db_write"]:
+    DB_URL = db_name_to_client[host].connection_str
+    config.set_main_option("sqlalchemy.url", DB_URL)
+    
+    if context.is_offline_mode():
+        run_migrations_offline()
+    else:
+        run_migrations_online()
