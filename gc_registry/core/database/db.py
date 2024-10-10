@@ -81,27 +81,6 @@ class DButils:
     def get_session(self) -> Session:
         return Session(self.engine)
 
-    def initiate_db_tables(self, schema_paths: list | None = None) -> None:
-        if schema_paths is None:
-            print("No schema paths provided. Skipping table creation.")
-            schema_paths = []
-        if not database_exists(self.engine.url):
-            print("Database does not exist. Creating database...")
-            create_database(self.engine.url)
-
-        if len(schema_paths) > 0:
-            print("Creating tables for the provided schema paths...")
-            tables = [
-                schema_path_to_class(schema_path).__table__
-                for schema_path in schema_paths
-            ]
-        else:
-            tables = None
-
-        SQLModel.metadata.create_all(self.engine, tables=tables)
-
-        return None
-
 
 # Initialising the DButil clients
 db_name_to_client: dict[str, Any] = {}
@@ -112,12 +91,12 @@ def get_db_name_to_client():
 
     if db_name_to_client == {}:
         db_mapping = [
-            ("db_read", settings.DATABASE_HOST_READ, schema_paths_read),
-            ("db_write", settings.DATABASE_HOST_WRITE, schema_paths_write),
+            ("db_read", settings.DATABASE_HOST_READ),
+            ("db_write", settings.DATABASE_HOST_WRITE),
         ]
 
         print("Initialising the database clients....")
-        for db_name, db_host, schema_paths in db_mapping:
+        for db_name, db_host in db_mapping:
             db_client = DButils(
                 db_url=db_host,
                 db_name=settings.POSTGRES_DB,

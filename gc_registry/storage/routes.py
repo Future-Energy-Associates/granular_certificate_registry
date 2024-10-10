@@ -6,8 +6,6 @@ from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.certificate.schemas import (
     GranularCertificateBundleCreate,
 )
-from gc_registry.core.database import db
-from gc_registry.certificate.schemas import GranularCertificateBundleBase
 from gc_registry.core.database import db, events
 from gc_registry.storage.models import (
     StorageAction,
@@ -144,7 +142,7 @@ def SDR_withdraw(
     status_code=200,
 )
 def issue_SDGC(
-    sdgc_base: GranularCertificateBundleBase,
+    sdgc_create: GranularCertificateBundleCreate,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
@@ -158,7 +156,7 @@ def issue_SDGC(
     """
 
     sdgc = GranularCertificateBundle.create(
-        sdgc_base, write_session, read_session, esdb_client
+        sdgc_create, write_session, read_session, esdb_client
     )
 
     return sdgc

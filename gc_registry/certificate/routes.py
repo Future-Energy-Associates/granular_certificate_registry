@@ -8,9 +8,7 @@ from gc_registry.certificate.models import (
 )
 from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
-    GranularCertificateBundleBase,
     GranularCertificateBundleCreate,
-    GranularCertificateBundleRead,
 )
 from gc_registry.core.database import db, events
 

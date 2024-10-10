@@ -8,11 +8,10 @@ from esdbclient import EventStoreDBClient, NewEvent, StreamState
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlmodel import Session, SQLModel
-from testcontainers.postgres import PostgresContainer  # type: ignore
 from starlette.testclient import TestClient
-from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
-from testcontainers.postgres import PostgresContainer
+from testcontainers.core.container import DockerContainer  # type: ignore
+from testcontainers.core.waiting_utils import wait_for_logs  # type: ignore
+from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
 from gc_registry.core.database import db, events

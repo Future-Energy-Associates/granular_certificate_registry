@@ -1,10 +1,12 @@
 import datetime
-from enum import Enum
 import uuid
+from enum import Enum
 
 from pydantic import BaseModel
 from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, Field
+
+from gc_registry import utils
 
 
 class CertificateStatus(str, Enum):
@@ -347,7 +349,7 @@ class GranularCertificateBundleRead(BaseModel):
     is_deleted: bool = Field(default=False)
 
 
-class GranularCertificateActionBase(BaseModel):
+class GranularCertificateActionBase(utils.ActiveRecord):
     # TODO validate with an enum at the class definition level
     action_type: str = Field(
         description="The type of action to be performed on the GC Bundle.",
