@@ -94,7 +94,7 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta | None = N
 
 
 def is_token_blacklisted(oauth_token):
-    with next(db.db_name_to_client["read"].yield_session()) as session:
+    with next(db.db_name_to_client["db_read"].yield_session()) as session:
         statement = select(TokenBlacklist).where(TokenBlacklist.token == oauth_token)
         results = session.exec(statement).all()
 
@@ -120,7 +120,7 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
         current_ts = datetime.datetime.utcnow().timestamp()
 
         if (float(expire) - current_ts) < 0:
-            with next(db.db_name_to_client["read"].yield_session()) as session:
+            with next(db.db_name_to_client["db_read"].yield_session()) as session:
                 session.add(TokenBlacklist(token=oauth_token))
                 session.commit()
 
@@ -179,7 +179,7 @@ def refresh(oauth_token: str = Depends(oauth2_scheme)):
 def logout(
     request: Request,
     oauth_token: str = Depends(oauth2_scheme),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    session: Session = Depends(db.get_write_session),
 ):
     is_token_blacklisted(oauth_token)
 

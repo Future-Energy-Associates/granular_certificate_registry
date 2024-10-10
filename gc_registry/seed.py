@@ -1,17 +1,17 @@
 import datetime
 
-from sqlmodel import Session
-
 from gc_registry.account.models import Account
-from gc_registry.core.database import db
+from gc_registry.core.database import cqrs, db, events
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
 from gc_registry.user.models import User
 
 
 def seed_data():
-    client = db.db_name_to_client["write"]
-    engine = client.engine
+    _ = db.get_db_name_to_client()
+    write_session = db.get_write_session()
+    read_session = db.get_read_session()
+    esdb_client = events.get_esdb_client()
 
     print("Seeding the database with data....")
     bmu_ids = [
@@ -29,57 +29,59 @@ def seed_data():
     to_date = from_date + datetime.timedelta(days=1)
     dataset = "B1610"
 
-    with Session(engine) as session:
-        # Create a User to add the certificates to
-        user_dict = {
-            "primary_contact": "a_user@usermail.com",
-            "name": "A User",
-            "role": ["Production User"],
+    # Create a User to add the certificates to
+    user_dict = {
+        "primary_contact": "a_user@usermail.com",
+        "name": "A User",
+        "roles": ["Production User"],
+    }
+    user = User.create(user_dict, write_session, read_session, esdb_client)
+
+    # Create an Account to add the certificates to
+    account_dict = {
+        "account_name": "Test Account",
+        "user_ids": [user.id],
+    }
+    account = Account.create(account_dict, write_session, read_session, esdb_client)
+
+    for bmu_id in bmu_ids:
+        device_dict = {
+            "device_name": bmu_id,
+            "grid": "National Grid",
+            "energy_source": "wind",
+            "technology_type": "wind",
+            "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
+            "capacity": 1000,
+            "peak_demand": 100,
+            "location": "Some Location",
+            "account_id": account.id,
         }
-        user = User.model_validate(user_dict)
-        session.add(user)
-        session.commit()
-        session.refresh(user)
+        device = Device.create(device_dict, write_session, read_session, esdb_client)
 
-        # Create an Account to add the certificates to
-        account_dict = {
-            "account_name": "Test Account",
-            "users": [user],
-        }
-        account = Account.model_validate(account_dict)
-        session.add(account)
-        session.commit()
-        session.refresh(account)
+        # Use Elexon to get data from the Elexon API
 
-        for bmu_id in bmu_ids:
-            device_dict = {
-                "device_name": bmu_id,
-                "grid": "National Grid",
-                "energy_source": "wind",
-                "technology_type": "wind",
-                "operational_date": datetime.datetime(2015, 1, 1, 0, 0, 0),
-                "capacity": 1000,
-                "peak_demand": 100,
-                "location": "Some Location",
-                "account_id": account.id,
-            }
-            device = Device.model_validate(device_dict)
-            session.add(device)
-            session.commit()
-            session.refresh(device)
+        data_hh = client.get_dataset_in_datetime_range(
+            dataset, from_date, to_date, bmu_ids=[bmu_id]
+        )
+        if data_hh.empty:
+            print(f"No data found for {bmu_id}")
+            continue
+        data_hourly = client.resample_hh_data_to_hourly(data_hh)
+        certificate_bundles = client.map_generation_to_certificates(
+            data_hourly, account_id=account.id, device_id=device.id
+        )
 
-            # Use Elexon to get data from the Elexon API
+        if not certificate_bundles:
+            print(f"No certificate bundles found for {bmu_id}")
+            continue
 
-            data = client.get_dataset_in_datetime_range(
-                dataset, from_date, to_date, bmu_ids=[bmu_id]
-            )
-            certificate_bundles = client.map_generation_to_certificates(
-                data, account_id=account.id, device_id=device.id
-            )
-
-            for certificate_bundle in certificate_bundles:
-                session.add(certificate_bundle)
-                session.commit()
-                session.refresh(certificate_bundle)
+        _ = cqrs.write_to_database(
+            certificate_bundles, write_session, read_session, esdb_client
+        )
 
     print("Seeding complete!")
+
+    write_session.close()
+    read_session.close()
+
+    return

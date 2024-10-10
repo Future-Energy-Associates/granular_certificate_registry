@@ -45,7 +45,7 @@ class ElexonClient:
         from_date: datetime,
         to_date: datetime,
         bmu_ids: list[str] | None = None,
-    ):
+    ) -> pd.DataFrame:
         data = []
         for half_hour_dt in pd.date_range(from_date, to_date, freq="30min"):
             params = {
@@ -63,19 +63,43 @@ class ElexonClient:
 
             data.extend(response.json()["data"])
 
-        return data
+        return pd.DataFrame(data)
+
+    def resample_hh_data_to_hourly(self, data_hh_df: pd.DataFrame) -> pd.DataFrame:
+        data_hh_df["start_time"] = pd.to_datetime(
+            data_hh_df.halfHourEndTime
+        ) - pd.Timedelta(minutes=30)
+
+        data_resampled_concat = []
+        for bmu_unit in data_hh_df.bmUnit.unique():
+            data_resampled_values = (
+                data_hh_df[data_hh_df.bmUnit == bmu_unit]
+                .set_index("start_time")
+                .quantity.resample("h")
+                .sum()
+            )
+            data_resampled_values.name = bmu_unit
+            data_resampled_concat.append(data_resampled_values)
+
+        data_resampled = (
+            pd.concat(data_resampled_concat, axis=1)
+            .melt(ignore_index=False, var_name="bmUnit", value_name="quantity")
+            .reset_index()
+        )
+
+        return data_resampled
 
     def map_generation_to_certificates(
         self,
-        generation_data: list[dict],
+        generation_data: pd.DataFrame,
         account_id: int,
         device_id: str | None = None,
     ) -> list[GranularCertificateBundle]:
         # Filter out any rows where the quantity is less than or equal to zero (no generation)
-        generation_data = [x for x in generation_data if x["quantity"] > 0]
+        generation_data = generation_data.loc[generation_data["quantity"] > 0]
 
         mapped_data: list = []
-        for data in generation_data:
+        for _idx, data in generation_data.iterrows():
             bundle_wh = int(data["quantity"] * 1000)
 
             # Get existing "bundle_id_range_end" from the last item in mapped_data
@@ -107,12 +131,8 @@ class ElexonClient:
                 "device_capacity": 200,  # :TODO: Get the actual capacity for the BMUID
                 "device_location": (0.0, 0.0),
                 "device_type": "wind",
-                "production_starting_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                ),
-                "production_ending_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                ),  # Assuming half-hour interval
+                "production_starting_interval": data["start_time"],
+                "production_ending_interval": data["start_time"] + timedelta(hours=1),
                 "issuance_datestamp": datetime.utcnow().date(),
                 "expiry_datestamp": (
                     datetime.utcnow() + timedelta(days=365 * 3)
@@ -123,6 +143,7 @@ class ElexonClient:
                 "issue_market_zone": "Great Britain",
                 "emissions_factor_production_device": 0.0,
                 "emissions_factor_source": "Some Data Source",
+                "hash": "Some Hash",
             }
 
             # Validate and append the transformed data

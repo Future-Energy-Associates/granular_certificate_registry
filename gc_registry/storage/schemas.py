@@ -36,6 +36,7 @@ class StorageChargeRecordBase(utils.ActiveRecord):
         description="When allocated, the unique ID of the Storage Discharge Record that has been allocated to this SCR. If blank, no SDR has been allocated to this SCR.",
         foreign_key="storagedischargerecord.sdr_allocation_id",
     )
+    is_deleted: bool = Field(default=False)
 
 
 class StorageDischargeRecordBase(utils.ActiveRecord):
@@ -65,6 +66,7 @@ class StorageDischargeRecordBase(utils.ActiveRecord):
     efficiency_factor_interval_end: datetime.datetime | None = Field(
         description="The UTC datetime to which the Storage Device calculates its effective efficiency factor for this SDR.",
     )
+    is_deleted: bool = Field(default=False)
 
 
 class StorageActionBase(utils.ActiveRecord):
@@ -108,6 +110,7 @@ class StorageActionBase(utils.ActiveRecord):
     storage_energy_source: str | None = Field(
         description="Filter records based on the fuel type used by the production Device.",
     )
+    is_deleted: bool = Field(default=False)
     # TODO this also breaks pydantic validation, need to revisit
     # sparse_filter_list: dict[int, datetime.datetime] | None = Field(
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",

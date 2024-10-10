@@ -1,11 +1,10 @@
+from esdbclient import EventStoreDBClient
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from gc_registry import utils
-from gc_registry.authentication import services
 from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.certificate.schemas import GranularCertificateBundleBase
-from gc_registry.core.database import db
+from gc_registry.core.database import db, events
 from gc_registry.storage.models import (
     StorageAction,
     StorageChargeRecord,
@@ -24,156 +23,127 @@ router = APIRouter(tags=["Storage"])
 
 
 @router.post(
-    "/storage/create_scr",
+    "/create_scr",
     response_model=StorageChargeRecord,
-    status_code=200,
+    status_code=201,
 )
 def create_SCR(
-    scr: StorageChargeRecordBase,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    scr_base: StorageChargeRecordBase,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Create a Storage Charge Record with the specified properties."""
-    db_scr = StorageChargeRecord.create(scr, session)
+    scr = StorageChargeRecord.create(scr_base, write_session, read_session, esdb_client)
 
-    return utils.format_json_response(
-        db_scr,
-        headers,
-        response_model=StorageChargeRecord,
-    )
+    return scr
 
 
 @router.get(
-    "/storage/query_scr",
+    "/query_scr",
     response_model=SCRQueryResponse,
     status_code=200,
 )
 def query_SCR(
     scr_query: StorageAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Return all SCRs from the specified Account that match the provided search criteria."""
-    scr_action = StorageAction.create(scr_query, session)
-
-    return utils.format_json_response(
-        scr_action,
-        headers,
-        response_model=SCRQueryResponse,
+    scr_action = StorageAction.create(
+        scr_query, write_session, read_session, esdb_client
     )
 
+    return scr_action
 
-# create storage discharge record
+
 @router.post(
-    "/storage/create_sdr",
+    "/create_sdr",
     response_model=StorageDischargeRecord,
-    status_code=200,
-    name="Create SDR",
+    status_code=201,
 )
 def create_SDR(
-    sdr: StorageDischargeRecordBase,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    sdr_base: StorageDischargeRecordBase,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Create a Storage Discharge Record with the specified properties."""
-    db_sdr = StorageDischargeRecord.create(sdr, session)
-
-    return utils.format_json_response(
-        db_sdr,
-        headers,
-        response_model=StorageDischargeRecord,
+    sdr = StorageDischargeRecord.create(
+        sdr_base, write_session, read_session, esdb_client
     )
+
+    return sdr
 
 
 @router.get(
-    "/storage/query_sdr",
+    "/query_sdr",
     response_model=SDRQueryResponse,
     status_code=200,
 )
 def query_SDR(
     sdr_query: StorageAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Return all SDRs from the specified Account that match the provided search criteria."""
-    sdr_action = StorageAction.create(sdr_query, session)
-
-    return utils.format_json_response(
-        sdr_action,
-        headers,
-        response_model=SDRQueryResponse,
+    sdr_action = StorageAction.create(
+        sdr_query, write_session, read_session, esdb_client
     )
+
+    return sdr_action
 
 
 @router.post(
-    "/storage/withdraw_scr",
+    "/withdraw_scr",
     response_model=StorageActionResponse,
     status_code=200,
 )
 def SCR_withdraw(
     storage_action_base: StorageAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SCRs from the specified Account matching the provided search criteria."""
-    scr_action = StorageAction.create(storage_action_base, session)
-
-    return utils.format_json_response(
-        scr_action,
-        headers,
-        response_model=StorageActionResponse,
+    scr_action = StorageAction.create(
+        storage_action_base, write_session, read_session, esdb_client
     )
+
+    return scr_action
 
 
 @router.post(
-    "/storage/withdraw_sdr",
+    "/withdraw_sdr",
     response_model=StorageActionResponse,
     status_code=200,
 )
 def SDR_withdraw(
     storage_action_base: StorageAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SDRs from the specified Account matching the provided search criteria."""
-    sdr_action = StorageAction.create(storage_action_base, session)
-
-    return utils.format_json_response(
-        sdr_action,
-        headers,
-        response_model=StorageActionResponse,
+    sdr_action = StorageAction.create(
+        storage_action_base, write_session, read_session, esdb_client
     )
 
-
-@router.patch(
-    "/storage/update_mutables",
-    response_model=StorageActionResponse,
-    status_code=200,
-)
-def update_storage_mutables(
-    storage_update: StorageAction,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
-):
-    """Update the mutable aspects (associated Account ID, status) of a given certificate bundle."""
-    storage_update_action = StorageAction.create(storage_update, session)
-
-    return utils.format_json_response(
-        storage_update_action,
-        headers,
-        response_model=StorageActionResponse,
-    )
+    return sdr_action
 
 
 @router.post(
-    "/storage/issue_sdgc",
+    "/issue_sdgc",
     response_model=GranularCertificateBundle,
     status_code=200,
 )
 def issue_SDGC(
-    sdgc: GranularCertificateBundleBase,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    sdgc_base: GranularCertificateBundleBase,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """A GC Bundle that has been issued following the verification of a cancelled GC Bundle and the proper allocation of a pair
     of Storage Charge and Discharge Records. The GC Bundle is issued to the Account of the Storage Device, and is identical to
@@ -183,10 +153,8 @@ def issue_SDGC(
     by the storage_id and the discharging_start_datetime, which is inherited from the allocated SDR.
     """
 
-    db_sdgc = GranularCertificateBundle.create(sdgc, session)
-
-    return utils.format_json_response(
-        db_sdgc,
-        headers,
-        response_model=GranularCertificateBundle,
+    sdgc = GranularCertificateBundle.create(
+        sdgc_base, write_session, read_session, esdb_client
     )
+
+    return sdgc

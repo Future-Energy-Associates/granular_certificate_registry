@@ -29,6 +29,5 @@ class AccountRead(AccountBase):
 
 
 class AccountUpdate(BaseModel):
-    id: int
-    account_name: str | None
-    user_id: int | None
+    account_name: str | None = None
+    user_ids: List[int] | None = None
