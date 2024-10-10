@@ -9,9 +9,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlmodel import Session, SQLModel
 from starlette.testclient import TestClient
-from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
-from testcontainers.postgres import PostgresContainer
+from testcontainers.core.container import DockerContainer  # type: ignore
+from testcontainers.core.waiting_utils import wait_for_logs  # type: ignore
+from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
 from gc_registry.core.database import db, events
@@ -276,6 +276,7 @@ def fake_db_wind_device(
         "commissioning_date": "2020-01-01",
         "operational_date": "2020-01-01",
         "peak_demand": 100,
+        "is_storage": False,
         "is_deleted": False,
     }
 
@@ -309,6 +310,7 @@ def fake_db_solar_device(
         "commissioning_date": "2020-01-01",
         "operational_date": "2020-01-01",
         "peak_demand": 100,
+        "is_storage": False,
         "is_deleted": False,
     }
 

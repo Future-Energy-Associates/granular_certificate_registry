@@ -4,10 +4,11 @@ from sqlmodel import Session
 
 from gc_registry.certificate.models import (
     GranularCertificateAction,
-    GranularCertificateActionResponse,
     GranularCertificateBundle,
-    GranularCertificateBundleBase,
-    GranularCertificateQueryResponse,
+)
+from gc_registry.certificate.schemas import (
+    GranularCertificateActionRead,
+    GranularCertificateBundleCreate,
 )
 from gc_registry.core.database import db, events
 
@@ -21,7 +22,7 @@ router = APIRouter(tags=["Certificates"])
     status_code=201,
 )
 def create_certificate_bundle(
-    certificate_bundle: GranularCertificateBundleBase,
+    certificate_bundle: GranularCertificateBundleCreate,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
@@ -36,7 +37,7 @@ def create_certificate_bundle(
 
 @router.post(
     "/transfer",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_transfer(
@@ -56,7 +57,7 @@ def certificate_bundle_transfer(
 
 @router.get(
     "/query",
-    response_model=GranularCertificateQueryResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def query_certificate_bundles(
@@ -75,7 +76,7 @@ def query_certificate_bundles(
 
 @router.post(
     "/recurring_transfer",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_recurring_transfer(
@@ -94,7 +95,7 @@ def certificate_bundle_recurring_transfer(
 
 @router.post(
     "/cancel",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_cancellation(
@@ -113,7 +114,7 @@ def certificate_bundle_cancellation(
 
 @router.post(
     "/recurring_cancel",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_recurring_cancellation(
@@ -132,7 +133,7 @@ def certificate_bundle_recurring_cancellation(
 
 @router.post(
     "/claim",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_claim(
@@ -153,7 +154,7 @@ def certificate_bundle_claim(
 
 @router.post(
     "/withdraw",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_withdraw(
@@ -172,7 +173,7 @@ def certificate_bundle_withdraw(
 
 @router.post(
     "/reseve",
-    response_model=GranularCertificateActionResponse,
+    response_model=GranularCertificateActionRead,
     status_code=202,
 )
 def certificate_bundle_reserve(

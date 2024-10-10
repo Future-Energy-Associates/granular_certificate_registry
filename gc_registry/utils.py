@@ -1,12 +1,13 @@
+import datetime
 import json
 import logging
-from typing import Type, TypeVar, Union
+from typing import Any, Type, TypeVar
 
 from esdbclient import EventStoreDBClient
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import Field, Session, SQLModel, select
 
 from gc_registry.core.database import cqrs
 from gc_registry.settings import settings
@@ -19,6 +20,10 @@ T = TypeVar("T", bound="ActiveRecord")
 
 
 class ActiveRecord(SQLModel):
+    created_at: datetime.datetime = Field(
+        default_factory=datetime.datetime.utcnow, nullable=False
+    )
+
     @classmethod
     def by_id(
         cls: Type[T],
@@ -42,7 +47,7 @@ class ActiveRecord(SQLModel):
     @classmethod
     def create(
         cls,
-        source: Union[dict, SQLModel],
+        source: dict[str, Any] | BaseModel,
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,

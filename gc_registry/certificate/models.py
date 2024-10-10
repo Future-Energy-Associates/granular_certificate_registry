@@ -1,10 +1,12 @@
-from typing import List, Union
+import uuid
 
 from sqlmodel import Field
 
+from gc_registry import utils
 from gc_registry.certificate.schemas import (
     GranularCertificateActionBase,
     GranularCertificateBundleBase,
+    IssuanceMetaDataBase,
 )
 
 # issuance_id a unique non-sequential ID related to the issuance of the entire bundle.
@@ -14,10 +16,12 @@ from gc_registry.certificate.schemas import (
 # bundle will retain the original bundle issuance ID.
 
 
-class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
-    id: int | None = Field(
+class GranularCertificateBundle(
+    utils.ActiveRecord, GranularCertificateBundleBase, table=True
+):
+    issuance_id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
         primary_key=True,
-        default=None,
         description="An integer ID unique to this bundle within the registry.",
     )
 
@@ -36,11 +40,9 @@ class GranularCertificateAction(GranularCertificateActionBase, table=True):
     )
 
 
-class GranularCertificateActionResponse(GranularCertificateActionBase):
-    action_response_status: str = Field(
-        description="Specifies whether the requested action has been accepted or rejected by the registry."
+class IssuanceMetaData(IssuanceMetaDataBase, utils.ActiveRecord, table=True):
+    id: int = Field(
+        primary_key=True,
+        default=None,
+        description="A unique ID assigned to this registry.",
     )
-
-
-class GranularCertificateQueryResponse(GranularCertificateActionResponse):
-    filtered_certificate_bundles: Union[List[GranularCertificateBundle], None]

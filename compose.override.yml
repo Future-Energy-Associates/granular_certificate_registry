@@ -5,8 +5,8 @@ services:
     environment:
       - TC_HOST=host.docker.internal
     volumes:
-      - ./:/code
       - /var/run/docker.sock:/var/run/docker.sock
+      - "./gc_registry:/code/gc_registry"
     build:
       context: .
       args:
@@ -29,17 +29,20 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5436:5432"
+
 
   db_read:
     image: postgres:13
     volumes:
       - postgres_data_read:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5438:5432"
 
   eventstore.db:
     image: eventstore/eventstore:23.10.2-bookworm-slim

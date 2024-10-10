@@ -13,7 +13,8 @@ def seed_data():
     read_session = db.get_read_session()
     esdb_client = events.get_esdb_client()
 
-    print("Seeding the database with data....")
+    print("Seeding the WRITE database with data....")
+
     bmu_ids = [
         "E_MARK-1",
         "E_MARK-2",
@@ -55,11 +56,11 @@ def seed_data():
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": account.id,
+            "is_storage": False,
         }
         device = Device.create(device_dict, write_session, read_session, esdb_client)
 
         # Use Elexon to get data from the Elexon API
-
         data_hh = client.get_dataset_in_datetime_range(
             dataset, from_date, to_date, bmu_ids=[bmu_id]
         )

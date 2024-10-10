@@ -1,12 +1,33 @@
 import importlib
 from typing import Any, Generator
 
-import numpy as np
-from sqlalchemy_utils import create_database, database_exists  # type: ignore
 from sqlmodel import Session, SQLModel, create_engine
 
-from gc_registry.core.database.config import schema_paths_read, schema_paths_write
+from gc_registry.account import models as account_models
+from gc_registry.authentication import models as authentication_models
+from gc_registry.certificate import models as certificate_models
+from gc_registry.device import models as device_models
+from gc_registry.measurement import models as measurement_models
+from gc_registry.organisation import models as organisation_models
 from gc_registry.settings import settings
+from gc_registry.storage import models as storage_models
+from gc_registry.user import models as user_models
+
+"""
+This section is used by Alembic to load the all the database related models
+"""
+
+__all__ = [
+    "SQLModel",
+    "user_models",
+    "authentication_models",
+    "organisation_models",
+    "account_models",
+    "device_models",
+    "certificate_models",
+    "storage_models",
+    "measurement_models",
+]
 
 
 # Defining utility functions and classes
@@ -19,42 +40,31 @@ def schema_path_to_class(schema_path):
     return schema_class
 
 
-def df_to_records_without_nulls(df):
-    records = [
-        {k: v for k, v in record.items() if v is not None}
-        for record in df.replace(np.nan, None).to_dict("records")
-    ]
-
-    return records
-
-
 class DButils:
     def __init__(
         self,
         db_username: str | None = None,
         db_password: str | None = None,
-        db_url: str | None = None,
+        db_host: str | None = None,
         db_port: int | None = None,
         db_name: str | None = None,
-        db_test_fp: str | None = None,
-        env: str | None = "STAGE",
+        db_test_fp: str = "gc_registry_test.db",
+        test: bool = False,
     ):
         self._db_username = db_username
         self._db_password = db_password
-        self._db_url = db_url
+        self._db_host = db_host
         self._db_port = db_port
         self._db_name = db_name
         self._db_test_fp = db_test_fp
 
-        if env == "PROD":
-            self.connection_str = (
-                f"postgresql://{self._db_username}:{self._db_password}@{self._db_url}:"
-                f"{self._db_port}/{self._db_name}"
-            )
-        elif env == "STAGE":
+        if test:
             self.connection_str = f"sqlite:///{self._db_test_fp}"
         else:
-            raise ValueError("`ENVIRONMENT` must be one of: `PROD` or `STAGE`")
+            self.connection_str = (
+                f"postgresql://{self._db_username}:{self._db_password}@{self._db_host}:"
+                f"{self._db_port}/{self._db_name}"
+            )
 
         self.engine = create_engine(self.connection_str, pool_pre_ping=True)
 
@@ -69,27 +79,6 @@ class DButils:
     def get_session(self) -> Session:
         return Session(self.engine)
 
-    def initiate_db_tables(self, schema_paths: list | None = None) -> None:
-        if schema_paths is None:
-            print("No schema paths provided. Skipping table creation.")
-            schema_paths = []
-        if not database_exists(self.engine.url):
-            print("Database does not exist. Creating database...")
-            create_database(self.engine.url)
-
-        if len(schema_paths) > 0:
-            print("Creating tables for the provided schema paths...")
-            tables = [
-                schema_path_to_class(schema_path).__table__
-                for schema_path in schema_paths
-            ]
-        else:
-            tables = None
-
-        SQLModel.metadata.create_all(self.engine, tables=tables)
-
-        return None
-
 
 # Initialising the DButil clients
 db_name_to_client: dict[str, Any] = {}
@@ -100,24 +89,22 @@ def get_db_name_to_client():
 
     if db_name_to_client == {}:
         db_mapping = [
-            ("db_read", settings.DATABASE_HOST_READ, schema_paths_read),
-            ("db_write", settings.DATABASE_HOST_WRITE, schema_paths_write),
+            ("db_read", settings.DATABASE_HOST_READ),
+            ("db_write", settings.DATABASE_HOST_WRITE),
         ]
 
         print("Initialising the database clients....")
-        for db_name, db_host, schema_paths in db_mapping:
+        for db_name, db_host in db_mapping:
             db_client = DButils(
-                db_url=db_host,
+                db_host=db_host,
                 db_name=settings.POSTGRES_DB,
                 db_username=settings.POSTGRES_USER,
                 db_password=settings.POSTGRES_PASSWORD,
                 db_port=settings.DATABASE_PORT,
                 db_test_fp=settings.DB_TEST_FP,
-                env=settings.ENVIRONMENT,
+                test=False,
             )
             db_name_to_client[db_name] = db_client
-
-            db_client.initiate_db_tables(schema_paths=schema_paths)
 
     return db_name_to_client
 
