@@ -14,24 +14,15 @@ from testcontainers.core.waiting_utils import wait_for_logs  # type: ignore
 from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
-from gc_registry.certificate.models import (
-    GranularCertificateBundle,
-    GranularCertificateBundleBase,
-    IssuanceMetaData,
-)
-from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
-from gc_registry.core.models.base import (
-    CertificateStatus,
-    DeviceTechnologyType,
-    EnergyCarrierType,
-    EnergySourceType,
-)
+from gc_registry.core.models.base import EnergyCarrierType, EnergySourceType, DeviceTechnologyType
 from gc_registry.device.models import Device
 from gc_registry.main import app
 from gc_registry.settings import settings
 from gc_registry.user.models import User
 from gc_registry.utils import ActiveRecord
+from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.certificate.services import create_bundle_hash
 
 load_dotenv()
 
@@ -85,9 +76,9 @@ def get_db_url(target: str = "write") -> str | None:
 
 
 def get_esdb_url() -> str | None:
-    logging.error(f"ENVIRONMENT: {settings.ENVIRONMENT}")
-    if settings.ENVIRONMENT == "CI":
-        return f"esdb://{settings.ESDB_CONNECTION_STRING}:2113?tls=false"
+    logging.error(f"ENVIRONMENT: {os.environ['ENVIRONMENT']}")
+    if os.environ["ENVIRONMENT"] == "CI":
+        return f"esdb://{os.environ['ESDB_CONNECTION_STRING']}:2113?tls=false"
     else:
         try:
             esdb_container = (
@@ -328,45 +319,19 @@ def fake_db_solar_device(
 
     return device_read
 
-
 @pytest.fixture()
 def fake_db_gc_bundle(
-    db_write_session: Session,
-    db_read_session: Session,
-    fake_db_account: Account,
-    fake_db_wind_device: Device,
+    db_write_session: Session, db_read_session: Session, fake_db_wind_device: Device
 ) -> GranularCertificateBundle:
-    fake_db_issuance_metadata = {
-        "country_of_issuance": "USA",
-        "connected_grid_identification": "ERCOT",
-        "issuing_body": "ERCOT",
-        "legal_status": "legal",
-        "issuance_purpose": "compliance",
-        "support_received": None,
-        "quality_scheme_reference": None,
-        "dissemination_level": None,
-        "issue_market_zone": "ERCOT",
-    }
-
-    issuance_metadata = IssuanceMetaData.model_validate(fake_db_issuance_metadata)
-    issuance_metadata_read = add_entity_to_write_and_read(
-        issuance_metadata, db_write_session, db_read_session
-    )
-
     gc_bundle_dict = {
-        "id": 1,
-        "account_id": fake_db_account.id,
-        "certificate_status": CertificateStatus.ACTIVE,
-        "metadata_id": issuance_metadata_read.id,
+        "account_id": 1,
+        "certificate_status": "Active",
         "bundle_id_range_start": 0,
-        "bundle_id_range_end": 999,
-        "bundle_quantity": 1000,
+        "bundle_id_range_end": 1000,
+        "bundle_quantity": 1001,
         "energy_carrier": EnergyCarrierType.electricity,
         "energy_source": EnergySourceType.wind,
         "face_value": 1,
-        "is_storage": False,
-        "sdr_allocation_id": None,
-        "storage_efficiency_factor": None,
         "issuance_post_energy_carrier_conversion": False,
         "registry_configuration": 1,
         "device_id": fake_db_wind_device.id,
@@ -388,13 +353,7 @@ def fake_db_gc_bundle(
         "hash": "Some Hash",
     }
 
-    gc_bundle_dict["issuance_id"] = f"""
-        {gc_bundle_dict["device_id"]}- \
-        {gc_bundle_dict["energy_carrier"]}- \
-        {gc_bundle_dict["production_starting_interval"]}
-        """
-
-    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+    gc_bundle = ActiveRecord.model_validate(gc_bundle_dict)
 
     gc_bundle.hash = create_bundle_hash(gc_bundle)
 
@@ -403,3 +362,4 @@ def fake_db_gc_bundle(
     )
 
     return gc_bundle_read
+)

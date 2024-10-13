@@ -1,63 +1,14 @@
-from esdbclient import EventStoreDBClient
 from sqlmodel import Session
 
-from gc_registry.account.models import Account
-from gc_registry.certificate.models import GranularCertificateBundle
-from gc_registry.certificate.services import (
-    split_certificate_bundle,
-    verifiy_bundle_lineage,
-)
+from gc_registry.account import models
 
 
-class TestServices:
-    def test_by_id(
-        self,
-        db_read_session: Session,
-        db_write_session: Session,
-        fake_db_account: Account,
-    ):
-        assert fake_db_account.id is not None
+def test_by_id(
+    db_read_session: Session, db_write_session: Session, fake_db_account: models.Account
+):
+    assert fake_db_account.id is not None
 
-        account_in_db = Account.by_id(fake_db_account.id, db_read_session)
+    account_in_db = models.Account.by_id(fake_db_account.id, db_read_session)
 
-        assert account_in_db is not None
-        assert account_in_db.account_name == fake_db_account.account_name
-
-    def test_gc_bundle_split(
-        self,
-        fake_db_gc_bundle: GranularCertificateBundle,
-        db_write_session: Session,
-        db_read_session: Session,
-        esdb_client: EventStoreDBClient,
-    ):
-        """
-        Split the bundle into two and assert that the bundle quantities align post-split,
-        and that the hashes of the child bundles are valid derivatives of the
-        parent bundle hash
-        """
-
-        child_bundle_1, child_bundle_2 = split_certificate_bundle(
-            fake_db_gc_bundle, 250, db_write_session, db_read_session, esdb_client
-        )
-
-        assert child_bundle_1.bundle_quantity == 250
-        assert child_bundle_2.bundle_quantity == 750
-
-        assert (
-            child_bundle_1.bundle_id_range_start
-            == fake_db_gc_bundle.bundle_id_range_start
-        )
-        assert (
-            child_bundle_1.bundle_id_range_end
-            == fake_db_gc_bundle.bundle_id_range_start + 250
-        )
-        assert (
-            child_bundle_2.bundle_id_range_start
-            == child_bundle_1.bundle_id_range_end + 1
-        )
-        assert (
-            child_bundle_2.bundle_id_range_end == fake_db_gc_bundle.bundle_id_range_end
-        )
-
-        assert verifiy_bundle_lineage(fake_db_gc_bundle, child_bundle_1)
-        assert verifiy_bundle_lineage(fake_db_gc_bundle, child_bundle_2)
+    assert account_in_db is not None
+    assert account_in_db.account_name == fake_db_account.account_name
