@@ -32,6 +32,14 @@ def create_certificate_bundle(
         certificate_bundle, write_session, read_session, esdb_client
     )
 
+    # Bundle issuance ID is the unique combination of device ID,
+    # energy carrier, and production starting interval.
+    db_certificate_bundle.issuance_id = f"""
+        {db_certificate_bundle.device_id}- \
+        {db_certificate_bundle.energy_carrier}- \
+        {db_certificate_bundle.production_starting_interval}
+        """
+
     return db_certificate_bundle
 
 
