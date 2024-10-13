@@ -1,11 +1,14 @@
 import datetime
 from enum import Enum
+from functools import partial
 
 from pydantic import BaseModel
 from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, Field
 
 from gc_registry import utils
+
+utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
 
 class CertificateStatus(str, Enum):
@@ -359,12 +362,20 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         description="If an issuance ID is specified, returns a GC Bundle containing all certificates between and inclusive of the range start and end IDs provided.",
     )
     action_request_datetime: datetime.datetime = Field(
-        default_factory=datetime.datetime.now,
+        default_factory=utc_datetime_now,
         description="The UTC datetime at which the User submitted the action to the registry.",
     )
     action_completed_datetime: datetime.datetime = Field(
-        default_factory=datetime.datetime.now,
+        default_factory=utc_datetime_now,
         description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
+    )
+    action_request_datetime_local: datetime.datetime | None = Field(
+        description="The local datetime at which the User submitted the action to the registry.",
+        default_factory=datetime.datetime.now,
+    )
+    action_complete_datetime_local: datetime.datetime | None = Field(
+        description="The local datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
+        default_factory=datetime.datetime.now,
     )
     initial_action_datetime: datetime.datetime | None = Field(
         description="If recurring, the UTC datetime of the first action that is to be completed.",
