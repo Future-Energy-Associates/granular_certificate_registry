@@ -38,6 +38,16 @@ class EnergySourceType(str, enum.Enum):
     other = "other"
 
 
+class CertificateStatus(str, Enum):
+    ACTIVE = "Active"
+    CANCELLED = "Cancelled"
+    CLAIMED = "Claimed"
+    EXPIRED = "Expired"
+    WITHDRAWN = "Withdrawn"
+    LOCKED = "Locked"
+    RESERVED = "Reserved"
+
+
 class EventTypes(str, Enum):
     CREATE = "CREATE"
     UPDATE = "UPDATE"

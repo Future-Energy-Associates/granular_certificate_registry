@@ -30,21 +30,22 @@ def create_certificate_bundle(
     nonce: str = None,
 ):
     """Create a GC Bundle with the specified properties."""
-    db_certificate_bundle = GranularCertificateBundle.create(
-        certificate_bundle, write_session, read_session, esdb_client
-    )
 
     # Bundle issuance ID is the unique combination of device ID,
     # energy carrier, and production starting interval.
-    db_certificate_bundle.issuance_id = f"""
-        {db_certificate_bundle.device_id}- \
-        {db_certificate_bundle.energy_carrier}- \
-        {db_certificate_bundle.production_starting_interval}
+    certificate_bundle.issuance_id = f"""
+        {certificate_bundle.device_id}- \
+        {certificate_bundle.energy_carrier}- \
+        {certificate_bundle.production_starting_interval}
         """
 
     # Bundle hash is the sha256 of the bundle's properties and, if the result of a bundle split,
     # a nonce taken from the hash of the parent bundle.
-    db_certificate_bundle.hash = create_bundle_hash(db_certificate_bundle, nonce)
+    certificate_bundle.hash = create_bundle_hash(certificate_bundle, nonce)
+
+    db_certificate_bundle = GranularCertificateBundle.create(
+        certificate_bundle, write_session, read_session, esdb_client
+    )
 
     return db_certificate_bundle
 

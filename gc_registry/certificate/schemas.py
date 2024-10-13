@@ -1,5 +1,4 @@
 import datetime
-from enum import Enum
 from functools import partial
 
 from pydantic import BaseModel
@@ -7,19 +6,13 @@ from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, Field
 
 from gc_registry import utils
-from gc_registry.core.models.base import EnergyCarrierType, EnergySourceType
+from gc_registry.core.models.base import (
+    CertificateStatus,
+    EnergyCarrierType,
+    EnergySourceType,
+)
 
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
-
-
-class CertificateStatus(str, Enum):
-    ACTIVE = "Active"
-    CANCELLED = "Cancelled"
-    CLAIMED = "Claimed"
-    EXPIRED = "Expired"
-    WITHDRAWN = "Withdrawn"
-    LOCKED = "Locked"
-    RESERVED = "Reserved"
 
 
 class GranularCertificateBundleBase(BaseModel):
@@ -41,6 +34,12 @@ class GranularCertificateBundleBase(BaseModel):
         description="""A unique identifier assigned to the GC Bundle at the time of issuance.
         If the bundle is split through partial transfer or cancellation, this issuance ID
         remains unchanged across each child GC Bundle.""",
+    )
+    hash: str = Field(
+        default=None,
+        description="""A unique hash assigned to this bundle at the time of issuance,
+        formed from the sha256 of the bundle's properties and, if the result of a bundle
+        split, a nonce taken from the hash of the parent bundle.""",
     )
 
     ### Mutable Attributes ###
@@ -131,6 +130,7 @@ class GranularCertificateBundleBase(BaseModel):
         default=None,
         description="The efficiency factor of the storage Device that has discharged the energy represented by this GC Bundle.",
     )
+    is_deleted: bool = Field(default=False)
 
 
 class GranularCertificateBundleCreate(GranularCertificateBundleBase):
