@@ -1,6 +1,6 @@
 from hashlib import sha256
 
-from .models import GranularCertificateBundle
+from .models import GranularCertificateBundle, GranularCertificateBundleBase
 
 
 def validate_transfer():
@@ -16,6 +16,10 @@ def create_bundle_hash(
     return a new hash for the child bundle that demonstrates the child's
     lineage from the parent.
 
+    To ensure that a consistent string representation of the GC bundle is
+    used, a JSON model dump of the base bundle class is used to avoid
+    automcatically generated fields such as the bundle's ID.
+
     Args:
         gc_bundle (GranularCertificateBundle): The child GC Bundle
         nonce (str): The hash of the parent GC Bundle
@@ -24,7 +28,9 @@ def create_bundle_hash(
         str: The hash of the child GC Bundle
     """
 
-    return sha256(f"{gc_bundle.__repr__()}{nonce}".encode()).hexdigest()
+    return sha256(
+        f"{GranularCertificateBundleBase(**gc_bundle.model_dump_json())}{nonce}".encode()
+    ).hexdigest()
 
 
 def verifiy_bundle_lineage(
