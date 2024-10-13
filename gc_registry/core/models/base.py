@@ -17,6 +17,27 @@ class DeviceTechnologyType(str, enum.Enum):
     other = "other"
 
 
+class EnergyCarrierType(str, enum.Enum):
+    electricity = "electricity"
+    natural_gas = "natural_gas"
+    hydrogen = "hydrogen"
+    heat = "heat"
+    other = "other"
+
+
+class EnergySourceType(str, enum.Enum):
+    solar_pv = "solar_pv"
+    wind = "wind"
+    hydro = "hydro"
+    biomass = "biomass"
+    nuclear = "nuclear"
+    electrolysis = "electrolysis"
+    geothermal = "geothermal"
+    battery_storage = "battery_storage"
+    chp = "chp"
+    other = "other"
+
+
 class EventTypes(str, Enum):
     CREATE = "CREATE"
     UPDATE = "UPDATE"

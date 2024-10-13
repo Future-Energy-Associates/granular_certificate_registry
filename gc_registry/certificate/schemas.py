@@ -7,6 +7,7 @@ from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, Field
 
 from gc_registry import utils
+from gc_registry.core.models.base import EnergyCarrierType, EnergySourceType
 
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
@@ -75,10 +76,10 @@ class GranularCertificateBundleBase(BaseModel):
     )
 
     ### Bundle Characteristics ###
-    energy_carrier: str = Field(
-        description="The form of energy that the GC Bundle represents, for example: Electricity, Hydrogen, Ammonia. In the current version of the standard (v2), this field is always Electricity.",
+    energy_carrier: EnergyCarrierType = Field(
+        description="The form of energy that the GC Bundle represents, for example: Electricity, Hydrogen, Ammonia.",
     )
-    energy_source: str = Field(
+    energy_source: EnergySourceType = Field(
         description="The fuel type used to generate the energy represented by the GC Bundle, for example: Solar, Wind, Biomass, Nuclear, Coal, Gas, Oil, Hydro.",
     )
     face_value: int = Field(
