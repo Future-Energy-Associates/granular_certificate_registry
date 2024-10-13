@@ -22,6 +22,9 @@ class UserAccountLink(utils.ActiveRecord, table=True):
 
 
 class User(UserBase, table=True):
+    # Postgres reserves the name "user" as a keyword, so we use "registry_user" instead
+    __tablename__: str = "registry_user"
+
     id: int | None = Field(default=None, primary_key=True)
     account_ids: List[int] | None = Field(
         default=None,
