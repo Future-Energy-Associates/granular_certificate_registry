@@ -8,7 +8,6 @@ from gc_registry.authentication import models as authentication_models
 from gc_registry.certificate import models as certificate_models
 from gc_registry.device import models as device_models
 from gc_registry.measurement import models as measurement_models
-from gc_registry.organisation import models as organisation_models
 from gc_registry.settings import settings
 from gc_registry.storage import models as storage_models
 from gc_registry.user import models as user_models
@@ -21,7 +20,6 @@ __all__ = [
     "SQLModel",
     "user_models",
     "authentication_models",
-    "organisation_models",
     "account_models",
     "device_models",
     "certificate_models",
