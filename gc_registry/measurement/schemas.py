@@ -15,3 +15,4 @@ class MeasurementReportBase(utils.ActiveRecord):
     gross_net_indicator: str = Field(
         description="Indicates whether the usage is gross or net of any losses in the system.",
     )
+    is_deleted: bool = Field(default=False)

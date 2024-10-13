@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-from gc_registry.core.database.db import db_name_to_client
+from gc_registry.core.database.db import get_db_name_to_client
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -15,8 +15,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-DB_URL = db_name_to_client["write"].connection_str
-config.set_main_option("sqlalchemy.url", DB_URL)
+
+db_name_to_client = get_db_name_to_client()
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -69,7 +69,11 @@ def run_migrations_online() -> None:
             context.run_migrations()
 
 
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
+for host in ["db_read", "db_write"]:
+    DB_URL = db_name_to_client[host].connection_str
+    config.set_main_option("sqlalchemy.url", DB_URL)
+
+    if context.is_offline_mode():
+        run_migrations_offline()
+    else:
+        run_migrations_online()

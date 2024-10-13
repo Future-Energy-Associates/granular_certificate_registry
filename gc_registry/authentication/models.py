@@ -5,6 +5,7 @@ from gc_registry.authentication.schemas import TokenBlacklistBase
 
 class TokenBlacklist(TokenBlacklistBase, table=True):
     token: str = Field(primary_key=True)
+    is_deleted: bool = Field(default=False)
 
 
 class TokenBlacklistWrite(TokenBlacklistBase):
@@ -25,4 +26,14 @@ class APIUser(SQLModel):
 
 
 class SecureAPIUser(APIUser, table=True):
+    hashed_password: str | None = None
+    is_deleted: bool = Field(default=False)
+
+
+class SecureAPIUserUpdate(SQLModel):
+    username: str | None = None
+    name: str | None = None
+    email: str | None = None
+    picture: str | None = None
+    scopes: str | None = None
     hashed_password: str | None = None

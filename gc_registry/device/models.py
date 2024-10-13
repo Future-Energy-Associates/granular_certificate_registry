@@ -1,8 +1,7 @@
 import datetime
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 from gc_registry.core.models.base import DeviceTechnologyType
 from gc_registry.device.schemas import DeviceBase
@@ -29,14 +28,13 @@ class DeviceRead(DeviceBase):
     id: int
 
 
-class DeviceUpdate(BaseModel):
-    id: int
-    device_name: str | None
-    grid: str | None
-    energy_source: str | None
-    technology_type: DeviceTechnologyType | None
-    operational_date: datetime.datetime | None
-    capacity: float | None
-    peak_demand: float | None
-    location: str | None
-    account_id: int | None
+class DeviceUpdate(SQLModel):
+    device_name: str | None = None
+    grid: str | None = None
+    energy_source: str | None = None
+    technology_type: DeviceTechnologyType | None = None
+    operational_date: datetime.datetime | None = None
+    capacity: float | None = None
+    peak_demand: float | None = None
+    location: str | None = None
+    account_id: int | None = None

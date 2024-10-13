@@ -1,11 +1,12 @@
 import uuid
-from typing import List, Union
 
 from sqlmodel import Field
 
+from gc_registry import utils
 from gc_registry.certificate.schemas import (
     GranularCertificateActionBase,
     GranularCertificateBundleBase,
+    IssuanceMetaDataBase,
 )
 
 # issuance_id a unique non-sequential ID related to the issuance of the entire bundle.
@@ -15,12 +16,13 @@ from gc_registry.certificate.schemas import (
 # bundle will retain the original bundle issuance ID.
 
 
-class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
+class GranularCertificateBundle(
+    utils.ActiveRecord, GranularCertificateBundleBase, table=True
+):
     issuance_id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
-        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
-        If the bundle is split through partial transfer or cancellation, this issuance ID remains unchanged across each child GC Bundle.""",
+        description="An integer ID unique to this bundle within the registry.",
     )
 
 
@@ -31,18 +33,16 @@ class GranularCertificateBundle(GranularCertificateBundleBase, table=True):
 
 
 class GranularCertificateAction(GranularCertificateActionBase, table=True):
-    action_id: int = Field(
+    id: int | None = Field(
         primary_key=True,
         default=None,
         description="A unique ID assigned to this action.",
     )
 
 
-class GranularCertificateActionResponse(GranularCertificateActionBase):
-    action_response_status: str = Field(
-        description="Specifies whether the requested action has been accepted or rejected by the registry."
+class IssuanceMetaData(IssuanceMetaDataBase, utils.ActiveRecord, table=True):
+    id: int = Field(
+        primary_key=True,
+        default=None,
+        description="A unique ID assigned to this registry.",
     )
-
-
-class GranularCertificateQueryResponse(GranularCertificateActionResponse):
-    filtered_certificate_bundles: Union[List[GranularCertificateBundle], None]
