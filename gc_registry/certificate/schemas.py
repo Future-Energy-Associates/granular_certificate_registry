@@ -35,6 +35,13 @@ class GranularCertificateBundleBase(BaseModel):
     the queue.
     """
 
+    issuance_id: str = Field(
+        primary_key=True,
+        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
+        If the bundle is split through partial transfer or cancellation, this issuance ID
+        remains unchanged across each child GC Bundle.""",
+    )
+
     ### Mutable Attributes ###
     certificate_status: CertificateStatus = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""

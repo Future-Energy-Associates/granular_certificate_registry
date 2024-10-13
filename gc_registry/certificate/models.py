@@ -17,11 +17,10 @@ from gc_registry.certificate.schemas import (
 class GranularCertificateBundle(
     utils.ActiveRecord, GranularCertificateBundleBase, table=True
 ):
-    issuance_id: str = Field(
+    id: int | None = Field(
         primary_key=True,
-        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
-        If the bundle is split through partial transfer or cancellation, this issuance ID
-        remains unchanged across each child GC Bundle.""",
+        default=None,
+        description="A unique, incremental integer ID assigned to this bundle.",
     )
 
 
