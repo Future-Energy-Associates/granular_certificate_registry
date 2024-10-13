@@ -27,7 +27,7 @@ def create_certificate_bundle(
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
-    nonce: str = None,
+    nonce: str = "",
 ):
     """Create a GC Bundle with the specified properties."""
 

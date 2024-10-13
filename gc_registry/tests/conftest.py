@@ -14,15 +14,19 @@ from testcontainers.core.waiting_utils import wait_for_logs  # type: ignore
 from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
+from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
-from gc_registry.core.models.base import EnergyCarrierType, EnergySourceType, DeviceTechnologyType
+from gc_registry.core.models.base import (
+    DeviceTechnologyType,
+    EnergyCarrierType,
+    EnergySourceType,
+)
 from gc_registry.device.models import Device
 from gc_registry.main import app
 from gc_registry.settings import settings
 from gc_registry.user.models import User
 from gc_registry.utils import ActiveRecord
-from gc_registry.certificate.models import GranularCertificateBundle
-from gc_registry.certificate.services import create_bundle_hash
 
 load_dotenv()
 
@@ -319,6 +323,7 @@ def fake_db_solar_device(
 
     return device_read
 
+
 @pytest.fixture()
 def fake_db_gc_bundle(
     db_write_session: Session, db_read_session: Session, fake_db_wind_device: Device
@@ -353,7 +358,7 @@ def fake_db_gc_bundle(
         "hash": "Some Hash",
     }
 
-    gc_bundle = ActiveRecord.model_validate(gc_bundle_dict)
+    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
 
     gc_bundle.hash = create_bundle_hash(gc_bundle)
 
@@ -362,4 +367,3 @@ def fake_db_gc_bundle(
     )
 
     return gc_bundle_read
-)

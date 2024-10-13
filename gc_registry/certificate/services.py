@@ -1,6 +1,10 @@
 from hashlib import sha256
 
-from .models import GranularCertificateBundle, GranularCertificateBundleBase
+from .models import (
+    GranularCertificateBundle,
+    GranularCertificateBundleBase,
+)
+from .schemas import GranularCertificateBundleCreate
 
 
 def validate_transfer():
@@ -8,8 +12,8 @@ def validate_transfer():
 
 
 def create_bundle_hash(
-    gc_bundle: GranularCertificateBundle,
-    nonce: str,
+    gc_bundle: GranularCertificateBundle | GranularCertificateBundleCreate,
+    nonce: str = "",
 ):
     """
     Given a GC Bundle and a nonce taken from the hash of a parent bundle,
@@ -29,7 +33,7 @@ def create_bundle_hash(
     """
 
     return sha256(
-        f"{GranularCertificateBundleBase(**gc_bundle.model_dump_json())}{nonce}".encode()
+        f"{GranularCertificateBundleBase(**gc_bundle.model_dump())}{nonce}".encode()
     ).hexdigest()
 
 
