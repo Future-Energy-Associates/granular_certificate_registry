@@ -33,7 +33,7 @@ class TestServices:
         """
         Split the bundle into two and assert that the bundle quantities align post-split,
         and that the hashes of the child bundles are valid derivatives of the
-        parent bundle hash
+        parent bundle hash.
         """
 
         child_bundle_1, child_bundle_2 = split_certificate_bundle(
