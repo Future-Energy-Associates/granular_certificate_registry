@@ -14,10 +14,11 @@ from testcontainers.core.waiting_utils import wait_for_logs  # type: ignore
 from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
-from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
 from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import (
+    CertificateStatus,
     DeviceTechnologyType,
     EnergyCarrierType,
     EnergySourceType,
@@ -326,17 +327,42 @@ def fake_db_solar_device(
 
 @pytest.fixture()
 def fake_db_gc_bundle(
-    db_write_session: Session, db_read_session: Session, fake_db_wind_device: Device
+    db_write_session: Session,
+    db_read_session: Session,
+    fake_db_account: Account,
+    fake_db_wind_device: Device,
 ) -> GranularCertificateBundle:
+    fake_db_issuance_metadata = {
+        "country_of_issuance": "USA",
+        "connected_grid_identification": "ERCOT",
+        "issuing_body": "ERCOT",
+        "legal_status": "legal",
+        "issuance_purpose": "compliance",
+        "support_received": None,
+        "quality_scheme_reference": None,
+        "dissemination_level": None,
+        "issue_market_zone": "ERCOT",
+    }
+
+    issuance_metadata = IssuanceMetaData.model_validate(fake_db_issuance_metadata)
+    issuance_metadata_read = add_entity_to_write_and_read(
+        issuance_metadata, db_write_session, db_read_session
+    )
+
     gc_bundle_dict = {
-        "account_id": 1,
-        "certificate_status": "Active",
+        "id": 1,
+        "account_id": fake_db_account.id,
+        "certificate_status": CertificateStatus.ACTIVE,
+        "metadata_id": issuance_metadata_read.id,
         "bundle_id_range_start": 0,
-        "bundle_id_range_end": 1000,
-        "bundle_quantity": 1001,
+        "bundle_id_range_end": 999,
+        "bundle_quantity": 1000,
         "energy_carrier": EnergyCarrierType.electricity,
         "energy_source": EnergySourceType.wind,
         "face_value": 1,
+        "is_storage": False,
+        "sdr_allocation_id": None,
+        "storage_efficiency_factor": None,
         "issuance_post_energy_carrier_conversion": False,
         "registry_configuration": 1,
         "device_id": fake_db_wind_device.id,
@@ -357,6 +383,12 @@ def fake_db_gc_bundle(
         "emissions_factor_source": "Some Data Source",
         "hash": "Some Hash",
     }
+
+    gc_bundle_dict["issuance_id"] = f"""
+        {gc_bundle_dict["device_id"]}- \
+        {gc_bundle_dict["energy_carrier"]}- \
+        {gc_bundle_dict["production_starting_interval"]}
+        """
 
     gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
 
