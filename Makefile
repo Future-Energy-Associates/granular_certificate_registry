@@ -22,7 +22,7 @@ typecheck:
 
 .PHONY: test
 test:
-	docker compose run --rm gc_registry pytest --cov-report term --cov-report html --cov=gc_registry
+	docker compose run --no-deps --rm gc_registry pytest --cov-report term --cov-report html --cov=gc_registry
 
 .PHONY: test.local
 test.local:
@@ -64,7 +64,10 @@ db.revision:
 
 .PHONY: db.reset
 db.reset:
-	docker compose down && docker volume rm tariff-tribe_db-data && make db.update
+	docker compose down && \
+		docker volume rm granular_certificate_registry_postgres_data_read && \
+		docker volume rm granular_certificate_registry_postgres_data_write && \
+		make db.update
 
 .PHONY: db.seed
 db.seed:

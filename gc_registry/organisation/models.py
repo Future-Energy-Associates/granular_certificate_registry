@@ -17,9 +17,8 @@ class OrganisationRead(OrganisationBase):
 
 
 class OrganisationUpdate(BaseModel):
-    id: int
-    name: str | None
-    business_id: int | None
-    website: str | None
-    address: str | None
-    primary_contact: str | None
+    name: str | None = None
+    business_id: int | None = None
+    website: str | None = None
+    address: str | None = None
+    primary_contact: str | None = None

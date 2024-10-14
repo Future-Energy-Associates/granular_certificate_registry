@@ -1,9 +1,7 @@
 from datetime import date, datetime, timedelta
 
-import elexonpy
 import httpx
 import pandas as pd
-from elexonpy.api_client import ApiClient
 
 from gc_registry.certificate.models import GranularCertificateBundle
 
@@ -15,30 +13,6 @@ def datetime_to_settlement_period(dt: datetime) -> int:
 class ElexonClient:
     def __init__(self):
         self.base_url = "https://data.elexon.co.uk/bmrs/api/v1"
-        self.client = ApiClient()
-        self.bm_client_dynamic = elexonpy.BalancingMechanismDynamicApi()
-        self.bm_client_static = elexonpy.BalancingMechanismPhysicalApi()
-
-    def get_bm_physical_data_in_datetime_range(
-        self,
-        from_date: datetime,
-        to_date: datetime,
-        bmu_ids: list[str] | None = None,
-    ):
-        data = []
-        for half_hour_dt in pd.date_range(from_date, to_date, freq="30min"):
-            settlement_period = datetime_to_settlement_period(half_hour_dt)
-            if bmu_ids:
-                response = self.bm_client_dynamic.balancing_dynamic_all_get(
-                    half_hour_dt.date(), settlement_period, bm_unit=bmu_ids
-                )
-            else:
-                response = self.bm_client_dynamic.balancing_dynamic_all_get(
-                    half_hour_dt.date(), settlement_period
-                )
-            data.append(response)
-
-        return data
 
     def get_sp_dataset_in_datetime_range(
         self,
@@ -48,6 +22,19 @@ class ElexonClient:
         bmu_ids: list[str] | None = None,
         frequency: str = "30min",
     ):
+        """
+        Get the dataset in the given date range
+        e.g. https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/B1610
+
+        Args:
+            dataset: The dataset to query
+            from_date: The start date
+            to_date: The end date
+            bmu_ids: The BMU IDs to query
+
+        Returns:
+            The dataset in the given date range
+        """
         data = []
         for half_hour_dt in pd.date_range(from_date, to_date, freq=frequency):
             params = {
@@ -56,16 +43,44 @@ class ElexonClient:
             }
             if bmu_ids:
                 params["bmUnit"] = bmu_ids
-            response = httpx.get(
-                f"{self.base_url}/datasets/{dataset}",
-                params=params,  # type: ignore
+
+            try:
+                response = httpx.get(
+                    f"{self.base_url}/datasets/{dataset}",
+                    params=params,  # type: ignore
+                )
+
+                response.raise_for_status()
+
+                data.extend(response.json()["data"])
+            except Exception as e:
+                print(f"Error fetching data for {half_hour_dt} for {bmu_ids}: {e}")
+
+        return pd.DataFrame(data)
+
+    def resample_hh_data_to_hourly(self, data_hh_df: pd.DataFrame) -> pd.DataFrame:
+        data_hh_df["start_time"] = pd.to_datetime(
+            data_hh_df.halfHourEndTime
+        ) - pd.Timedelta(minutes=30)
+
+        data_resampled_concat = []
+        for bmu_unit in data_hh_df.bmUnit.unique():
+            data_resampled_values = (
+                data_hh_df[data_hh_df.bmUnit == bmu_unit]
+                .set_index("start_time")
+                .quantity.resample("h")
+                .sum()
             )
+            data_resampled_values.name = bmu_unit
+            data_resampled_concat.append(data_resampled_values)
 
-            response.raise_for_status()
+        data_resampled = (
+            pd.concat(data_resampled_concat, axis=1)
+            .melt(ignore_index=False, var_name="bmUnit", value_name="quantity")
+            .reset_index()
+        )
 
-            data.extend(response.json()["data"])
-
-        return data
+        return data_resampled
 
     def get_asset_dataset_in_datetime_range(
         self,
@@ -88,15 +103,15 @@ class ElexonClient:
 
     def map_generation_to_certificates(
         self,
-        generation_data: list[dict],
+        generation_data: pd.DataFrame,
         account_id: int,
         device_id: str | None = None,
     ) -> list[GranularCertificateBundle]:
         # Filter out any rows where the quantity is less than or equal to zero (no generation)
-        generation_data = [x for x in generation_data if x["quantity"] > 0]
+        generation_data = generation_data.loc[generation_data["quantity"] > 0]
 
         mapped_data: list = []
-        for data in generation_data:
+        for _idx, data in generation_data.iterrows():
             bundle_wh = int(data["quantity"] * 1000)
 
             # Get existing "bundle_id_range_end" from the last item in mapped_data
@@ -128,12 +143,8 @@ class ElexonClient:
                 "device_capacity": 200,  # :TODO: Get the actual capacity for the BMUID
                 "device_location": (0.0, 0.0),
                 "device_type": "wind",
-                "production_starting_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                ),
-                "production_ending_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                ),  # Assuming half-hour interval
+                "production_starting_interval": data["start_time"],
+                "production_ending_interval": data["start_time"] + timedelta(hours=1),
                 "issuance_datestamp": datetime.utcnow().date(),
                 "expiry_datestamp": (
                     datetime.utcnow() + timedelta(days=365 * 3)
@@ -144,6 +155,7 @@ class ElexonClient:
                 "issue_market_zone": "Great Britain",
                 "emissions_factor_production_device": 0.0,
                 "emissions_factor_source": "Some Data Source",
+                "hash": "Some Hash",
             }
 
             # Validate and append the transformed data
