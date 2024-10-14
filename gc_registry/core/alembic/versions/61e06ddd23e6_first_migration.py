@@ -69,16 +69,6 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
-        "organisation",
-        sa.Column("name", sa.String(), nullable=False),
-        sa.Column("business_id", sa.Integer(), nullable=False),
-        sa.Column("primary_contact", sa.String(), nullable=False),
-        sa.Column("website", sa.String(), nullable=True),
-        sa.Column("address", sa.String(), nullable=True),
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_table(
         "secureapiuser",
         sa.Column("username", sa.String(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
@@ -228,7 +218,6 @@ def downgrade() -> None:
     op.drop_table("user")
     op.drop_table("tokenblacklist")
     op.drop_table("secureapiuser")
-    op.drop_table("organisation")
     op.drop_table("measurementreport")
     op.drop_table("granularcertificateaction")
     op.drop_table("account")

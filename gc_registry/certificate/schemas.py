@@ -1,21 +1,18 @@
 import datetime
-from enum import Enum
+from functools import partial
 
 from pydantic import BaseModel
 from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, Field
 
 from gc_registry import utils
+from gc_registry.core.models.base import (
+    CertificateStatus,
+    EnergyCarrierType,
+    EnergySourceType,
+)
 
-
-class CertificateStatus(str, Enum):
-    ACTIVE = "Active"
-    CANCELLED = "Cancelled"
-    CLAIMED = "Claimed"
-    EXPIRED = "Expired"
-    WITHDRAWN = "Withdrawn"
-    LOCKED = "Locked"
-    RESERVED = "Reserved"
+utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
 
 class GranularCertificateBundleBase(BaseModel):
@@ -31,6 +28,19 @@ class GranularCertificateBundleBase(BaseModel):
     the state of the database is consistent at all times, and any errors can be rectified by reversing linearly through
     the queue.
     """
+
+    issuance_id: str = Field(
+        primary_key=True,
+        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
+        If the bundle is split through partial transfer or cancellation, this issuance ID
+        remains unchanged across each child GC Bundle.""",
+    )
+    hash: str = Field(
+        default=None,
+        description="""A unique hash assigned to this bundle at the time of issuance,
+        formed from the sha256 of the bundle's properties and, if the result of a bundle
+        split, a nonce taken from the hash of the parent bundle.""",
+    )
 
     ### Mutable Attributes ###
     certificate_status: CertificateStatus = Field(
@@ -65,10 +75,10 @@ class GranularCertificateBundleBase(BaseModel):
     )
 
     ### Bundle Characteristics ###
-    energy_carrier: str = Field(
-        description="The form of energy that the GC Bundle represents, for example: Electricity, Hydrogen, Ammonia. In the current version of the standard (v2), this field is always Electricity.",
+    energy_carrier: EnergyCarrierType = Field(
+        description="The form of energy that the GC Bundle represents, for example: Electricity, Hydrogen, Ammonia.",
     )
-    energy_source: str = Field(
+    energy_source: EnergySourceType = Field(
         description="The fuel type used to generate the energy represented by the GC Bundle, for example: Solar, Wind, Biomass, Nuclear, Coal, Gas, Oil, Hydro.",
     )
     face_value: int = Field(
@@ -120,6 +130,7 @@ class GranularCertificateBundleBase(BaseModel):
         default=None,
         description="The efficiency factor of the storage Device that has discharged the energy represented by this GC Bundle.",
     )
+    is_deleted: bool = Field(default=False)
 
 
 class GranularCertificateBundleCreate(GranularCertificateBundleBase):
@@ -359,12 +370,20 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         description="If an issuance ID is specified, returns a GC Bundle containing all certificates between and inclusive of the range start and end IDs provided.",
     )
     action_request_datetime: datetime.datetime = Field(
-        default_factory=datetime.datetime.now,
+        default_factory=utc_datetime_now,
         description="The UTC datetime at which the User submitted the action to the registry.",
     )
     action_completed_datetime: datetime.datetime = Field(
-        default_factory=datetime.datetime.now,
+        default_factory=utc_datetime_now,
         description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
+    )
+    action_request_datetime_local: datetime.datetime | None = Field(
+        description="The local datetime at which the User submitted the action to the registry.",
+        default_factory=datetime.datetime.now,
+    )
+    action_complete_datetime_local: datetime.datetime | None = Field(
+        description="The local datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
+        default_factory=datetime.datetime.now,
     )
     initial_action_datetime: datetime.datetime | None = Field(
         description="If recurring, the UTC datetime of the first action that is to be completed.",

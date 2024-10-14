@@ -7,7 +7,7 @@ Within the Certificates section, the definition of GCs as specified in the Creat
 Certificate POST request, alongside the filtering parameters required to instigate
 query, transfer, and cancellation requests, will form core components of the standard
 and impact the functionality of the registry the greatest. Subsequent sections
-describing Organisation, User, Account, and Device management are **recommendations
+describing User, Account, and Device management are **recommendations
 only** and do not form part of the standard, although terminology used therein is
 referenced in the certificate definitions. They are included in the database class
 diagram for the sake of completeness in representing the relationships between the
