@@ -2,16 +2,17 @@ import datetime
 import logging
 
 from esdbclient import EventStoreDBClient
-from fluent_validator import validate
-from sqlalchemy import func, select
-from sqlmodel import Session
+from fluent_validator import validate  # type: ignore
+from sqlalchemy import func
+from sqlmodel import Session, SQLModel, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.certificate.schemas import (
     CertificateStatus,
     GranularCertificateBundleBase,
 )
-from gc_registry.device.meter_data.abstract_client import MeterDataClient
+from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.services import (
     device_mw_capacity_to_wh_max,
     get_all_devices,
@@ -35,17 +36,19 @@ def get_max_certificate_id_by_device_id(
 
     """
 
-    stmt = select(func.max(GranularCertificateBundle.bundle_id_range_end)).where(
+    stmt: SelectOfScalar = select(
+        func.max(GranularCertificateBundle.bundle_id_range_end)
+    ).where(
         GranularCertificateBundle.device_id == device_id,
         GranularCertificateBundle.certificate_status != CertificateStatus.WITHDRAWN,
     )
 
     max_certificate_id = db_session.exec(stmt).first()
 
-    if not max_certificate_id[0]:
+    if not max_certificate_id:
         return None
     else:
-        return int(max_certificate_id[0])
+        return int(max_certificate_id)
 
 
 def validate_granular_certificate_bundle(
@@ -56,7 +59,11 @@ def validate_granular_certificate_bundle(
 ) -> None:
     W_IN_MW = 1e6
     device_id = gcb.device_id
-    device_mw = get_device_capacity_by_id(db_session, device_id) / W_IN_MW
+    device_w = get_device_capacity_by_id(db_session, device_id)
+    if not device_w:
+        raise ValueError(f"Device with ID {device_id} not found")
+
+    device_mw = device_w / W_IN_MW
     device_max_watts_hours = device_mw_capacity_to_wh_max(device_mw, hours)
 
     device_max_certificate_id = get_max_certificate_id_by_device_id(
@@ -94,8 +101,8 @@ def issue_certificates_in_date_range(
     db_read_engine: Session,
     esdb_client: EventStoreDBClient,
     issuance_metadata_id: int,
-    meter_data_client: MeterDataClient,
-) -> list[GranularCertificateBundle]:
+    meter_data_client: ElexonClient,
+) -> list[SQLModel] | None:
     """Issues certificates for a device using the following process.
     1. Get a list of devices in the registry and their capacities
     2. For each device, get the meter data for the device for the given period
@@ -117,14 +124,22 @@ def issue_certificates_in_date_range(
     """
 
     # Get the devices in the registry
-    devices = [d[0] for d in get_all_devices(db_read_engine)]
+    devices = get_all_devices(db_read_engine)
+
+    if not devices:
+        logging.error("No devices found in the registry")
+        return None
 
     # Issue certificates for each device
-    certificates = []
+    certificates: list = []
     for device in devices:
         # Get the meter data for the device
         if not device.meter_data_id:
             logging.error(f"No meter data ID for device: {device.id}")
+            continue
+
+        if not device.id:
+            logging.error(f"No device ID for device: {device}")
             continue
 
         meter_data = meter_data_client.get_generation_by_device_in_datetime_range(

@@ -25,6 +25,7 @@ class TestCQRS:
     ):
         device_dict = {
             "device_name": "fake_wind_device_2",
+            "meter_data_id": "XYZ-123",
             "grid": "fake_grid",
             "energy_source": "wind",
             "technology_type": "wind",

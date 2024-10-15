@@ -1,23 +1,24 @@
-from sqlalchemy import select
-from sqlmodel import Session
+from sqlmodel import Session, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from gc_registry.device.models import Device
 from gc_registry.settings import settings
 
 
 def get_all_devices(db_session: Session) -> list[Device]:
-    stmt = select(Device)
+    stmt: SelectOfScalar = select(Device)
     devices = db_session.exec(stmt).all()
 
     return list(devices)
 
 
-def get_device_capacity_by_id(db_session: Session, device_id: int) -> float:
-    stmt = select(Device.capacity).where(Device.id == device_id)
-
+def get_device_capacity_by_id(db_session: Session, device_id: int) -> float | None:
+    stmt: SelectOfScalar = select(Device.capacity).where(Device.id == device_id)
     device_capacity = db_session.exec(stmt).first()
-
-    return float(device_capacity[0])
+    if device_capacity:
+        return float(device_capacity)
+    else:
+        return None
 
 
 def device_mw_capacity_to_wh_max(

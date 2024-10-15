@@ -6,7 +6,6 @@ import httpx
 import pandas as pd
 
 from gc_registry.certificate.models import GranularCertificateBundle
-from gc_registry.device.meter_data.abstract_client import MeterDataClient
 from gc_registry.settings import settings
 
 
@@ -14,7 +13,7 @@ def datetime_to_settlement_period(dt: datetime) -> int:
     return (dt.hour * 60 + dt.minute) // 30 + 1
 
 
-class ElexonClient(MeterDataClient):
+class ElexonClient:
     def __init__(self):
         self.base_url = "https://data.elexon.co.uk/bmrs/api/v1"
 
@@ -181,17 +180,11 @@ class ElexonClient(MeterDataClient):
     def get_device_capacities(
         self,
         bmu_ids: list[str],
+        from_date: date = datetime.now().date() - timedelta(days=365 * 2),
+        to_date: date = datetime.now().date(),
         dataset: str = "IGCPU",
-        from_datetime: datetime | None = None,
-        to_datetime: datetime | None = None,
     ) -> dict[str, Any]:
-        if from_datetime is None or to_datetime is None:
-            to_datetime = datetime.now().date()
-            from_datetime = to_datetime - timedelta(days=2 * 365)
-
-        data = self.get_asset_dataset_in_datetime_range(
-            dataset, from_datetime, to_datetime
-        )
+        data = self.get_asset_dataset_in_datetime_range(dataset, from_date, to_date)
 
         df = pd.DataFrame(data["data"])
 
@@ -216,22 +209,3 @@ class ElexonClient(MeterDataClient):
         }
 
         return device_capacities
-
-
-if __name__ == "__main__":
-    client = ElexonClient()
-
-    from_datetime = datetime(2024, 1, 1, 0, 0, 0)
-    to_datetime = from_datetime + timedelta(days=1)
-    bmu_ids = [
-        "T_RATS-1",
-        "T_RATS-2",
-        "T_RATS-3",
-        "T_RATS-4",
-        "T_RATSGT-2",
-        "T_RATSGT-4",
-    ]
-
-    client.get_sp_dataset_in_datetime_range(
-        "B1610", from_datetime, to_datetime, bmu_ids
-    )
