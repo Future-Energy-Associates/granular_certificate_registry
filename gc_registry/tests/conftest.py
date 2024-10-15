@@ -178,7 +178,7 @@ def db_read_session(db_read_engine: Engine) -> Generator[Session, None, None]:
     connection.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def esdb_client() -> Generator[EventStoreDBClient, None, None]:
     """Returns an instance of the EventStoreDBClient that rolls back the event
     stream after each test.
