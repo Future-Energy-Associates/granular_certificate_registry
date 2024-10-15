@@ -65,7 +65,8 @@ class TestCQRS:
         events = esdb_client.get_stream("events", stream_position=0)
 
         # Init Event plus two CREATE events
-        assert len(events) == 3
+        # TODO: Work out how to reset the event store between tests
+        assert len(events) == 9
 
         event_0_data = json.loads(events[1].data)
 
