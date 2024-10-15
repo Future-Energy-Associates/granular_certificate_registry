@@ -1,49 +1,10 @@
 import datetime
-from typing import Any
-
-import pandas as pd
-from sqlmodel import Session
 
 from gc_registry.account.models import Account
 from gc_registry.core.database import cqrs, db, events
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
 from gc_registry.user.models import User
-
-
-def get_device_capacities(bmu_ids: list[str]) -> list[dict[str, Any]]:
-
-    client = ElexonClient()
-    dataset = "IGCPU"
-    to_datetime = datetime.datetime.now().date()
-    from_datetime = to_datetime - datetime.timedelta(days=2 * 365)
-
-    data = client.get_asset_dataset_in_datetime_range(
-        dataset, from_datetime, to_datetime
-    )
-
-    df = pd.DataFrame(data["data"])
-
-    df.sort_values("effectiveFrom", inplace=True, ascending=True)
-    df.drop_duplicates(subset=["registeredResourceName"], inplace=True, keep="last")
-    df = df[df.bmUnit.notna()]
-    df = df[df.bmUnit.str.contains("|".join(bmu_ids))]
-    df = df[["bmUnit", "installedCapacity"]]
-    df["installedCapacity"] = df["installedCapacity"].astype(int)
-
-    df.to_csv("device_capacities.csv", index=False)
-
-    # check if all bmu_ids are in the data
-    if len(df) != len(bmu_ids):
-        missing_bmu_ids = set(bmu_ids) - set(df["bmUnit"])
-        raise ValueError(f"Missing BMU IDs: {missing_bmu_ids}")
-
-    device_dictionary = df.to_dict(orient="records")
-    device_capacities = {
-        device["bmUnit"]: device["installedCapacity"] for device in device_dictionary
-    }
-
-    return device_capacities
 
 
 def seed_data():
@@ -64,12 +25,11 @@ def seed_data():
         "T_RATSGT-4",
     ]
 
-    device_capacities = get_device_capacities(bmu_ids)
-
     client = ElexonClient()
-    from_date = datetime.datetime(2024, 1, 1, 0, 0, 0)
-    to_date = from_date + datetime.timedelta(days=1)
-    dataset = "B1610"
+    from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+    to_datetime = from_datetime + datetime.timedelta(days=1)
+
+    device_capacities = client.get_device_capacities(bmu_ids)
 
     # Create a User to add the certificates to
     user_dict = {
@@ -89,11 +49,12 @@ def seed_data():
     for bmu_id in bmu_ids:
         device_dict = {
             "device_name": bmu_id,
+            "meter_data_id": bmu_id,
             "grid": "National Grid",
             "energy_source": "wind",
             "technology_type": "wind",
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
-            "capacity": 1000,
+            "capacity": device_capacities[bmu_id],
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": account.id,
@@ -102,8 +63,8 @@ def seed_data():
         device = Device.create(device_dict, write_session, read_session, esdb_client)
 
         # Use Elexon to get data from the Elexon API
-        data_hh = client.get_dataset_in_datetime_range(
-            dataset, from_date, to_date, bmu_ids=[bmu_id]
+        data_hh = client.get_generation_by_device_in_datetime_range(
+            from_datetime, to_datetime, meter_data_id=bmu_id
         )
         if data_hh.empty:
             print(f"No data found for {bmu_id}")
