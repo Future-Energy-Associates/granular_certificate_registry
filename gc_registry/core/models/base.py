@@ -1,4 +1,5 @@
 import enum
+import uuid
 from datetime import datetime
 from enum import Enum
 
@@ -24,7 +25,7 @@ class EventTypes(str, Enum):
 
 
 class Event(BaseModel):
-    entity_id: int
+    entity_id: int | uuid.UUID
     entity_name: str
     attributes_before: dict | None = Field(sa_column=Column(JSON))
     attributes_after: dict | None = Field(sa_column=Column(JSON))

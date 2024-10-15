@@ -7,6 +7,7 @@ from gc_registry import utils
 
 class DeviceBase(utils.ActiveRecord):
     device_name: str
+    meter_data_id: str | None
     grid: str
     energy_source: str
     technology_type: str

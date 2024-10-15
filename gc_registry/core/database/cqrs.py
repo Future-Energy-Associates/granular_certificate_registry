@@ -54,8 +54,13 @@ def write_to_database(
         read_session.rollback()
         return None
 
+    id_attribute = (
+        "id"
+        if entities[0].__class__.__name__ != "GranularCertificateBundle"
+        else "issuance_id"
+    )
     batch_create_events(
-        entity_ids=[entity.id for entity in entities],  # type: ignore
+        entity_ids=[getattr(entity, id_attribute) for entity in entities],  # type: ignore
         entity_names=[entity.__class__.__name__ for entity in entities],
         event_type=EventTypes.CREATE,
         esdb_client=esdb_client,
@@ -114,8 +119,13 @@ def update_database_entity(
         read_session.rollback()
         return None
 
+    id_attribute = (
+        "id"
+        if entity.__class__.__name__ != "GranularCertificateBundle"
+        else "issuance_id"
+    )
     create_event(
-        entity_id=entity.id,  # type: ignore
+        entity_id=getattr(entity, id_attribute),  # type: ignore
         entity_name=entity.__class__.__name__,
         event_type=EventTypes.UPDATE,
         attributes_before=before_data,
@@ -169,7 +179,6 @@ def delete_database_entities(
         write_session.rollback()
         read_session.rollback()
         return None
-
     batch_create_events(
         entity_ids=[entity.id for entity in entities],  # type: ignore
         entity_names=[entity.__class__.__name__ for entity in entities],
