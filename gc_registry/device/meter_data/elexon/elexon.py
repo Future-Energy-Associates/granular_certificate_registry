@@ -1,9 +1,12 @@
-from datetime import datetime, timedelta
+import logging
+from datetime import date, datetime, timedelta
+from typing import Any
 
 import httpx
 import pandas as pd
 
 from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.settings import settings
 
 
 def datetime_to_settlement_period(dt: datetime) -> int:
@@ -17,10 +20,11 @@ class ElexonClient:
     def get_dataset_in_datetime_range(
         self,
         dataset,
-        from_date: datetime,
-        to_date: datetime,
+        from_datetime: datetime,
+        to_datetime: datetime,
         bmu_ids: list[str] | None = None,
-    ):
+        frequency: str = "30min",
+    ) -> list[dict[str, Any]]:
         """
         Get the dataset in the given date range
         e.g. https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/B1610
@@ -35,7 +39,7 @@ class ElexonClient:
             The dataset in the given date range
         """
         data = []
-        for half_hour_dt in pd.date_range(from_date, to_date, freq="30min"):
+        for half_hour_dt in pd.date_range(from_datetime, to_datetime, freq=frequency):
             params = {
                 "settlementDate": half_hour_dt.date(),
                 "settlementPeriod": datetime_to_settlement_period(half_hour_dt),
@@ -55,7 +59,7 @@ class ElexonClient:
             except Exception as e:
                 print(f"Error fetching data for {half_hour_dt} for {bmu_ids}: {e}")
 
-        return pd.DataFrame(data)
+        return data
 
     def resample_hh_data_to_hourly(self, data_hh_df: pd.DataFrame) -> pd.DataFrame:
         data_hh_df["start_time"] = pd.to_datetime(
@@ -81,24 +85,61 @@ class ElexonClient:
 
         return data_resampled
 
+    def get_asset_dataset_in_datetime_range(
+        self,
+        dataset,
+        from_date: date,
+        to_date: date,
+    ):
+        params = {
+            "publishDateTimeFrom": from_date,
+            "publishDateTimeTo": to_date,
+        }
+        response = httpx.get(
+            f"{self.base_url}/datasets/{dataset}",
+            params=params,  # type: ignore
+        )
+
+        response.raise_for_status()
+
+        return response.json()
+
+    def get_generation_by_device_in_datetime_range(
+        self,
+        from_datetime: datetime,
+        to_datetime: datetime,
+        meter_data_id: str,
+        dataset="B1610",
+    ) -> list[dict[str, Any]]:
+        data = self.get_dataset_in_datetime_range(
+            dataset=dataset,
+            from_datetime=from_datetime,
+            to_datetime=to_datetime,
+            bmu_ids=[meter_data_id],
+        )
+
+        return data
+
     def map_generation_to_certificates(
         self,
-        generation_data: pd.DataFrame,
+        generation_data: list[dict[str, Any]],
+        bundle_id_range_start: int,
         account_id: int,
-        device_id: str | None = None,
+        device_id: int,
+        is_storage: bool,
+        issuance_metadata_id: int,
     ) -> list[GranularCertificateBundle]:
-        # Filter out any rows where the quantity is less than or equal to zero (no generation)
-        generation_data = generation_data.loc[generation_data["quantity"] > 0]
+        WH_IN_MWH = 1e6
 
         mapped_data: list = []
-        for _idx, data in generation_data.iterrows():
-            bundle_wh = int(data["quantity"] * 1000)
+        for data in generation_data:
+            bundle_wh = int(data["quantity"] * WH_IN_MWH)
+
+            logging.info(f"Data: {data}, Bundle WH: {bundle_wh}")
 
             # Get existing "bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
                 bundle_id_range_start = mapped_data[-1].bundle_id_range_end + 1
-            else:
-                bundle_id_range_start = 0
 
             bundle_id_range_end = bundle_id_range_start + bundle_wh
 
@@ -112,30 +153,22 @@ class ElexonClient:
                 "energy_source": "wind",
                 "face_value": bundle_wh,
                 "issuance_post_energy_carrier_conversion": False,
-                "registry_configuration": 1,
-                ### Production Device Characteristics ###
                 "device_id": device_id,
-                "device_name": "Device Name Placeholder",
-                "device_technology_type": "wind",
-                "device_production_start_date": datetime.strptime(
-                    "2015-01-01", "%Y-%m-%d"
-                ).date(),
-                "device_capacity": 200,  # :TODO: Get the actual capacity for the BMUID
-                "device_location": (0.0, 0.0),
-                "device_type": "wind",
-                "production_starting_interval": data["start_time"],
-                "production_ending_interval": data["start_time"] + timedelta(hours=1),
+                "production_starting_interval": datetime.fromisoformat(
+                    data["halfHourEndTime"]
+                )
+                - timedelta(minutes=30),
+                "production_ending_interval": datetime.fromisoformat(
+                    data["halfHourEndTime"]
+                ),
                 "issuance_datestamp": datetime.utcnow().date(),
                 "expiry_datestamp": (
-                    datetime.utcnow() + timedelta(days=365 * 3)
+                    datetime.utcnow()
+                    + timedelta(days=365 * settings.CERTIFICATE_EXPIRY_YEARS)
                 ).date(),
-                "country_of_issuance": "Great Britain",
-                "connected_grid_identification": "National Grid",
-                "issuing_body": "Ofgem",
-                "issue_market_zone": "Great Britain",
-                "emissions_factor_production_device": 0.0,
-                "emissions_factor_source": "Some Data Source",
                 "hash": "Some Hash",
+                "metadata_id": issuance_metadata_id,
+                "is_storage": is_storage,
             }
 
             # Validate and append the transformed data
@@ -143,3 +176,36 @@ class ElexonClient:
             mapped_data.append(valid_data)
 
         return mapped_data
+
+    def get_device_capacities(
+        self,
+        bmu_ids: list[str],
+        from_date: date = datetime.now().date() - timedelta(days=365 * 2),
+        to_date: date = datetime.now().date(),
+        dataset: str = "IGCPU",
+    ) -> dict[str, Any]:
+        data = self.get_asset_dataset_in_datetime_range(dataset, from_date, to_date)
+
+        df = pd.DataFrame(data["data"])
+
+        df.sort_values("effectiveFrom", inplace=True, ascending=True)
+        df.drop_duplicates(subset=["registeredResourceName"], inplace=True, keep="last")
+        df = df[df.bmUnit.notna()]
+
+        # Filter by bmu_ids
+        df = df[df.bmUnit.str.contains("|".join(bmu_ids))]
+        df = df[["bmUnit", "installedCapacity"]]
+        df["installedCapacity"] = df["installedCapacity"].astype(int)
+
+        # check if all bmu_ids are in the data
+        if len(df) != len(bmu_ids):
+            missing_bmu_ids = set(bmu_ids) - set(df["bmUnit"])
+            raise ValueError(f"Missing BMU IDs: {missing_bmu_ids}")
+
+        device_dictionary = df.to_dict(orient="records")
+        device_capacities = {
+            str(device["bmUnit"]): device["installedCapacity"]
+            for device in device_dictionary
+        }
+
+        return device_capacities

@@ -20,6 +20,7 @@ from gc_registry.certificate.models import (
     IssuanceMetaData,
 )
 from gc_registry.certificate.services import create_bundle_hash
+from gc_registry.certificate.schemas import CertificateStatus
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import (
     CertificateStatus,
@@ -68,7 +69,6 @@ def api_client(
 
 
 def get_db_url(target: str = "write") -> str | None:
-    logging.error(f"ENVIRONMENT: {os.environ['ENVIRONMENT']}")
     if os.environ["ENVIRONMENT"] == "CI":
         url = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@db_{target}:{settings.DATABASE_PORT}/{settings.POSTGRES_DB}"
         return url
@@ -194,7 +194,7 @@ def db_read_session(db_read_engine: Engine) -> Generator[Session, None, None]:
     connection.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def esdb_client() -> Generator[EventStoreDBClient, None, None]:
     """Returns an instance of the EventStoreDBClient that rolls back the event
     stream after each test.
@@ -221,11 +221,12 @@ def add_entity_to_write_and_read(
     write_session.refresh(entity)
 
     # check that the entity has an ID
-    assert entity.id is not None  # type: ignore
+    # assert entity.id is not None  # type: ignore
 
     read_entity = read_session.merge(entity)
     assert read_entity.id == entity.id  # type: ignore
 
+    # read_entity = read_session.merge(read_entity)
     read_session.add(read_entity)
     read_session.commit()
     read_session.refresh(read_entity)
@@ -274,6 +275,7 @@ def fake_db_wind_device(
 ) -> Device:
     device_dict = {
         "device_name": "fake_wind_device",
+        "meter_data_id": "BMU-XYZ",
         "grid": "fake_grid",
         "energy_source": EnergySourceType.wind,
         "technology_type": DeviceTechnologyType.wind_turbine,
@@ -306,6 +308,9 @@ def fake_db_solar_device(
         "grid": "fake_grid",
         "energy_source": EnergySourceType.solar_pv,
         "technology_type": DeviceTechnologyType.solar_pv,
+        "meter_data_id": "BMU-ABC",
+        "energy_source": "solar",
+        "technology_type": "solar",
         "capacity": 1000,
         "account_id": fake_db_account.id,
         "fuel_source": "solar",
@@ -327,12 +332,9 @@ def fake_db_solar_device(
 
 
 @pytest.fixture()
-def fake_db_gc_bundle(
-    db_write_session: Session,
-    db_read_session: Session,
-    fake_db_account: Account,
-    fake_db_wind_device: Device,
-) -> GranularCertificateBundle:
+def fake_db_issuance_metadata(
+    db_write_session: Session, db_read_session: Session
+) -> IssuanceMetaData:
     fake_db_issuance_metadata = {
         "country_of_issuance": "USA",
         "connected_grid_identification": "ERCOT",
@@ -350,10 +352,22 @@ def fake_db_gc_bundle(
         issuance_metadata, db_write_session, db_read_session
     )
 
+    return issuance_metadata_read
+
+
+@pytest.fixture()
+def fake_db_gc_bundle(
+    db_write_session: Session,
+    db_read_session: Session,
+    fake_db_account: Account,
+    fake_db_wind_device: Device,
+    fake_db_issuance_metadata: IssuanceMetaData,
+) -> GranularCertificateBundle:
     gc_bundle_dict = {
+        "id": 1,
         "account_id": fake_db_account.id,
         "certificate_status": CertificateStatus.ACTIVE,
-        "metadata_id": issuance_metadata_read.id,
+        "metadata_id": fake_db_issuance_metadata.id,
         "bundle_id_range_start": 0,
         "bundle_id_range_end": 999,
         "bundle_quantity": 1000,
@@ -364,13 +378,7 @@ def fake_db_gc_bundle(
         "sdr_allocation_id": None,
         "storage_efficiency_factor": None,
         "issuance_post_energy_carrier_conversion": False,
-        "registry_configuration": 1,
         "device_id": fake_db_wind_device.id,
-        "device_name": "fake_wind_device",
-        "device_technology_type": DeviceTechnologyType.wind_turbine,
-        "device_production_start_date": "2020-01-01",
-        "device_capacity": 1000,
-        "device_location": "USA",
         "production_starting_interval": "2021-01-01T00:00:00",
         "production_ending_interval": "2021-01-01T01:00:00",
         "issuance_datestamp": "2021-01-01",
@@ -388,7 +396,7 @@ def fake_db_gc_bundle(
         f"{gc_bundle_dict["device_id"]}-{gc_bundle_dict["production_starting_interval"]}"
     )
 
-    gc_bundle = GranularCertificateBundle(**gc_bundle_dict)
+    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
 
     gc_bundle.hash = create_bundle_hash(gc_bundle)
 

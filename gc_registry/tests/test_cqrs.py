@@ -25,6 +25,7 @@ class TestCQRS:
     ):
         device_dict = {
             "device_name": "fake_wind_device_2",
+            "meter_data_id": "XYZ-123",
             "grid": "fake_grid",
             "energy_source": "wind",
             "technology_type": "wind",
@@ -64,6 +65,7 @@ class TestCQRS:
         events = esdb_client.get_stream("events", stream_position=0)
 
         # Init Event plus two CREATE events
+        # TODO: Work out how to reset the event store between tests
         assert len(events) == 3
 
         event_0_data = json.loads(events[1].data)

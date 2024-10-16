@@ -4,6 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    CERTIFICATE_GRANULARITY_HOURS: float
+    CERTIFICATE_EXPIRY_YEARS: int
+
     DATABASE_HOST_WRITE: str
     DATABASE_HOST_READ: str
     DATABASE_PORT: int
