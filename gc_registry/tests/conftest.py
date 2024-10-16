@@ -16,11 +16,9 @@ from testcontainers.postgres import PostgresContainer  # type: ignore
 from gc_registry.account.models import Account
 from gc_registry.certificate.models import (
     GranularCertificateBundle,
-    GranularCertificateBundleBase,
     IssuanceMetaData,
 )
 from gc_registry.certificate.services import create_bundle_hash
-from gc_registry.certificate.schemas import CertificateStatus
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import (
     CertificateStatus,
@@ -309,8 +307,6 @@ def fake_db_solar_device(
         "energy_source": EnergySourceType.solar_pv,
         "technology_type": DeviceTechnologyType.solar_pv,
         "meter_data_id": "BMU-ABC",
-        "energy_source": "solar",
-        "technology_type": "solar",
         "capacity": 1000,
         "account_id": fake_db_account.id,
         "fuel_source": "solar",
@@ -404,4 +400,7 @@ def fake_db_gc_bundle(
         gc_bundle, db_write_session, db_read_session
     )
 
-    return gc_bundle_read
+    # we actually want the bundle associated with the write session for these tests
+    gc_bundle_write = db_write_session.merge(gc_bundle_read)
+
+    return gc_bundle_write

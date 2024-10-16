@@ -61,29 +61,25 @@ class TestCQRS:
             esdb_client=esdb_client,
         )
 
-        # Check that the events were created in the correct order
-        events = esdb_client.get_stream("events", stream_position=0)
+        # Check that the events were created in the correct order, looking backwards
+        events = esdb_client.get_stream("events", backwards=True)
 
-        # Init Event plus two CREATE events
-        # TODO: Work out how to reset the event store between tests
-        assert len(events) == 3
-
-        event_0_data = json.loads(events[1].data)
+        event_0_data = json.loads(events[0].data)
 
         assert created_entities is not None
 
-        assert events[1].type == "CREATE"
-        assert event_0_data["entity_name"] == "Device"
+        assert events[0].type == "CREATE"
+        assert event_0_data["entity_name"] == "User"
         assert created_entities[0].id is not None  # type: ignore
-        assert event_0_data["entity_id"] == created_entities[0].id  # type: ignore
+        assert event_0_data["entity_id"] == created_entities[1].id  # type: ignore
 
-        event_1_data = json.loads(events[2].data)
+        event_1_data = json.loads(events[1].data)
 
-        assert events[2].type == "CREATE"
-        assert event_1_data["entity_name"] == "User"
-        assert event_1_data["entity_id"] == created_entities[1].id  # type: ignore
+        assert events[1].type == "CREATE"
+        assert event_1_data["entity_name"] == "Device"
+        assert event_1_data["entity_id"] == created_entities[0].id  # type: ignore
 
-        assert event_0_data["timestamp"] < event_1_data["timestamp"]
+        assert event_0_data["timestamp"] > event_1_data["timestamp"]
 
         # Check that the read database contains the same as the write database
         assert fake_db_wind_device.id is not None

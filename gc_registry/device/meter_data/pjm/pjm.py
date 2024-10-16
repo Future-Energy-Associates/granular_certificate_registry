@@ -67,7 +67,7 @@ class PJM:
                 ### Bundle Characteristics ###
                 "energy_carrier": "Electricity",
                 "energy_source": data["fuel_type"],
-                "face_value": bundle_mwh,
+                "face_value": 1,
                 "issuance_post_energy_carrier_conversion": False,
                 "registry_configuration": 1,
                 ### Production Device Characteristics ###

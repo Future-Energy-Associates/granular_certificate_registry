@@ -13,6 +13,7 @@ from gc_registry.certificate.schemas import (
     CertificateStatus,
     GranularCertificateBundleBase,
     GranularCertificateBundleCreate,
+    mutable_gc_attributes,
 )
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.services import (
@@ -34,7 +35,9 @@ def create_bundle_hash(
 
     To ensure that a consistent string representation of the GC bundle is
     used, a JSON model dump of the base bundle class is used to avoid
-    automcatically generated fields such as the bundle's ID.
+    automcatically generated fields such as the bundle's ID. In addition,
+    only non-mutable fields are included such that lineage can be traced
+    no matter the lifecycle stage the GC is in.
 
     Args:
         gc_bundle (GranularCertificateBundle): The child GC Bundle
@@ -45,7 +48,7 @@ def create_bundle_hash(
     """
 
     return sha256(
-        f"{gc_bundle.model_dump_json(exclude='id')}{nonce}".encode()
+        f"{gc_bundle.model_dump_json(exclude=["id", "created_at", "hash"] + mutable_gc_attributes)}{nonce}".encode()
     ).hexdigest()
 
 
@@ -186,7 +189,7 @@ def validate_granular_certificate_bundle(
     # and less than the device max watts hours
     validate(gcb.bundle_quantity, identifier="bundle_quantity").less_than(
         device_max_watts_hours
-    ).equal(gcb.bundle_id_range_end - gcb.bundle_id_range_start)
+    ).equal(gcb.bundle_id_range_end - gcb.bundle_id_range_start + 1)
 
     # Validate the bundle ID range start is greater than the previous max certificate ID
     validate(gcb.bundle_id_range_start, identifier="bundle_id_range_start").equal(

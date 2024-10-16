@@ -6,6 +6,11 @@ import httpx
 import pandas as pd
 
 from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.core.models.base import (
+    CertificateStatus,
+    EnergyCarrierType,
+    EnergySourceType,
+)
 from gc_registry.settings import settings
 
 
@@ -141,17 +146,18 @@ class ElexonClient:
             if mapped_data:
                 bundle_id_range_start = mapped_data[-1].bundle_id_range_end + 1
 
-            bundle_id_range_end = bundle_id_range_start + bundle_wh
+            # E.g., if bundle_wh = 1000, bundle_id_range_start = 0, bundle_id_range_end = 999
+            bundle_id_range_end = bundle_id_range_start + bundle_wh - 1
 
             transformed = {
                 "account_id": account_id,
-                "certificate_status": "Active",
+                "certificate_status": CertificateStatus.ACTIVE,
                 "bundle_id_range_start": bundle_id_range_start,
                 "bundle_id_range_end": bundle_id_range_end,
                 "bundle_quantity": bundle_id_range_end - bundle_id_range_start + 1,
-                "energy_carrier": "Electricity",
-                "energy_source": "wind",
-                "face_value": bundle_wh,
+                "energy_carrier": EnergyCarrierType.electricity,
+                "energy_source": EnergySourceType.wind,
+                "face_value": 1,
                 "issuance_post_energy_carrier_conversion": False,
                 "device_id": device_id,
                 "production_starting_interval": datetime.fromisoformat(
@@ -166,13 +172,19 @@ class ElexonClient:
                     datetime.utcnow()
                     + timedelta(days=365 * settings.CERTIFICATE_EXPIRY_YEARS)
                 ).date(),
-                "hash": "Some Hash",
                 "metadata_id": issuance_metadata_id,
                 "is_storage": is_storage,
+                "hash": "Some hash",
             }
+
+            transformed["issuance_id"] = (
+                f"{device_id}-{transformed['production_starting_interval']}"
+            )
 
             # Validate and append the transformed data
             valid_data = GranularCertificateBundle.model_validate(transformed)
+            # Add this back in when moved to certificate services
+            # valid_data.hash = create_bundle_hash(valid_data, None)
             mapped_data.append(valid_data)
 
         return mapped_data

@@ -14,6 +14,14 @@ from gc_registry.core.models.base import (
 
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
+mutable_gc_attributes = [
+    "certificate_status",
+    "account_id",
+    "sdr_allocation_id",
+    "storage_efficiency_factor",
+    "is_deleted",
+]
+
 
 class GranularCertificateBundleBase(BaseModel):
     """The GC Bundle is the primary unit of issuance and transfer within the EnergyTag standard, and only the Resgistry
