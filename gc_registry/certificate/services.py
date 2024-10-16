@@ -1,9 +1,13 @@
 from hashlib import sha256
 
 from esdbclient import EventStoreDBClient
-from sqlalchemy.orm import Session
+from sqlalchemy.orm.session import Session
 
-from .models import GranularCertificateBundle, GranularCertificateBundleBase
+from .models import (
+    GranularCertificateBundle,
+    GranularCertificateBundleBase,
+)
+from .schemas import GranularCertificateBundleCreate
 
 
 def validate_transfer():
@@ -11,7 +15,7 @@ def validate_transfer():
 
 
 def create_bundle_hash(
-    gc_bundle: GranularCertificateBundle,
+    gc_bundle: GranularCertificateBundle | GranularCertificateBundleCreate,
     nonce: str = "",
 ):
     """
@@ -32,7 +36,7 @@ def create_bundle_hash(
     """
 
     return sha256(
-        f"{GranularCertificateBundleBase(**gc_bundle.model_dump())}{nonce}".encode()
+        f"{gc_bundle.model_dump_json(exclude='id')}{nonce}".encode()
     ).hexdigest()
 
 
@@ -109,9 +113,9 @@ def split_certificate_bundle(
     # Write the child bundles to the database
     db_gc_bundle_child_1 = GranularCertificateBundle.create(
         gc_bundle_child_1, write_session, read_session, esdb_client
-    )
+    )[0]
     db_gc_bundle_child_2 = GranularCertificateBundle.create(
         gc_bundle_child_2, write_session, read_session, esdb_client
-    )
+    )[0]
 
     return db_gc_bundle_child_1, db_gc_bundle_child_2

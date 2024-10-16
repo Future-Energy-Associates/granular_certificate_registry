@@ -1,5 +1,5 @@
 from esdbclient import EventStoreDBClient
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from gc_registry.certificate.models import (
@@ -8,7 +8,7 @@ from gc_registry.certificate.models import (
 )
 from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
-    GranularCertificateBundleCreate,
+    GranularCertificateBundleBase,
 )
 from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
@@ -23,7 +23,7 @@ router = APIRouter(tags=["Certificates"])
     status_code=201,
 )
 def create_certificate_bundle(
-    certificate_bundle: GranularCertificateBundleCreate,
+    certificate_bundle: GranularCertificateBundleBase,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
@@ -33,19 +33,20 @@ def create_certificate_bundle(
 
     # Bundle issuance ID is the unique combination of device ID,
     # energy carrier, and production starting interval.
-    certificate_bundle.issuance_id = f"""
-        {certificate_bundle.device_id}- \
-        {certificate_bundle.energy_carrier}- \
-        {certificate_bundle.production_starting_interval}
-        """
+    # certificate_bundle.issuance_id = f"{certificate_bundle.device_id}-{certificate_bundle.production_starting_interval}"
 
-    # Bundle hash is the sha256 of the bundle's properties and, if the result of a bundle split,
-    # a nonce taken from the hash of the parent bundle.
-    certificate_bundle.hash = create_bundle_hash(certificate_bundle, nonce)
+    # # Bundle hash is the sha256 of the bundle's properties and, if the result of a bundle split,
+    # # a nonce taken from the hash of the parent bundle.
+    # certificate_bundle.hash = create_bundle_hash(certificate_bundle, nonce)
 
-    db_certificate_bundle = GranularCertificateBundle.create(
+    db_certificate_bundles = GranularCertificateBundle.create(
         certificate_bundle, write_session, read_session, esdb_client
     )
+
+    if not db_certificate_bundles:
+        raise HTTPException(status_code=500, detail="Could not create Account")
+
+    db_certificate_bundle = db_certificate_bundles[0].model_dump()
 
     return db_certificate_bundle
 

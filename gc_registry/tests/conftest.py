@@ -134,7 +134,9 @@ def db_write_engine() -> Generator[Engine, None, None]:
         raise ValueError("No db url for write")
 
     db_engine = create_engine(url)
+
     SQLModel.metadata.create_all(db_engine)
+
     yield db_engine
     db_engine.dispose()
 
@@ -149,7 +151,9 @@ def db_read_engine() -> Generator[Engine, None, None]:
         raise ValueError("No db url for read")
 
     db_engine = create_engine(url)
+
     SQLModel.metadata.create_all(db_engine)
+
     yield db_engine
     db_engine.dispose()
 
@@ -213,22 +217,21 @@ def add_entity_to_write_and_read(
     # Write entities to database first using the write session
     write_session.add(entity)
     write_session.commit()
+
     write_session.refresh(entity)
 
     # check that the entity has an ID
     assert entity.id is not None  # type: ignore
 
-    # validate the entity
-    entity_read = entity.model_validate(entity.model_dump())
+    read_entity = read_session.merge(entity)
+    assert read_entity.id == entity.id  # type: ignore
 
-    assert entity_read.id == entity.id  # type: ignore
-
-    # read_entity = read_session.merge(read_entity)
-    read_session.add(entity_read)
+    read_session.add(read_entity)
     read_session.commit()
-    read_session.refresh(entity_read)
+    read_session.refresh(read_entity)
 
-    return entity_read
+    print("read_entity: ", read_entity)
+    return read_entity
 
 
 @pytest.fixture()
@@ -252,12 +255,8 @@ def fake_db_user(db_write_session: Session, db_read_session: Session) -> User:
 def fake_db_account(db_write_session: Session, db_read_session: Session) -> Account:
     account_dict = {
         "account_name": "fake_account",
-        "account_type": "fake_account_type",
-        "account_status": "active",
-        "account_balance": 1000,
-        "account_currency": "USD",
-        "account_country": "USA",
-        "account_state": "NY",
+        "user_ids": [],
+        "roles": ["admin"],
     }
 
     account_write = Account.model_validate(account_dict)
@@ -294,8 +293,6 @@ def fake_db_wind_device(
     device_read = add_entity_to_write_and_read(
         wind_device, db_write_session, db_read_session
     )
-
-    print("device_read", device_read)
 
     return device_read
 
@@ -354,7 +351,6 @@ def fake_db_gc_bundle(
     )
 
     gc_bundle_dict = {
-        "id": 1,
         "account_id": fake_db_account.id,
         "certificate_status": CertificateStatus.ACTIVE,
         "metadata_id": issuance_metadata_read.id,
@@ -388,13 +384,11 @@ def fake_db_gc_bundle(
         "hash": "Some Hash",
     }
 
-    gc_bundle_dict["issuance_id"] = f"""
-        {gc_bundle_dict["device_id"]}- \
-        {gc_bundle_dict["energy_carrier"]}- \
-        {gc_bundle_dict["production_starting_interval"]}
-        """
+    gc_bundle_dict["issuance_id"] = (
+        f"{gc_bundle_dict["device_id"]}-{gc_bundle_dict["production_starting_interval"]}"
+    )
 
-    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+    gc_bundle = GranularCertificateBundle(**gc_bundle_dict)
 
     gc_bundle.hash = create_bundle_hash(gc_bundle)
 

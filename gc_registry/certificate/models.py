@@ -1,3 +1,4 @@
+from sqlalchemy import Column, Integer
 from sqlmodel import Field
 
 from gc_registry import utils
@@ -15,11 +16,11 @@ from gc_registry.certificate.schemas import (
 
 
 class GranularCertificateBundle(
-    utils.ActiveRecord, GranularCertificateBundleBase, table=True
+    GranularCertificateBundleBase, utils.ActiveRecord, table=True
 ):
     id: int | None = Field(
-        primary_key=True,
         default=None,
+        sa_column=Column(Integer, primary_key=True, autoincrement=True),
         description="A unique, incremental integer ID assigned to this bundle.",
     )
 
