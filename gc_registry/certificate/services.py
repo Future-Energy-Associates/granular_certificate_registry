@@ -182,9 +182,9 @@ def validate_granular_certificate_bundle(
     if not device_max_certificate_id:
         device_max_certificate_id = 0
 
-    # Validate the bundle face value is equal to the difference between the bundle ID range
+    # Validate the bundle quantity is equal to the difference between the bundle ID range
     # and less than the device max watts hours
-    validate(gcb.face_value, identifier="face_value").less_than(
+    validate(gcb.bundle_quantity, identifier="bundle_quantity").less_than(
         device_max_watts_hours
     ).equal(gcb.bundle_id_range_end - gcb.bundle_id_range_start)
 
