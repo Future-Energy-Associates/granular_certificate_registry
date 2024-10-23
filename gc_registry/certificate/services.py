@@ -48,7 +48,7 @@ def create_bundle_hash(
     """
 
     return sha256(
-        f"{gc_bundle.model_dump_json(exclude=["id", "created_at", "hash"] + mutable_gc_attributes)}{nonce}".encode()
+        f"{gc_bundle.model_dump_json(exclude=['id', 'created_at', 'hash'] + mutable_gc_attributes)}{nonce}".encode()
     ).hexdigest()
 
 

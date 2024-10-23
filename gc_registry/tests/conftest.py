@@ -389,7 +389,7 @@ def fake_db_gc_bundle(
     }
 
     gc_bundle_dict["issuance_id"] = (
-        f"{gc_bundle_dict["device_id"]}-{gc_bundle_dict["production_starting_interval"]}"
+        f"{gc_bundle_dict['device_id']}-{gc_bundle_dict['production_starting_interval']}"
     )
 
     gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
