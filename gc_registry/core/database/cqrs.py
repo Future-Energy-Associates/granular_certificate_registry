@@ -2,7 +2,6 @@ from esdbclient import EventStoreDBClient
 from pydantic import BaseModel
 from sqlmodel import Session, SQLModel
 
-from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.core.database.events import batch_create_events, create_event
 from gc_registry.core.models.base import EventTypes
 
@@ -55,7 +54,7 @@ def write_to_database(
         read_session.rollback()
         return None
 
-    if isinstance(entities[0], GranularCertificateBundle):
+    if hasattr(entities[0], "issuance_id"):
         id_attribute = "issuance_id"
     else:
         id_attribute = "id"
