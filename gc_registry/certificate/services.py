@@ -1,5 +1,6 @@
 import datetime
 import logging
+from hashlib import sha256
 
 from esdbclient import EventStoreDBClient
 from fluent_validator import validate  # type: ignore
@@ -11,6 +12,7 @@ from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.certificate.schemas import (
     CertificateStatus,
     GranularCertificateBundleBase,
+    GranularCertificateBundleCreate,
 )
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.services import (
@@ -19,14 +21,6 @@ from gc_registry.device.services import (
     get_device_capacity_by_id,
 )
 from gc_registry.settings import settings
-
-from hashlib import sha256
-
-from .models import (
-    GranularCertificateBundle,
-    GranularCertificateBundleBase,
-)
-from .schemas import GranularCertificateBundleCreate
 
 
 def get_max_certificate_id_by_device_id(
@@ -195,7 +189,6 @@ def issue_certificates_in_date_range(
             )
 
     return created_entities
-
 
 
 def validate_transfer():

@@ -15,12 +15,10 @@ from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
 from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
-from gc_registry.certificate.schemas import CertificateStatus
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import (
     CertificateStatus,
     DeviceTechnologyType,
-    EnergyCarrierType,
     EnergySourceType,
 )
 from gc_registry.device.models import Device
