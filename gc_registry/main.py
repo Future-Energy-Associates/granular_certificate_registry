@@ -11,7 +11,6 @@ from .certificate.routes import router as certificate_router
 from .core.database.db import get_db_name_to_client
 from .device.routes import router as device_router
 from .measurement.routes import router as measurements_router
-from .organisation.routes import router as organisation_router
 from .settings import settings
 from .storage.routes import router as storage_router
 from .user.routes import router as user_router
@@ -32,10 +31,6 @@ tags_metadata = [
     {
         "name": "Storage",
         "description": descriptions["storage"],
-    },
-    {
-        "name": "Organisations",
-        "description": "Top-level entities that manage multiple Users and Accounts.",
     },
     {
         "name": "Users",
@@ -77,10 +72,6 @@ app.include_router(
 app.include_router(
     storage_router,
     prefix="/storage",
-)
-app.include_router(
-    organisation_router,
-    prefix="/organisation",
 )
 app.include_router(
     user_router,

@@ -17,6 +17,12 @@ from gc_registry.account.models import Account
 from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
 from gc_registry.certificate.schemas import CertificateStatus
 from gc_registry.core.database import db, events
+from gc_registry.core.models.base import (
+    CertificateStatus,
+    DeviceTechnologyType,
+    EnergyCarrierType,
+    EnergySourceType,
+)
 from gc_registry.device.models import Device
 from gc_registry.main import app
 from gc_registry.settings import settings
@@ -265,12 +271,10 @@ def fake_db_wind_device(
         "device_name": "fake_wind_device",
         "meter_data_id": "BMU-XYZ",
         "grid": "fake_grid",
-        "energy_source": "wind",
-        "technology_type": "wind",
+        "energy_source": EnergySourceType.wind,
+        "technology_type": DeviceTechnologyType.wind_turbine,
         "capacity": 3000,
         "account_id": fake_db_account.id,
-        "device_type": "wind",
-        "is_renewable": True,
         "fuel_source": "wind",
         "location": "USA",
         "commissioning_date": "2020-01-01",
@@ -301,11 +305,8 @@ def fake_db_solar_device(
         "technology_type": "solar",
         "capacity": 1000,
         "account_id": fake_db_account.id,
-        "device_type": "solar",
-        "is_renewable": True,
         "fuel_source": "solar",
         "location": "USA",
-        "capacity_mw": 100,
         "commissioning_date": "2020-01-01",
         "operational_date": "2020-01-01",
         "peak_demand": 100,

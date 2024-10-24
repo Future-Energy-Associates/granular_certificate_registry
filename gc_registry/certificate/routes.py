@@ -10,6 +10,7 @@ from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleCreate,
 )
+from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
 
 # Router initialisation
@@ -26,8 +27,22 @@ def create_certificate_bundle(
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+    nonce: str = "",
 ):
     """Create a GC Bundle with the specified properties."""
+
+    # Bundle issuance ID is the unique combination of device ID,
+    # energy carrier, and production starting interval.
+    certificate_bundle.issuance_id = f"""
+        {certificate_bundle.device_id}- \
+        {certificate_bundle.energy_carrier}- \
+        {certificate_bundle.production_starting_interval}
+        """
+
+    # Bundle hash is the sha256 of the bundle's properties and, if the result of a bundle split,
+    # a nonce taken from the hash of the parent bundle.
+    certificate_bundle.hash = create_bundle_hash(certificate_bundle, nonce)
+
     db_certificate_bundle = GranularCertificateBundle.create(
         certificate_bundle, write_session, read_session, esdb_client
     )
