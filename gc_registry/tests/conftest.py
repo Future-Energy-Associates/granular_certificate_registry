@@ -14,7 +14,15 @@ from testcontainers.core.waiting_utils import wait_for_logs  # type: ignore
 from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
+from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
+from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
+from gc_registry.core.models.base import (
+    CertificateStatus,
+    DeviceTechnologyType,
+    EnergyCarrierType,
+    EnergySourceType,
+)
 from gc_registry.device.models import Device
 from gc_registry.main import app
 from gc_registry.settings import settings
@@ -264,15 +272,12 @@ def fake_db_wind_device(
     device_dict = {
         "device_name": "fake_wind_device",
         "grid": "fake_grid",
-        "energy_source": "wind",
-        "technology_type": "wind",
+        "energy_source": EnergySourceType.wind,
+        "technology_type": DeviceTechnologyType.wind_turbine,
         "capacity": 3000,
         "account_id": fake_db_account.id,
-        "device_type": "wind",
-        "is_renewable": True,
         "fuel_source": "wind",
         "location": "USA",
-        "capacity_mw": 100,
         "commissioning_date": "2020-01-01",
         "operational_date": "2020-01-01",
         "peak_demand": 100,
@@ -298,15 +303,12 @@ def fake_db_solar_device(
     device_dict = {
         "device_name": "fake_solar_device",
         "grid": "fake_grid",
-        "energy_source": "solar",
-        "technology_type": "solar",
+        "energy_source": EnergySourceType.solar_pv,
+        "technology_type": DeviceTechnologyType.solar_pv,
         "capacity": 1000,
         "account_id": fake_db_account.id,
-        "device_type": "solar",
-        "is_renewable": True,
         "fuel_source": "solar",
         "location": "USA",
-        "capacity_mw": 100,
         "commissioning_date": "2020-01-01",
         "operational_date": "2020-01-01",
         "peak_demand": 100,
@@ -321,3 +323,79 @@ def fake_db_solar_device(
     )
 
     return device_read
+
+
+@pytest.fixture()
+def fake_db_gc_bundle(
+    db_write_session: Session,
+    db_read_session: Session,
+    fake_db_account: Account,
+    fake_db_wind_device: Device,
+) -> GranularCertificateBundle:
+    fake_db_issuance_metadata = {
+        "country_of_issuance": "USA",
+        "connected_grid_identification": "ERCOT",
+        "issuing_body": "ERCOT",
+        "legal_status": "legal",
+        "issuance_purpose": "compliance",
+        "support_received": None,
+        "quality_scheme_reference": None,
+        "dissemination_level": None,
+        "issue_market_zone": "ERCOT",
+    }
+
+    issuance_metadata = IssuanceMetaData.model_validate(fake_db_issuance_metadata)
+    issuance_metadata_read = add_entity_to_write_and_read(
+        issuance_metadata, db_write_session, db_read_session
+    )
+
+    gc_bundle_dict = {
+        "id": 1,
+        "account_id": fake_db_account.id,
+        "certificate_status": CertificateStatus.ACTIVE,
+        "metadata_id": issuance_metadata_read.id,
+        "bundle_id_range_start": 0,
+        "bundle_id_range_end": 999,
+        "bundle_quantity": 1000,
+        "energy_carrier": EnergyCarrierType.electricity,
+        "energy_source": EnergySourceType.wind,
+        "face_value": 1,
+        "is_storage": False,
+        "sdr_allocation_id": None,
+        "storage_efficiency_factor": None,
+        "issuance_post_energy_carrier_conversion": False,
+        "registry_configuration": 1,
+        "device_id": fake_db_wind_device.id,
+        "device_name": "fake_wind_device",
+        "device_technology_type": DeviceTechnologyType.wind_turbine,
+        "device_production_start_date": "2020-01-01",
+        "device_capacity": 1000,
+        "device_location": "USA",
+        "production_starting_interval": "2021-01-01T00:00:00",
+        "production_ending_interval": "2021-01-01T01:00:00",
+        "issuance_datestamp": "2021-01-01",
+        "expiry_datestamp": "2024-01-01",
+        "country_of_issuance": "USA",
+        "connected_grid_identification": "ERCOT",
+        "issuing_body": "ERCOT",
+        "issue_market_zone": "USA",
+        "emissions_factor_production_device": 0.0,
+        "emissions_factor_source": "Some Data Source",
+        "hash": "Some Hash",
+    }
+
+    gc_bundle_dict["issuance_id"] = f"""
+        {gc_bundle_dict["device_id"]}- \
+        {gc_bundle_dict["energy_carrier"]}- \
+        {gc_bundle_dict["production_starting_interval"]}
+        """
+
+    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+
+    gc_bundle.hash = create_bundle_hash(gc_bundle, nonce="")
+
+    gc_bundle_read = add_entity_to_write_and_read(
+        gc_bundle, db_write_session, db_read_session
+    )
+
+    return gc_bundle_read

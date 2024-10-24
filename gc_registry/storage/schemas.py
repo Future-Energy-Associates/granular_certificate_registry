@@ -85,7 +85,7 @@ class StorageActionBase(utils.ActiveRecord):
     )
     user_id: int = Field(
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified.",
-        foreign_key="user.id",
+        foreign_key="registry_user.id",
     )
     source_allocation_id: int | None = Field(
         description="The specific SCRs/SDRs onto which the action will be performed. Returns all records with the specified allocation ID."

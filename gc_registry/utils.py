@@ -52,7 +52,7 @@ class ActiveRecord(SQLModel):
         read_session: Session,
         esdb_client: EventStoreDBClient,
     ) -> list[SQLModel] | None:
-        if isinstance(source, SQLModel):
+        if isinstance(source, (SQLModel, BaseModel)):
             obj = cls.model_validate(source)
         elif isinstance(source, dict):
             obj = cls.model_validate_json(json.dumps(source))
