@@ -13,7 +13,7 @@ def validate_transfer():
 
 def create_bundle_hash(
     gc_bundle: GranularCertificateBundle | GranularCertificateBundleCreate,
-    nonce: str = "",
+    nonce: str,
 ):
     """
     Given a GC Bundle and a nonce taken from the hash of a parent bundle,
@@ -31,13 +31,17 @@ def create_bundle_hash(
     Returns:
         str: The hash of the child GC Bundle
     """
+    if not gc_bundle:
+        raise ValueError("gc_bundle must not be None")
+    if not hasattr(gc_bundle, 'model_dump'):
+        raise TypeError("gc_bundle must have a model_dump() method")
 
     return sha256(
         f"{GranularCertificateBundleBase(**gc_bundle.model_dump())}{nonce}".encode()
     ).hexdigest()
 
 
-def verifiy_bundle_lineage(
+def verify_bundle_lineage(
     gc_bundle_parent: GranularCertificateBundle,
     gc_bundle_child: GranularCertificateBundle,
 ):
