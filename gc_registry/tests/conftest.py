@@ -392,7 +392,7 @@ def fake_db_gc_bundle(
 
     gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
 
-    gc_bundle.hash = create_bundle_hash(gc_bundle)
+    gc_bundle.hash = create_bundle_hash(gc_bundle, nonce="")
 
     gc_bundle_read = add_entity_to_write_and_read(
         gc_bundle, db_write_session, db_read_session
