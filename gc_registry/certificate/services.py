@@ -33,7 +33,7 @@ def create_bundle_hash(
     """
     if not gc_bundle:
         raise ValueError("gc_bundle must not be None")
-    if not hasattr(gc_bundle, 'model_dump'):
+    if not hasattr(gc_bundle, "model_dump"):
         raise TypeError("gc_bundle must have a model_dump() method")
 
     return sha256(
