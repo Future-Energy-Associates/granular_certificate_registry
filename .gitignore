@@ -12,6 +12,7 @@
 
 # directories
 /data
+/dev
 /snap
 /usr
 /libx32

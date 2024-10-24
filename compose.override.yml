@@ -1,44 +1,81 @@
 services:
   gc_registry:
+    image: gc_registry:latest
     restart: "${RESTART-no}"
     environment:
       - TC_HOST=host.docker.internal
     volumes:
-      - ./:/app
       - /var/run/docker.sock:/var/run/docker.sock
-      - "./:/gc_registry"
+      - "./gc_registry:/code/gc_registry"
     build:
       context: .
       args:
         INSTALL_DEV: ${INSTALL_DEV-true}
-    command: poetry run uvicorn --reload "gc_registry.main:app" --host 0.0.0.0 --port 4200 --log-level debug
+    command: poetry run uvicorn --reload "gc_registry.main:app" --host 0.0.0.0 --port 8000 --log-level debug
     env_file:
       - .env
     depends_on:
       - db_write
       - db_read
+      - eventstore.db
     ports:
-      - "4200:4200"
+      - "8000:8000"
 
   db_write:
     image: postgres:13
     volumes:
       - postgres_data_write:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=gc_registry
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5436:5432"
+
 
   db_read:
     image: postgres:13
     volumes:
       - postgres_data_read:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=gc_registry
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5438:5432"
+
+  eventstore.db:
+    image: eventstore/eventstore:23.10.2-bookworm-slim
+    hostname: eventstore
+    environment:
+      - EVENTSTORE_CLUSTER_SIZE=1
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_START_STANDARD_PROJECTIONS=true
+      - EVENTSTORE_HTTP_PORT=2113
+      - EVENTSTORE_EXT_TCP_PORT=2113
+      - EVENTSTORE_INSECURE=true
+      - EVENTSTORE_DISABLE_INTERNAL_TCP_TLS=true
+      - EVENTSTORE_DISABLE_EXTERNAL_TCP_TLS=true
+      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+      - EVENTSTORE_TELEMETRY_OPTOUT=true
+      - DOTNET_EnableWriteXorExecute=0
+      - EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS=localhost
+      - EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2113
+    ports:
+      - "2113:2113"
+    expose:
+      - "2113"
+    volumes:
+      - type: volume
+        source: eventstore-volume-data
+        target: /var/lib/eventstore
+      - type: volume
+        source: eventstore-volume-logs
+        target: /var/log/eventstore
 
 volumes:
   gc_registry:
   postgres_data_write:
   postgres_data_read:
+  eventstore-volume-data:
+  eventstore-volume-logs:

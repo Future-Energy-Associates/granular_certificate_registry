@@ -5,26 +5,28 @@ from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship
 
 from gc_registry import utils
-
-# from gc_registry.organisation.models import Organisation
 from gc_registry.user.schemas import UserBase
 
 if TYPE_CHECKING:
     from gc_registry.account.models import Account
 
-# User - a single Organisation can have multiple Users, each with different roles and
-# responsibilities at the discretion of the Organisation they are related to. Each
-# User may be authorised to operate multiple accounts.
+# Each User may be authorised to operate multiple accounts.
 
 
 class UserAccountLink(utils.ActiveRecord, table=True):
-    user_id: int | None = Field(default=None, foreign_key="user.id", primary_key=True)
+    user_id: int | None = Field(
+        default=None, foreign_key="registry_user.id", primary_key=True
+    )
     account_id: int | None = Field(
         default=None, foreign_key="account.id", primary_key=True
     )
+    is_deleted: bool = Field(default=False)
 
 
 class User(UserBase, table=True):
+    # Postgres reserves the name "user" as a keyword, so we use "registry_user" instead
+    __tablename__: str = "registry_user"  # type: ignore
+
     id: int | None = Field(default=None, primary_key=True)
     account_ids: List[int] | None = Field(
         default=None,
@@ -34,9 +36,10 @@ class User(UserBase, table=True):
     accounts: List["Account"] | None = Relationship(
         back_populates="users", link_model=UserAccountLink
     )
-
-    # organisation_id: int = Field(foreign_key="organisation.id")
-    # organisation: "Organisation" = Relationship(back_populates="users")
+    organisation: str | None = Field(
+        default=None,
+        description="The organisation to which the user is registered.",
+    )
 
 
 class UserRead(UserBase):
@@ -44,6 +47,8 @@ class UserRead(UserBase):
 
 
 class UserUpdate(BaseModel):
-    id: int
-    name: str | None
-    primary_contact: str | None
+    name: str | None = None
+    primary_contact: str | None = None
+    roles: List[str] | None = None
+    account_ids: List[int] | None = None
+    organisation: str | None = None
