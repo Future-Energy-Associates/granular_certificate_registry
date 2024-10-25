@@ -35,7 +35,6 @@ def create_certificate_bundle(
     # energy carrier, and production starting interval.
     certificate_bundle.issuance_id = f"""
         {certificate_bundle.device_id}- \
-        {certificate_bundle.energy_carrier}- \
         {certificate_bundle.production_starting_interval}
         """
 

@@ -189,7 +189,8 @@ def upgrade() -> None:
         sa.Column("issue_market_zone", sa.String(), nullable=False),
         sa.Column("emissions_factor_production_device", sa.Float(), nullable=True),
         sa.Column("emissions_factor_source", sa.String(), nullable=True),
-        sa.Column("issuance_id", sa.Uuid(), nullable=False),
+        sa.Column("issuance_id", sa.VARCHAR(), nullable=False),
+        sa.Column("id", sa.Integer(), nullable=False, autoincrement=True),
         sa.ForeignKeyConstraint(
             ["account_id"],
             ["account.id"],
@@ -202,9 +203,7 @@ def upgrade() -> None:
             ["storage_id"],
             ["device.id"],
         ),
-        sa.PrimaryKeyConstraint(
-            "bundle_id_range_start", "bundle_id_range_end", "issuance_id"
-        ),
+        sa.UniqueConstraint("id", "issuance_id", name="granularcertificatebundle_unique_key")
     )
     # ### end Alembic commands ###
 

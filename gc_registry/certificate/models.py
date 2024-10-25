@@ -22,6 +22,18 @@ class GranularCertificateBundle(
         default=None,
         description="A unique, incremental integer ID assigned to this bundle.",
     )
+    issuance_id: str = Field(
+        primary_key=True,
+        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
+        If the bundle is split through partial transfer or cancellation, this issuance ID
+        remains unchanged across each child GC Bundle.""",
+    )
+    hash: str = Field(
+        default=None,
+        description="""A unique hash assigned to this bundle at the time of issuance,
+        formed from the sha256 of the bundle's properties and, if the result of a bundle
+        split, a nonce taken from the hash of the parent bundle.""",
+    )
 
 
 # A Transfer object is specified by a User, and is stored in a transaction table that

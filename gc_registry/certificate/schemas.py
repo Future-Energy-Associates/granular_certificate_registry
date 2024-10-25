@@ -29,19 +29,6 @@ class GranularCertificateBundleBase(BaseModel):
     the queue.
     """
 
-    issuance_id: str = Field(
-        primary_key=True,
-        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
-        If the bundle is split through partial transfer or cancellation, this issuance ID
-        remains unchanged across each child GC Bundle.""",
-    )
-    hash: str = Field(
-        default=None,
-        description="""A unique hash assigned to this bundle at the time of issuance,
-        formed from the sha256 of the bundle's properties and, if the result of a bundle
-        split, a nonce taken from the hash of the parent bundle.""",
-    )
-
     ### Mutable Attributes ###
     certificate_status: CertificateStatus = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
@@ -61,12 +48,10 @@ class GranularCertificateBundleBase(BaseModel):
                         clearly ascending manner, displayed on the GC Bundle instance by start and end IDs indicating the minimum
                         and maximum IDs contained within the Bundle, inclusive of both range end points and all integers
                         within that range.""",
-        primary_key=True,
     )
     bundle_id_range_end: int = Field(
         description="""The start and end range IDs of GC Bundles may change as they are split and transferred between Accounts,
                        or partially cancelled.""",
-        primary_key=True,
     )
     bundle_quantity: int = Field(
         description="""The quantity of Granular Certificates within this GC Bundle, according to a
@@ -134,7 +119,8 @@ class GranularCertificateBundleBase(BaseModel):
 
 
 class GranularCertificateBundleCreate(GranularCertificateBundleBase):
-    pass
+    hash: str | None = None
+    issuance_id: str | None = None
 
 
 class IssuanceMetaDataBase(BaseModel):

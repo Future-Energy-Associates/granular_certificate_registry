@@ -63,6 +63,7 @@ def upgrade() -> None:
     op.add_column('granularcertificatebundle', sa.Column('metadata_id', sa.Integer(), nullable=False))
     op.add_column('granularcertificatebundle', sa.Column('is_storage', sa.Integer(), nullable=False))
     op.add_column('granularcertificatebundle', sa.Column('created_at', sa.DateTime(), nullable=False))
+    op.add_column('granularcertificatebundle', sa.Column('is_deleted', sa.Boolean(), nullable=False))
     op.alter_column(
         "granularcertificatebundle",
         "certificate_status",
@@ -163,6 +164,7 @@ def downgrade() -> None:
     op.drop_column('granularcertificatebundle', 'created_at')
     op.drop_column('granularcertificatebundle', 'is_storage')
     op.drop_column('granularcertificatebundle', 'metadata_id')
+    op.drop_column('granularcertificatebundle', 'is_deleted')
     op.add_column('granularcertificateaction', sa.Column('action_id', sa.INTEGER(), autoincrement=True, nullable=False))
     op.alter_column(
         "granularcertificateaction",

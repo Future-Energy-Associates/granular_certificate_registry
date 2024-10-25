@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 import pandas as pd
 
-from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.certificate.schemas import GranularCertificateBundleCreate
 from gc_registry.settings import settings
 
 
@@ -128,7 +128,7 @@ class ElexonClient:
         device_id: int,
         is_storage: bool,
         issuance_metadata_id: int,
-    ) -> list[GranularCertificateBundle]:
+    ) -> list[GranularCertificateBundleCreate]:
         WH_IN_MWH = 1e6
 
         mapped_data: list = []
@@ -143,21 +143,23 @@ class ElexonClient:
 
             bundle_id_range_end = bundle_id_range_start + bundle_wh
 
+            production_starting_interval = datetime.fromisoformat(
+                data["halfHourEndTime"]
+            ) - timedelta(minutes=30)
+
             transformed = {
                 "account_id": account_id,
+                "issuance_id": f"{device_id}-{production_starting_interval}",
                 "certificate_status": "Active",
                 "bundle_id_range_start": bundle_id_range_start,
                 "bundle_id_range_end": bundle_id_range_end,
                 "bundle_quantity": bundle_id_range_end - bundle_id_range_start + 1,
-                "energy_carrier": "Electricity",
+                "energy_carrier": "electricity",
                 "energy_source": "wind",
                 "face_value": bundle_wh,
                 "issuance_post_energy_carrier_conversion": False,
                 "device_id": device_id,
-                "production_starting_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                )
-                - timedelta(minutes=30),
+                "production_starting_interval": production_starting_interval,
                 "production_ending_interval": datetime.fromisoformat(
                     data["halfHourEndTime"]
                 ),
@@ -166,13 +168,12 @@ class ElexonClient:
                     datetime.utcnow()
                     + timedelta(days=365 * settings.CERTIFICATE_EXPIRY_YEARS)
                 ).date(),
-                "hash": "Some Hash",
                 "metadata_id": issuance_metadata_id,
                 "is_storage": is_storage,
             }
 
             # Validate and append the transformed data
-            valid_data = GranularCertificateBundle.model_validate(transformed)
+            valid_data = GranularCertificateBundleCreate.model_validate(transformed)
             mapped_data.append(valid_data)
 
         return mapped_data
