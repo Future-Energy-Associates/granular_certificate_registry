@@ -1,6 +1,6 @@
 # Imports
 from esdbclient import EventStoreDBClient
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from gc_registry.core.database import db, events
@@ -17,7 +17,13 @@ def create_device(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    device = models.Device.create(device_base, write_session, read_session, esdb_client)
+    devices = models.Device.create(
+        device_base, write_session, read_session, esdb_client
+    )
+    if not devices:
+        raise HTTPException(status_code=500, detail="Could not create Device")
+
+    device = devices[0].model_dump()
 
     return device
 
