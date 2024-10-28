@@ -48,7 +48,7 @@ def create_bundle_hash(
     """
 
     return sha256(
-        f"{gc_bundle.model_dump_json(exclude=["id", "created_at", "hash"] + mutable_gc_attributes)}{nonce}".encode()
+        f"{gc_bundle.model_dump_json(exclude=['id', 'created_at', 'hash'] + mutable_gc_attributes)}{nonce}".encode()
     ).hexdigest()
 
 
@@ -113,6 +113,7 @@ def split_certificate_bundle(
     gc_bundle_child_1.bundle_id_range_end = (
         gc_bundle_child_1.bundle_id_range_start + size_to_split
     )
+
     gc_bundle_child_1.hash = create_bundle_hash(gc_bundle_child_1, gc_bundle.hash)
 
     gc_bundle_child_2.bundle_quantity = gc_bundle.bundle_quantity - size_to_split
