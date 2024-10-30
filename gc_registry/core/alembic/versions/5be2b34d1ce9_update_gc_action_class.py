@@ -24,6 +24,17 @@ def upgrade() -> None:
     op.add_column('granularcertificateaction', sa.Column('device_id', sa.Integer(), nullable=True))
     op.add_column('granularcertificateaction', sa.Column('action_response_status', sqlmodel.sql.sqltypes.AutoString(), nullable=False))
     op.drop_column('granularcertificateaction', 'id_to_update_to')
+
+    # Create a sequence for the id column
+    op.execute("CREATE SEQUENCE granularcertificateaction_id_seq")
+
+    # Alter the id column to use the sequence and set it as the primary key
+    op.execute("""
+        ALTER TABLE granularcertificateaction
+        ALTER COLUMN id SET DEFAULT nextval('granularcertificateaction_id_seq'),
+        ALTER COLUMN id SET NOT NULL
+    """)
+    op.create_primary_key('granularcertificateaction_pkey', 'granularcertificateaction', ['id'])
     # ### end Alembic commands ###
 
 
@@ -32,4 +43,19 @@ def downgrade() -> None:
     op.add_column('granularcertificateaction', sa.Column('id_to_update_to', sa.INTEGER(), autoincrement=False, nullable=True))
     op.drop_column('granularcertificateaction', 'action_response_status')
     op.drop_column('granularcertificateaction', 'device_id')
+
+    op.drop_constraint('granularcertificateaction_pkey', 'granularcertificateaction', type_='primary')
+
+    # Remove the default value and sequence from the id column
+    op.execute("""
+        ALTER TABLE granularcertificateaction
+        ALTER COLUMN id DROP DEFAULT,
+        ALTER COLUMN id DROP NOT NULL
+    """)
+
+    # Drop the sequence
+    op.execute("DROP SEQUENCE granularcertificateaction_id_seq")
+
+    # Recreate the primary key constraint
+    op.create_primary_key('granularcertificateaction_pkey', 'granularcertificateaction', ['id'])
     # ### end Alembic commands ###
