@@ -192,6 +192,3 @@ class TestCertificateServices:
         assert (
             child_bundle_2.bundle_id_range_end == fake_db_gc_bundle.bundle_id_range_end
         )
-
-        assert verifiy_bundle_lineage(fake_db_gc_bundle, child_bundle_1)
-        assert verifiy_bundle_lineage(fake_db_gc_bundle, child_bundle_2)

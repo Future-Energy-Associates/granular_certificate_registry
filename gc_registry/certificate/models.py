@@ -20,7 +20,7 @@ class GranularCertificateBundle(
 ):
     id: int | None = Field(
         default=None,
-        sa_column=Column(Integer, primary_key=True, autoincrement=True),
+        primary_key=True,
         description="A unique, incremental integer ID assigned to this bundle.",
     )
 
