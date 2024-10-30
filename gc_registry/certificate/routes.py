@@ -4,17 +4,21 @@ from sqlmodel import Session
 
 from gc_registry.certificate.models import (
     GranularCertificateAction,
+    GranularCertificateActionBase,
     GranularCertificateBundle,
+    IssuanceMetaData,
 )
 from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleBase,
+    IssuanceMetaDataBase,
 )
 from gc_registry.certificate.services import (
     create_bundle_hash,
     process_certificate_action,
 )
 from gc_registry.core.database import db, events
+from gc_registry.core.models.base import CertificateActionType
 
 # Router initialisation
 router = APIRouter(tags=["Certificates"])
@@ -47,11 +51,38 @@ def create_certificate_bundle(
     )
 
     if not db_certificate_bundles:
-        raise HTTPException(status_code=500, detail="Could not create Account")
+        raise HTTPException(status_code=500, detail="Could not create GC Bundle")
 
     db_certificate_bundle = db_certificate_bundles[0].model_dump()
 
     return db_certificate_bundle
+
+
+@router.post(
+    "/create_metadata",
+    response_model=IssuanceMetaData,
+    status_code=201,
+)
+def create_issuance_metadata(
+    issuance_metadata: IssuanceMetaDataBase,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+):
+    """Create GC issuance metadata with the specified properties."""
+
+    db_issuance_metadata = IssuanceMetaData.create(
+        issuance_metadata, write_session, read_session, esdb_client
+    )
+
+    if not db_issuance_metadata:
+        raise HTTPException(
+            status_code=500, detail="Could not create Issuance Metadata"
+        )
+
+    db_issuance_metadata = db_issuance_metadata[0].model_dump()
+
+    return db_issuance_metadata
 
 
 @router.post(
@@ -60,14 +91,14 @@ def create_certificate_bundle(
     status_code=202,
 )
 def certificate_bundle_transfer(
-    certificate_bundle_action: GranularCertificateAction,
+    certificate_bundle_action: GranularCertificateActionBase,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
 
-    certificate_bundle_action.action_type = "transfer"
+    certificate_bundle_action.action_type = CertificateActionType.TRANSFER
     db_certificate_action = process_certificate_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
