@@ -11,7 +11,6 @@ from gc_registry.certificate.services import (
     issue_certificates_in_date_range,
     split_certificate_bundle,
     validate_granular_certificate_bundle,
-    verifiy_bundle_lineage,
 )
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device

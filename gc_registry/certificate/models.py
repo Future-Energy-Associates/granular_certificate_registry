@@ -1,4 +1,3 @@
-from sqlalchemy import Column, Integer
 from sqlmodel import Field
 
 from gc_registry import utils
