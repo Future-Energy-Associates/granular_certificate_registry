@@ -194,7 +194,7 @@ class ElexonClient:
         df = df[df.bmUnit.notna()]
 
         # Filter by bmu_ids
-        df = df[df.bmUnit.str.contains("|".join(bmu_ids))]
+        df = df[df.bmUnit.isin(bmu_ids)]
         df = df[["bmUnit", "installedCapacity"]]
         df["installedCapacity"] = df["installedCapacity"].astype(int)
 
