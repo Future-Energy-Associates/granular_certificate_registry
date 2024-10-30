@@ -9,12 +9,18 @@ from sqlmodel import Session, SQLModel, select
 from sqlmodel.sql.expression import SelectOfScalar
 
 from gc_registry.account.models import Account
-from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.certificate.models import (
+    GranularCertificateAction,
+    GranularCertificateBundle,
+    GranularCertificateBundleUpdate,
+)
 from gc_registry.certificate.schemas import (
     CertificateStatus,
     GranularCertificateActionBase,
     GranularCertificateBundleBase,
     GranularCertificateBundleCreate,
+    GranularCertificateBundleRead,
+    certificate_query_param_map,
     mutable_gc_attributes,
 )
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
@@ -115,7 +121,6 @@ def split_certificate_bundle(
     gc_bundle_child_1.bundle_id_range_end = (
         gc_bundle_child_1.bundle_id_range_start + size_to_split
     )
-
     gc_bundle_child_1.hash = create_bundle_hash(gc_bundle_child_1, gc_bundle.hash)
 
     gc_bundle_child_2.bundle_quantity = gc_bundle.bundle_quantity - size_to_split
@@ -302,18 +307,118 @@ def issue_certificates_in_date_range(
     return created_entities
 
 
+def process_certificate_action(
+    certificate_action: GranularCertificateActionBase,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> list[SQLModel] | None:
+    """Process the given certificate action.
+
+    Args:
+        certificate_action (GranularCertificateAction): The certificate action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    Returns:
+        list[GranularCertificateAction]: The list of certificates processed
+
+    """
+
+    # Action request datetimes are set prior to the operation; action complete datetimes are set
+    # using a default factory once the action entity is written to the DB post-completion
+    certificate_action.action_request_datetime = datetime.datetime.now(
+        tz=datetime.timezone.utc
+    )
+    certificate_action.action_complete_datetime_local = datetime.datetime.now()
+
+    certificate_action_functions = {
+        "transfer": transfer_certificates,
+        "query": query_certificates,
+        "cancel": cancel_certificates,
+    }
+
+    assert (
+        certificate_action.action_type in certificate_action_functions
+    ), "Invalid action type."
+
+    try:
+        certificate_action_functions[certificate_action.action_type](
+            certificate_action, write_session, read_session, esdb_client
+        )
+    except Exception as e:
+        logging.error(f"Error whilst processing certificate action: {str(e)}")
+        certificate_action.action_response_status = "rejected"
+    else:
+        certificate_action.action_response_status = "accepted"
+
+    db_certificate_action = GranularCertificateAction.create(
+        certificate_action, write_session, read_session, esdb_client
+    )
+    return db_certificate_action
+
+
+def query_certificates(
+    certificate_query: GranularCertificateActionBase, db_read_engine: Session
+) -> list[GranularCertificateBundleRead] | None:
+    """Query certificates based on the given filter parameters.
+
+    Args:
+        certificate_query (GranularCertificateAction): The certificate action
+        db_read_engine (Session): The database read session
+
+    Returns:
+        list[GranularCertificateAction]: The list of certificates
+
+    """
+
+    # Query certificates based on the given filter parameters
+    stmt = select(GranularCertificateBundle)
+    for query_param, query_value in certificate_query.model_dump().items():
+        if (query_param in certificate_query_param_map) & (query_value is not None):
+            if query_param == "certificate_period_start":
+                stmt = stmt.where(
+                    getattr(
+                        GranularCertificateBundle,
+                        certificate_query_param_map[query_param],
+                    )
+                    >= query_value
+                )
+            elif query_param == "certificate_period_end":
+                stmt = stmt.where(
+                    getattr(
+                        GranularCertificateBundle,
+                        certificate_query_param_map[query_param],
+                    )
+                    <= query_value
+                )
+            else:
+                stmt = stmt.where(
+                    getattr(
+                        GranularCertificateBundle,
+                        certificate_query_param_map[query_param],
+                    )
+                    == query_value
+                )
+
+    certificates = db_read_engine.exec(stmt).all()
+
+    return certificates
+
+
 def transfer_certificates(
     certificate_bundle_action: GranularCertificateActionBase,
-    db_write_engine: Session,
-    db_read_engine: Session,
+    write_session: Session,
+    read_session: Session,
     esdb_client: EventStoreDBClient,
 ) -> list[SQLModel] | None:
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account.
 
     Args:
         certificate_bundle_action (GranularCertificateAction): The certificate action
-        db_write_engine (Session): The database write session
-        db_read_engine (Session): The database read session
+        write_session (Session): The database write session
+        read_session (Session): The database read session
         esdb_client (EventStoreDBClient): The EventStoreDB client
 
     Returns:
@@ -321,13 +426,77 @@ def transfer_certificates(
 
     """
 
-    assert certificate_bundle_action.target_account_id, "Target account ID is required"
+    assert certificate_bundle_action.target_id, "Target account ID is required"
     assert Account.exists(
-        certificate_bundle_action.target_account_id, db_read_engine
+        certificate_bundle_action.target_id, write_session
     ), "Target account does not exist"
 
+    # Retrieve certificates to transfer
+    certificates_from_query = query_certificates(
+        certificate_bundle_action, read_session
+    )
+
+    if not certificates_from_query:
+        logging.error("No certificates found to transfer with given query parameters.")
+        return None
+
+    for certificate in certificates_from_query:
+        assert (
+            certificate.certificate_status == CertificateStatus.ACTIVE
+        ), f"Certificate with ID {certificate.issuance_id} is not active and cannot be transferred"
+
     # Split bundles if required
+    certificates_to_transfer = []
+    for certificate in certificates_from_query:
+        if certificate.bundle_quantity > certificate_bundle_action.certificate_quantity:
+            chlid_bundle_1, _child_bundle_2 = split_certificate_bundle(
+                certificate,
+                certificate_bundle_action.certificate_quantity,
+                write_session,
+                read_session,
+                esdb_client,
+            )
+            certificates_to_transfer.append(chlid_bundle_1)
+        else:
+            certificates_to_transfer.append(certificate)
 
     # Transfer certificates by updating account ID of target bundle
+    for certificate in certificates_to_transfer:
+        certificate_update = GranularCertificateBundleUpdate(
+            account_id=certificate_bundle_action.target_id
+        )
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
+
+    return
+
+
+def cancel_certificates(
+    certificate_bundle_action: GranularCertificateActionBase,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> list[SQLModel] | None:
+    """Cancel certificates matched to the given filter parameters.
+
+    Args:
+        certificate_bundle_action (GranularCertificateAction): The certificate action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    Returns:
+        list[GranularCertificateAction]: The list of certificates cancelled
+
+    """
+
+    # Retrieve certificates to cancel
+    certificates_to_cancel = query_certificates(certificate_bundle_action, read_session)
+
+    # Cancel certificates
+    for certificate in certificates_to_cancel:
+        certificate_update = GranularCertificateBundleUpdate(
+            certificate_status=CertificateStatus.CANCELLED
+        )
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
 
     return
