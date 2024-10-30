@@ -55,9 +55,8 @@ def create_bundle_hash(
         str: The hash of the child GC Bundle
     """
 
-    return sha256(
-        f"{gc_bundle.model_dump_json(exclude=['id', 'created_at', 'hash'] + mutable_gc_attributes)}{nonce}".encode()
-    ).hexdigest()
+    gc_bundle_dict = gc_bundle.model_dump_json(exclude=set(["id", "created_at", "hash"] + mutable_gc_attributes))
+    return sha256(f"{gc_bundle_dict}{nonce}".encode()).hexdigest()
 
 
 def verifiy_bundle_lineage(
@@ -113,8 +112,8 @@ def split_certificate_bundle(
     ), "The size to split must be less than the total certificates in the parent bundle"
 
     # Create two child bundles
-    gc_bundle_child_1 = GranularCertificateBundleBase(**gc_bundle.model_dump())
-    gc_bundle_child_2 = GranularCertificateBundleBase(**gc_bundle.model_dump())
+    gc_bundle_child_1 = GranularCertificateBundleCreate(**gc_bundle.model_dump())
+    gc_bundle_child_2 = GranularCertificateBundleCreate(**gc_bundle.model_dump())
 
     # Update the child bundles with the new quantities
     gc_bundle_child_1.bundle_quantity = size_to_split
