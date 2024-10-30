@@ -76,12 +76,8 @@ def validate_granular_certificate_bundle(
         db_session, device_id
     )
 
-    print("device_max_certificate_id",device_max_certificate_id)
-
     if not device_max_certificate_id:
         device_max_certificate_id = 0
-
-    print("gcb.bundle_id_range_start",gcb.bundle_id_range_start)
 
     # Validate the bundle face value is equal to the difference between the bundle ID range
     # and less than the device max watts hours
@@ -166,7 +162,6 @@ def issue_certificates_in_date_range(
         bundle_id_range_start = get_max_certificate_id_by_device_id(
             db_read_session, device.id
         )
-        print("bundle_id_range_start",bundle_id_range_start)
         if not bundle_id_range_start:
             bundle_id_range_start = 1
         else:
@@ -187,7 +182,7 @@ def issue_certificates_in_date_range(
 
         # Validate the certificates
         for certificate in certificates:
-            certificate.hash = create_bundle_hash(certificate,nonce="")
+            certificate.hash = create_bundle_hash(certificate, nonce="")
             certificate.issuance_id = create_issuance_id(certificate)
             validate_granular_certificate_bundle(
                 db_read_session, certificate, is_storage_device=device.is_storage

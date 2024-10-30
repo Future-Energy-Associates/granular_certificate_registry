@@ -54,13 +54,8 @@ def write_to_database(
         read_session.rollback()
         return None
 
-    if hasattr(entities[0], "issuance_id"):
-        id_attribute = "issuance_id"
-    else:
-        id_attribute = "id"
-
     batch_create_events(
-        entity_ids=[getattr(entity, id_attribute) for entity in entities],  # type: ignore
+        entity_ids=[entity.id for entity in entities],  # type: ignore
         entity_names=[entity.__class__.__name__ for entity in entities],
         event_type=EventTypes.CREATE,
         esdb_client=esdb_client,

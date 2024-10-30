@@ -2,8 +2,13 @@ import datetime
 
 import pytest
 
-from gc_registry.certificate.schemas import GranularCertificateBundleBase
+from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.certificate.schemas import (
+    GranularCertificateBundleBase,
+    GranularCertificateBundleCreate,
+)
 from gc_registry.certificate.services import (
+    create_bundle_hash,
     get_max_certificate_id_by_device_id,
     issue_certificates_in_date_range,
     validate_granular_certificate_bundle,
@@ -11,6 +16,24 @@ from gc_registry.certificate.services import (
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
 from gc_registry.settings import settings
+
+
+def test_certificate_create(
+    fake_db_gc_bundle, db_read_session, db_write_session, esdb_client
+):
+    bundle_dict = fake_db_gc_bundle.model_dump()
+    bundle_dict["id"] = None
+
+    fake_db_gc_bundle_2 = GranularCertificateBundleCreate.model_validate(bundle_dict)
+
+    fake_db_gc_bundle_2.hash = create_bundle_hash(fake_db_gc_bundle_2, nonce="")
+    fake_db_gc_bundle_2.issuance_id = f"{fake_db_gc_bundle_2.device_id}-{1234}"
+
+    fake_db_gc_bundle = GranularCertificateBundle.create(
+        fake_db_gc_bundle_2, db_write_session, db_read_session, esdb_client
+    )
+    assert fake_db_gc_bundle[0] is not None
+    assert fake_db_gc_bundle[0].id is not None
 
 
 def test_get_max_certificate_id_by_device_id(

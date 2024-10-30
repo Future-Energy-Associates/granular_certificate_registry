@@ -15,6 +15,7 @@ from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
 from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
+from gc_registry.certificate.schemas import GranularCertificateBundleCreate
 from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import (
@@ -377,9 +378,14 @@ def fake_db_gc_bundle(
         "emissions_factor_source": "Some Data Source",
     }
 
-    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+    gc_bundle_create = GranularCertificateBundleCreate.model_validate(gc_bundle_dict)
 
-    gc_bundle.hash = create_bundle_hash(gc_bundle,nonce="")
+    gc_bundle_create.hash = create_bundle_hash(gc_bundle_create, nonce="")
+    gc_bundle_create.issuance_id = (
+        f"{gc_bundle_create.device_id}-{gc_bundle_create.production_starting_interval}"
+    )
+
+    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_create.model_dump())
 
     gc_bundle_read = add_entity_to_write_and_read(
         gc_bundle, db_write_session, db_read_session
