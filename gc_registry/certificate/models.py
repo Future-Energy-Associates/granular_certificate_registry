@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from sqlmodel import Field
 
 from gc_registry import utils
@@ -6,6 +7,7 @@ from gc_registry.certificate.schemas import (
     GranularCertificateBundleBase,
     IssuanceMetaDataBase,
 )
+from gc_registry.core.models.base import CertificateStatus
 
 # issuance_id a unique non-sequential ID related to the issuance of the entire bundle,
 # specified as a concatenation of deviceID-EnergyCarrier-ProductionStartDatetime.
@@ -15,25 +17,22 @@ from gc_registry.certificate.schemas import (
 
 
 class GranularCertificateBundle(
-    utils.ActiveRecord, GranularCertificateBundleBase, table=True
+    GranularCertificateBundleBase, utils.ActiveRecord, table=True
 ):
     id: int | None = Field(
-        primary_key=True,
         default=None,
+        primary_key=True,
         description="A unique, incremental integer ID assigned to this bundle.",
     )
-    issuance_id: str = Field(
-        primary_key=True,
-        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
-        If the bundle is split through partial transfer or cancellation, this issuance ID
-        remains unchanged across each child GC Bundle.""",
-    )
-    hash: str = Field(
-        default=None,
-        description="""A unique hash assigned to this bundle at the time of issuance,
-        formed from the sha256 of the bundle's properties and, if the result of a bundle
-        split, a nonce taken from the hash of the parent bundle.""",
-    )
+
+
+class GranularCertificateBundleUpdate(BaseModel):
+    account_id: int | None = None
+    certificate_status: CertificateStatus | None = None
+    metadata_id: int | None = None
+    bundle_id_range_start: int | None = None
+    bundle_id_range_end: int | None = None
+    bundle_quantity: int | None = None
 
 
 # A Transfer object is specified by a User, and is stored in a transaction table that
