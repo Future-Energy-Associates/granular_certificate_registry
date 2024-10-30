@@ -58,6 +58,7 @@ class CertificateActionType(str, Enum):
     RECURRING_CLAIM = "recurring_claim"
     WITHDRAW = "withdraw"
     LOCK = "lock"
+    RESERVE = "reserve"
 
 
 class EventTypes(str, Enum):

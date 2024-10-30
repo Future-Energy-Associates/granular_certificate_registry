@@ -365,7 +365,8 @@ class GranularCertificateBundleRead(BaseModel):
 
 class GranularCertificateActionBase(utils.ActiveRecord):
     # TODO validate with an enum at the class definition level
-    action_type: str = Field(
+    action_type: str | None = Field(
+        default=None,
         description="The type of action to be performed on the GC Bundle.",
     )
     source_id: int = Field(
@@ -460,7 +461,7 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
     #     sa_column=Column(ARRAY(String(), String())),
     # )
-    action_response_status: str = Field(
+    action_response_status: str | None = Field(
         default=None,
         description="Specifies whether the requested action has been accepted or rejected by the registry.",
     )

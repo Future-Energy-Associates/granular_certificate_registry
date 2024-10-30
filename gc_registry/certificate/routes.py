@@ -16,6 +16,7 @@ from gc_registry.certificate.schemas import (
 from gc_registry.certificate.services import (
     create_bundle_hash,
     process_certificate_action,
+    query_certificates,
 )
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import CertificateActionType
@@ -97,7 +98,6 @@ def certificate_bundle_transfer(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
-
     certificate_bundle_action.action_type = CertificateActionType.TRANSFER
     db_certificate_action = process_certificate_action(
         certificate_bundle_action, write_session, read_session, esdb_client
@@ -108,18 +108,34 @@ def certificate_bundle_transfer(
 
 @router.get(
     "/query",
-    response_model=GranularCertificateActionRead,
+    response_model=GranularCertificateBundle,
     status_code=202,
 )
 def query_certificate_bundles(
     certificate_bundle_query: GranularCertificateAction,
+    read_session: Session = Depends(db.get_read_session),
+):
+    """Return all certificates from the specified Account that match the provided search criteria."""
+    certificates_from_query = query_certificates(certificate_bundle_query, read_session)
+
+    return certificates_from_query
+
+
+@router.post(
+    "/cancel",
+    response_model=GranularCertificateActionRead,
+    status_code=202,
+)
+def certificate_bundle_cancellation(
+    certificate_bundle_action: GranularCertificateAction,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    """Return all certificates from the specified Account that match the provided search criteria."""
-    db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_query, write_session, read_session, esdb_client
+    """Cancel a fixed number of certificates matched to the given filter parameters within the specified Account."""
+    certificate_bundle_action.action_type = CertificateActionType.CANCEL
+    db_certificate_action = process_certificate_action(
+        certificate_bundle_action, write_session, read_session, esdb_client
     )
 
     return db_certificate_action
@@ -137,25 +153,6 @@ def certificate_bundle_recurring_transfer(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Set up a protocol that transfers a fixed number of certificates matching the provided search criteria to a given target Account once per time period."""
-    db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, write_session, read_session, esdb_client
-    )
-
-    return db_certificate_action
-
-
-@router.post(
-    "/cancel",
-    response_model=GranularCertificateActionRead,
-    status_code=202,
-)
-def certificate_bundle_cancellation(
-    certificate_bundle_action: GranularCertificateAction,
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
-    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
-):
-    """Cancel a fixed number of certificates matched to the given filter parameters within the specified Account."""
     db_certificate_action = GranularCertificateAction.create(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
@@ -196,7 +193,8 @@ def certificate_bundle_claim(
     """Claim a fixed number of cancelled certificates matching the provided search criteria within a given Account,
     if the User is specified as the Beneficiary of those cancelled GCs. For more information on the claim process,
     please see page 15 of the EnergyTag GC Scheme Standard document."""
-    db_certificate_action = GranularCertificateAction.create(
+    certificate_bundle_action.action_type = CertificateActionType.CLAIM
+    db_certificate_action = process_certificate_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 
@@ -215,7 +213,9 @@ def certificate_bundle_withdraw(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """(Issuing Body only) - Withdraw a fixed number of certificates from the specified Account matching the provided search criteria."""
-    db_certificate_action = GranularCertificateAction.create(
+    # TODO add validation that only the IB user can access this endpoint
+    certificate_bundle_action.action_type = CertificateActionType.WITHDRAW
+    db_certificate_action = process_certificate_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 
@@ -234,7 +234,8 @@ def certificate_bundle_reserve(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Label a fixed number of certificates as Reserved from the specified Account matching the provided search criteria."""
-    db_certificate_action = GranularCertificateAction.create(
+    certificate_bundle_action.action_type = CertificateActionType.RESERVE
+    db_certificate_action = process_certificate_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 

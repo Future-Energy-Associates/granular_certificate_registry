@@ -338,6 +338,10 @@ def process_certificate_action(
     certificate_action_functions = {
         CertificateActionType.TRANSFER: transfer_certificates,
         CertificateActionType.CANCEL: cancel_certificates,
+        CertificateActionType.CLAIM: claim_certificates,
+        CertificateActionType.WITHDRAW: withdraw_certificates,
+        CertificateActionType.LOCK: lock_certificates,
+        CertificateActionType.RESERVE: reserve_certificates,
     }
 
     assert (
@@ -413,7 +417,7 @@ def transfer_certificates(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> list[SQLModel] | None:
+) -> None:
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account.
 
     Args:
@@ -421,9 +425,6 @@ def transfer_certificates(
         write_session (Session): The database write session
         read_session (Session): The database read session
         esdb_client (EventStoreDBClient): The EventStoreDB client
-
-    Returns:
-        list[GranularCertificateAction]: The list of certificates transferred
 
     """
 
@@ -484,7 +485,7 @@ def cancel_certificates(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> list[SQLModel] | None:
+) -> None:
     """Cancel certificates matched to the given filter parameters.
 
     Args:
@@ -492,9 +493,6 @@ def cancel_certificates(
         write_session (Session): The database write session
         read_session (Session): The database read session
         esdb_client (EventStoreDBClient): The EventStoreDB client
-
-    Returns:
-        list[GranularCertificateAction]: The list of certificates cancelled
 
     """
 
@@ -505,6 +503,141 @@ def cancel_certificates(
     for certificate in certificates_to_cancel:
         certificate_update = GranularCertificateBundleUpdate(
             certificate_status=CertificateStatus.CANCELLED
+        )
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
+
+    return
+
+
+def claim_certificates(
+    certificate_bundle_action: GranularCertificateActionBase,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> None:
+    """Claim certificates matched to the given filter parameters.
+
+    Args:
+        certificate_bundle_action (GranularCertificateAction): The certificate action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    """
+
+    # Claims need a beneficiary
+    assert (
+        certificate_bundle_action.beneficiary_id
+    ), "Beneficiary ID is required for GC claims"
+
+    # Retrieve certificates to claim
+    certificates_to_claim = query_certificates(certificate_bundle_action, read_session)
+
+    # Assert the certificates are in a cancelled state
+    for certificate in certificates_to_claim:
+        assert (
+            certificate.certificate_status == CertificateStatus.CANCELLED
+        ), f"Certificate with ID {certificate.issuance_id} is not cancelled and cannot be claimed"
+
+        certificate_update = GranularCertificateBundleUpdate(
+            certificate_status=CertificateStatus.CLAIMED
+        )
+
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
+
+    return
+
+
+def withdraw_certificates(
+    certificate_bundle_action: GranularCertificateActionBase,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> None:
+    """Withdraw certificates matched to the given filter parameters.
+
+    Args:
+        certificate_bundle_action (GranularCertificateAction): The certificate action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    """
+
+    # TODO add logic for removing withdrawn GCs from the main table
+
+    # Retrieve certificates to withdraw
+    certificates_to_withdraw = query_certificates(
+        certificate_bundle_action, read_session
+    )
+
+    # Withdraw certificates
+    for certificate in certificates_to_withdraw:
+        certificate_update = GranularCertificateBundleUpdate(
+            certificate_status=CertificateStatus.WITHDRAWN
+        )
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
+
+    return
+
+
+def lock_certificates(
+    certificate_bundle_action: GranularCertificateActionBase,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> list[SQLModel] | None:
+    """Lock certificates matched to the given filter parameters.
+
+    Args:
+        certificate_bundle_action (GranularCertificateAction): The certificate action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    Returns:
+        list[GranularCertificateAction]: The list of certificates locked
+
+    """
+
+    # Retrieve certificates to lock
+    certificates_to_lock = query_certificates(certificate_bundle_action, read_session)
+
+    # Lock certificates
+    for certificate in certificates_to_lock:
+        certificate_update = GranularCertificateBundleUpdate(
+            certificate_status=CertificateStatus.LOCKED
+        )
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
+
+    return
+
+
+def reserve_certificates(
+    certificate_bundle_action: GranularCertificateActionBase,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> list[SQLModel] | None:
+    """Reserve certificates matched to the given filter parameters.
+
+    Args:
+        certificate_bundle_action (GranularCertificateAction): The certificate action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    """
+
+    # Retrieve certificates to reserve
+    certificates_to_reserve = query_certificates(
+        certificate_bundle_action, read_session
+    )
+
+    # Reserve certificates
+    for certificate in certificates_to_reserve:
+        certificate_update = GranularCertificateBundleUpdate(
+            certificate_status=CertificateStatus.RESERVED
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 
