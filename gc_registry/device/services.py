@@ -26,5 +26,5 @@ def device_mw_capacity_to_wh_max(
 ) -> float:
     """Take the device capacity in MW and calculate the maximum Watt-Hours
     the device can produce in a given number of hours"""
-    WH_IN_MW = 1e6
-    return device_capacity_mw * WH_IN_MW * hours
+    W_IN_MW = 1e6
+    return device_capacity_mw * W_IN_MW * hours
