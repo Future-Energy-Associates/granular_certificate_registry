@@ -22,6 +22,7 @@ from gc_registry.device.services import (
 )
 from gc_registry.settings import settings
 
+
 def create_issuance_id(gcb: GranularCertificateBundleBase) -> str:
     return f"{gcb.device_id}-{gcb.production_starting_interval}"
 
@@ -143,7 +144,7 @@ def issue_certificates_in_date_range(
 
     # Issue certificates for each device
     certificates: list = []
-    bundle_id_range_start: int = None
+    bundle_id_range_start = None
     for device in devices:
         # Get the meter data for the device
         if not device.meter_data_id:
