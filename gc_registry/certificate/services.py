@@ -8,9 +8,11 @@ from sqlalchemy import func
 from sqlmodel import Session, SQLModel, select
 from sqlmodel.sql.expression import SelectOfScalar
 
+from gc_registry.account.models import Account
 from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.certificate.schemas import (
     CertificateStatus,
+    GranularCertificateActionBase,
     GranularCertificateBundleBase,
     GranularCertificateBundleCreate,
     mutable_gc_attributes,
@@ -297,3 +299,34 @@ def issue_certificates_in_date_range(
             )
 
     return created_entities
+
+
+def transfer_certificates(
+    certificate_bundle_action: GranularCertificateActionBase,
+    db_write_engine: Session,
+    db_read_engine: Session,
+    esdb_client: EventStoreDBClient,
+) -> list[SQLModel] | None:
+    """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account.
+
+    Args:
+        certificate_bundle_action (GranularCertificateAction): The certificate action
+        db_write_engine (Session): The database write session
+        db_read_engine (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    Returns:
+        list[GranularCertificateAction]: The list of certificates transferred
+
+    """
+
+    assert certificate_bundle_action.target_account_id, "Target account ID is required"
+    assert Account.exists(
+        certificate_bundle_action.target_account_id, db_read_engine
+    ), "Target account does not exist"
+
+    # Split bundles if required
+
+    # Transfer certificates by updating account ID of target bundle
+
+    return
