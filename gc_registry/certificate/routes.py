@@ -10,7 +10,10 @@ from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleBase,
 )
-from gc_registry.certificate.services import create_bundle_hash
+from gc_registry.certificate.services import (
+    create_bundle_hash,
+    process_certificate_action,
+)
 from gc_registry.core.database import db, events
 
 # Router initialisation
@@ -64,7 +67,8 @@ def certificate_bundle_transfer(
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
 
-    db_certificate_action = GranularCertificateAction.create(
+    certificate_bundle_action.action_type = "transfer"
+    db_certificate_action = process_certificate_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 
