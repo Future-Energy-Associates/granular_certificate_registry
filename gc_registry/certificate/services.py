@@ -55,7 +55,9 @@ def create_bundle_hash(
         str: The hash of the child GC Bundle
     """
 
-    gc_bundle_dict = gc_bundle.model_dump_json(exclude=set(["id", "created_at", "hash"] + mutable_gc_attributes))
+    gc_bundle_dict = gc_bundle.model_dump_json(
+        exclude=set(["id", "created_at", "hash"] + mutable_gc_attributes)
+    )
     return sha256(f"{gc_bundle_dict}{nonce}".encode()).hexdigest()
 
 
@@ -311,7 +313,7 @@ def process_certificate_action(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> list[SQLModel] | None:
+) -> GranularCertificateAction | None:
     """Process the given certificate action.
 
     Args:
@@ -334,7 +336,6 @@ def process_certificate_action(
 
     certificate_action_functions = {
         "transfer": transfer_certificates,
-        "query": query_certificates,
         "cancel": cancel_certificates,
     }
 
@@ -355,7 +356,7 @@ def process_certificate_action(
     db_certificate_action = GranularCertificateAction.create(
         certificate_action, write_session, read_session, esdb_client
     )
-    return db_certificate_action
+    return db_certificate_action[0]
 
 
 def query_certificates(
