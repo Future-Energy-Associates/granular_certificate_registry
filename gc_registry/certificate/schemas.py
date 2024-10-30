@@ -22,6 +22,17 @@ mutable_gc_attributes = [
     "is_deleted",
 ]
 
+certificate_query_param_map = {
+    "source_certificate_issuance_id": "issuance_id",
+    "source_certificate_bundle_id_range_start": "bundle_id_range_start",
+    "source_certificate_bundle_id_range_end": "bundle_id_range_end",
+    "certificate_period_start": None,
+    "certificate_period_end": None,
+    "device_id": "device_id",
+    "energy_source": "energy_source",
+    "certificate_status": "certificate_status",
+}
+
 
 class GranularCertificateBundleBase(BaseModel):
     """The GC Bundle is the primary unit of issuance and transfer within the EnergyTag standard, and only the Resgistry
@@ -416,7 +427,7 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         Of the GC Bundles identified, return the total number of certificates to action on,
         splitting GC Bundles from the start of the range where necessary.""",
     )
-    id: int | None = Field(
+    device_id: int | None = Field(
         description="Filter GC Bundles associated with the specified production device."
     )
     energy_source: str | None = Field(
@@ -424,9 +435,6 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     )
     certificate_status: CertificateStatus | None = Field(
         description="""Filter on the status of the GC Bundles."""
-    )
-    id_to_update_to: int | None = Field(
-        description="Update the associated Account of a GC Bundle."
     )
     certificate_status_to_update_to: str | None = Field(
         description="Update the status of a GC Bundle."
@@ -437,9 +445,13 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
     #     sa_column=Column(ARRAY(String(), String())),
     # )
+    action_response_status: str = Field(
+        description="Specifies whether the requested action has been accepted or rejected by the registry."
+    )
 
 
 class GranularCertificateActionRead(GranularCertificateActionBase):
-    action_response_status: str = Field(
-        description="Specifies whether the requested action has been accepted or rejected by the registry."
+    id: int | None = Field(
+        primary_key=True,
+        description="A unique ID assigned to this action.",
     )
