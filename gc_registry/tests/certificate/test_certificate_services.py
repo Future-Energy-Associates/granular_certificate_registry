@@ -4,12 +4,17 @@ import pytest
 from esdbclient import EventStoreDBClient
 from sqlmodel import Session
 
-from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.certificate.models import (
+    GranularCertificateBundle,
+    GranularCertificateActionBase,
+)
 from gc_registry.certificate.schemas import GranularCertificateBundleBase
 from gc_registry.certificate.services import (
     get_max_certificate_id_by_device_id,
     issue_certificates_in_date_range,
     split_certificate_bundle,
+    process_certificate_action,
+    query_certificates,
     validate_granular_certificate_bundle,
 )
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
@@ -191,3 +196,38 @@ class TestCertificateServices:
         assert (
             child_bundle_2.bundle_id_range_end == fake_db_gc_bundle.bundle_id_range_end
         )
+
+    def test_transfer_gcs(
+        self,
+        fake_db_gc_bundle: GranularCertificateBundle,
+        db_write_session: Session,
+        db_read_session: Session,
+        esdb_client: EventStoreDBClient,
+    ):
+        """
+        Transfer a fixed number of certificates from one account to another.
+        """
+
+        certificate_action = GranularCertificateActionBase(
+            action_type="transfer",
+            source_id=1,
+            target_id=2,
+            user_id=1,
+            source_certificate_issuance_id=fake_db_gc_bundle.issuance_id,
+            certificate_quantity=500,
+        )
+
+        db_certificate_action = process_certificate_action(
+            certificate_action, db_write_session, db_read_session, esdb_client
+        )
+
+        assert db_certificate_action.action_response_status == "accepted"
+
+        # Check that the target account received the split bundle
+        certificate_query = GranularCertificateActionBase(
+            action_type="query",
+            source_id=2,
+        )
+        certificate_transfered = query_certificates(certificate_query, db_read_session)
+
+        assert certificate_transfered[0].bundle_quantity == 500
