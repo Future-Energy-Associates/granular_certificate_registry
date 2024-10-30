@@ -49,6 +49,17 @@ class CertificateStatus(str, Enum):
     RESERVED = "Reserved"
 
 
+class CertificateActionType(str, Enum):
+    TRANSFER = "transfer"
+    RECURRING_TRANSFER = "recurring_transfer"
+    CANCEL = "cancel"
+    RECURRING_CANCEL = "recurring_cancel"
+    CLAIM = "claim"
+    RECURRING_CLAIM = "recurring_claim"
+    WITHDRAW = "withdraw"
+    LOCK = "lock"
+
+
 class EventTypes(str, Enum):
     CREATE = "CREATE"
     UPDATE = "UPDATE"

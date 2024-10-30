@@ -252,24 +252,32 @@ def fake_db_user(db_write_session: Session, db_read_session: Session) -> User:
 
 @pytest.fixture()
 def fake_db_account(db_write_session: Session, db_read_session: Session) -> Account:
-    account_dicts = [
-        {
-            "account_name": "fake_account_2",
-            "user_ids": [],
-            "roles": ["admin"],
-        },
-        {
-            "account_name": "fake_account",
-            "user_ids": [],
-            "roles": ["admin"],
-        },
-    ]
-    for account_dict in account_dicts:
-        account_write = Account.model_validate(account_dict)
+    account_dict = {
+        "account_name": "fake_account",
+        "user_ids": [],
+        "roles": ["admin"],
+    }
+    account_write = Account.model_validate(account_dict)
 
-        account_read = add_entity_to_write_and_read(
-            account_write, db_write_session, db_read_session
-        )
+    account_read = add_entity_to_write_and_read(
+        account_write, db_write_session, db_read_session
+    )
+
+    return account_read
+
+
+@pytest.fixture()
+def fake_db_account_2(db_write_session: Session, db_read_session: Session) -> Account:
+    account_dict = {
+        "account_name": "fake_account_2",
+        "user_ids": [],
+        "roles": ["admin"],
+    }
+    account_write = Account.model_validate(account_dict)
+
+    account_read = add_entity_to_write_and_read(
+        account_write, db_write_session, db_read_session
+    )
 
     return account_read
 

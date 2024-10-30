@@ -23,6 +23,7 @@ from gc_registry.certificate.schemas import (
     certificate_query_param_map,
     mutable_gc_attributes,
 )
+from gc_registry.core.models.base import CertificateActionType
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.services import (
     device_mw_capacity_to_wh_max,
@@ -335,8 +336,8 @@ def process_certificate_action(
     certificate_action.action_complete_datetime_local = datetime.datetime.now()
 
     certificate_action_functions = {
-        "transfer": transfer_certificates,
-        "cancel": cancel_certificates,
+        CertificateActionType.TRANSFER: transfer_certificates,
+        CertificateActionType.CANCEL: cancel_certificates,
     }
 
     assert (
@@ -445,26 +446,34 @@ def transfer_certificates(
             certificate.certificate_status == CertificateStatus.ACTIVE
         ), f"Certificate with ID {certificate.issuance_id} is not active and cannot be transferred"
 
-    # Split bundles if required
+    # Split bundles if required, but only if certificate_quantity is supplied
     certificates_to_transfer = []
-    for certificate in certificates_from_query:
-        if certificate.bundle_quantity > certificate_bundle_action.certificate_quantity:
-            chlid_bundle_1, _child_bundle_2 = split_certificate_bundle(
-                certificate,
-                certificate_bundle_action.certificate_quantity,
-                write_session,
-                read_session,
-                esdb_client,
-            )
-            certificates_to_transfer.append(chlid_bundle_1)
-        else:
-            certificates_to_transfer.append(certificate)
+    if certificate_bundle_action.certificate_quantity is not None:
+        for certificate in certificates_from_query:
+            certificate = write_session.merge(certificate)
+            if (
+                certificate.bundle_quantity
+                > certificate_bundle_action.certificate_quantity
+            ):
+                chlid_bundle_1, _child_bundle_2 = split_certificate_bundle(
+                    certificate,
+                    certificate_bundle_action.certificate_quantity,
+                    write_session,
+                    read_session,
+                    esdb_client,
+                )
+                certificates_to_transfer.append(chlid_bundle_1)
+            else:
+                certificates_to_transfer.append(certificate)
+    else:
+        certificates_to_transfer = certificates_from_query
 
     # Transfer certificates by updating account ID of target bundle
     for certificate in certificates_to_transfer:
         certificate_update = GranularCertificateBundleUpdate(
             account_id=certificate_bundle_action.target_id
         )
+        certificate = write_session.merge(certificate)
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 
     return

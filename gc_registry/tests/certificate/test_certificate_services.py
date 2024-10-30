@@ -4,6 +4,7 @@ import pytest
 from esdbclient import EventStoreDBClient
 from sqlmodel import Session
 
+from gc_registry.account.models import Account
 from gc_registry.certificate.models import (
     GranularCertificateBundle,
     GranularCertificateActionBase,
@@ -20,6 +21,7 @@ from gc_registry.certificate.services import (
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
 from gc_registry.settings import settings
+from gc_registry.user.models import User
 
 
 class TestCertificateServices:
@@ -199,6 +201,9 @@ class TestCertificateServices:
 
     def test_transfer_gcs(
         self,
+        fake_db_account: Account,
+        fake_db_account_2: Account,
+        fake_db_user: User,
         fake_db_gc_bundle: GranularCertificateBundle,
         db_write_session: Session,
         db_read_session: Session,
@@ -210,9 +215,9 @@ class TestCertificateServices:
 
         certificate_action = GranularCertificateActionBase(
             action_type="transfer",
-            source_id=1,
-            target_id=2,
-            user_id=1,
+            source_id=fake_db_account.id,
+            target_id=fake_db_account_2.id,
+            user_id=fake_db_user.id,
             source_certificate_issuance_id=fake_db_gc_bundle.issuance_id,
             certificate_quantity=500,
         )
@@ -226,7 +231,8 @@ class TestCertificateServices:
         # Check that the target account received the split bundle
         certificate_query = GranularCertificateActionBase(
             action_type="query",
-            source_id=2,
+            user_id=fake_db_user.id,
+            source_id=fake_db_account_2.id,
         )
         certificate_transfered = query_certificates(certificate_query, db_read_session)
 
