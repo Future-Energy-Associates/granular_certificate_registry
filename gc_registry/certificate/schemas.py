@@ -14,6 +14,26 @@ from gc_registry.core.models.base import (
 
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
+mutable_gc_attributes = [
+    "certificate_status",
+    "account_id",
+    "sdr_allocation_id",
+    "storage_efficiency_factor",
+    "is_deleted",
+]
+
+certificate_query_param_map = {
+    "source_id": "account_id",
+    "source_certificate_issuance_id": "issuance_id",
+    "source_certificate_bundle_id_range_start": "bundle_id_range_start",
+    "source_certificate_bundle_id_range_end": "bundle_id_range_end",
+    "certificate_period_start": None,
+    "certificate_period_end": None,
+    "device_id": "device_id",
+    "energy_source": "energy_source",
+    "certificate_status": "certificate_status",
+}
+
 
 class GranularCertificateBundleBase(BaseModel):
     """The GC Bundle is the primary unit of issuance and transfer within the EnergyTag standard, and only the Resgistry
@@ -30,16 +50,9 @@ class GranularCertificateBundleBase(BaseModel):
     """
 
     issuance_id: str = Field(
-        primary_key=True,
         description="""A unique identifier assigned to the GC Bundle at the time of issuance.
         If the bundle is split through partial transfer or cancellation, this issuance ID
         remains unchanged across each child GC Bundle.""",
-    )
-    hash: str = Field(
-        default=None,
-        description="""A unique hash assigned to this bundle at the time of issuance,
-        formed from the sha256 of the bundle's properties and, if the result of a bundle
-        split, a nonce taken from the hash of the parent bundle.""",
     )
 
     ### Mutable Attributes ###
@@ -61,12 +74,10 @@ class GranularCertificateBundleBase(BaseModel):
                         clearly ascending manner, displayed on the GC Bundle instance by start and end IDs indicating the minimum
                         and maximum IDs contained within the Bundle, inclusive of both range end points and all integers
                         within that range.""",
-        primary_key=True,
     )
     bundle_id_range_end: int = Field(
         description="""The start and end range IDs of GC Bundles may change as they are split and transferred between Accounts,
                        or partially cancelled.""",
-        primary_key=True,
     )
     bundle_quantity: int = Field(
         description="""The quantity of Granular Certificates within this GC Bundle, according to a
@@ -134,7 +145,7 @@ class GranularCertificateBundleBase(BaseModel):
 
 
 class GranularCertificateBundleCreate(GranularCertificateBundleBase):
-    pass
+    hash: str | None = None
 
 
 class IssuanceMetaDataBase(BaseModel):
@@ -348,7 +359,8 @@ class GranularCertificateBundleRead(BaseModel):
 
 class GranularCertificateActionBase(utils.ActiveRecord):
     # TODO validate with an enum at the class definition level
-    action_type: str = Field(
+    action_type: str | None = Field(
+        default=None,
         description="The type of action to be performed on the GC Bundle.",
     )
     source_id: int = Field(
@@ -358,15 +370,19 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified."
     )
     target_id: int | None = Field(
-        description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to."
+        default=None,
+        description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to.",
     )
-    source_certificate_issuance_id: int | None = Field(
-        description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID."
+    source_certificate_issuance_id: str | None = Field(
+        default=None,
+        description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID.",
     )
     source_certificate_bundle_id_range_start: int | None = Field(
+        default=None,
         description="If an issuance ID is specified, returns a GC Bundle containing all certificates between and inclusive of the range start and end IDs provided.",
     )
     source_certificate_bundle_id_range_end: int | None = Field(
+        default=None,
         description="If an issuance ID is specified, returns a GC Bundle containing all certificates between and inclusive of the range start and end IDs provided.",
     )
     action_request_datetime: datetime.datetime = Field(
@@ -386,45 +402,52 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         default_factory=datetime.datetime.now,
     )
     initial_action_datetime: datetime.datetime | None = Field(
+        default=None,
         description="If recurring, the UTC datetime of the first action that is to be completed.",
     )
     recurring_action_period_units: str | None = Field(
-        description="If recurring, the unit of time described by the recurring_action_period_quantity field, for example: 'days', 'weeks', 'months', 'years'."
+        default=None,
+        description="If recurring, the unit of time described by the recurring_action_period_quantity field, for example: 'days', 'weeks', 'months', 'years'.",
     )
     recurring_action_period_quantity: int | None = Field(
-        description="If recurring, the number of units of time (specified by the units field) between each action."
+        default=None,
+        description="If recurring, the number of units of time (specified by the units field) between each action.",
     )
     number_of_recurring_actions: int | None = Field(
-        description="If recurring, including the first action, the number of recurring actions to perform before halting the recurring action."
+        default=None,
+        description="If recurring, including the first action, the number of recurring actions to perform before halting the recurring action.",
     )
     beneficiary: str | None = Field(
-        description="The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. If not specified, the Account holder is treated as the Beneficiary."
+        default=None,
+        description="The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. If not specified, the Account holder is treated as the Beneficiary.",
     )
     certificate_period_start: datetime.datetime | None = Field(
-        description="The UTC datetime from which to filter GC Bundles within the specified Account."
+        default=None,
+        description="The UTC datetime from which to filter GC Bundles within the specified Account.",
     )
     certificate_period_end: datetime.datetime | None = Field(
-        description="The UTC datetime up to which GC Bundles within the specified Account are to be filtered."
+        default=None,
+        description="The UTC datetime up to which GC Bundles within the specified Account are to be filtered.",
     )
     certificate_quantity: int | None = Field(
+        default=None,
         description="""Overrides GC Bundle range start and end IDs, if specified.
         Of the GC Bundles identified, return the total number of certificates to action on,
         splitting GC Bundles from the start of the range where necessary.""",
     )
-    id: int | None = Field(
-        description="Filter GC Bundles associated with the specified production device."
+    device_id: int | None = Field(
+        default=None,
+        description="Filter GC Bundles associated with the specified production device.",
     )
     energy_source: str | None = Field(
+        default=None,
         description="Filter GC Bundles based on the fuel type used by the production Device.",
     )
     certificate_status: CertificateStatus | None = Field(
-        description="""Filter on the status of the GC Bundles."""
-    )
-    id_to_update_to: int | None = Field(
-        description="Update the associated Account of a GC Bundle."
+        default=None, description="""Filter on the status of the GC Bundles."""
     )
     certificate_status_to_update_to: str | None = Field(
-        description="Update the status of a GC Bundle."
+        default=None, description="Update the status of a GC Bundle."
     )
     is_deleted: bool = Field(default=False)
     # TODO this currently can't pass Pydantic validation, need to revisit
@@ -432,9 +455,14 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
     #     sa_column=Column(ARRAY(String(), String())),
     # )
+    action_response_status: str | None = Field(
+        default=None,
+        description="Specifies whether the requested action has been accepted or rejected by the registry.",
+    )
 
 
 class GranularCertificateActionRead(GranularCertificateActionBase):
-    action_response_status: str = Field(
-        description="Specifies whether the requested action has been accepted or rejected by the registry."
+    id: int | None = Field(
+        primary_key=True,
+        description="A unique ID assigned to this action.",
     )

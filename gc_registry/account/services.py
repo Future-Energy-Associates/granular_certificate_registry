@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlmodel import select
 
 from gc_registry.account.models import Account
 from gc_registry.user.models import User
