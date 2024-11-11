@@ -54,12 +54,6 @@ class GranularCertificateBundleBase(BaseModel):
         If the bundle is split through partial transfer or cancellation, this issuance ID
         remains unchanged across each child GC Bundle.""",
     )
-    hash: str = Field(
-        default=None,
-        description="""A unique hash assigned to this bundle at the time of issuance,
-        formed from the sha256 of the bundle's properties and, if the result of a bundle
-        split, a nonce taken from the hash of the parent bundle.""",
-    )
 
     ### Mutable Attributes ###
     certificate_status: CertificateStatus = Field(
@@ -151,7 +145,7 @@ class GranularCertificateBundleBase(BaseModel):
 
 
 class GranularCertificateBundleCreate(GranularCertificateBundleBase):
-    pass
+    hash: str | None = None
 
 
 class IssuanceMetaDataBase(BaseModel):

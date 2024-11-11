@@ -149,6 +149,10 @@ class ElexonClient:
             # E.g., if bundle_wh = 1000, bundle_id_range_start = 0, bundle_id_range_end = 999
             bundle_id_range_end = bundle_id_range_start + bundle_wh - 1
 
+            production_starting_interval = datetime.fromisoformat(
+                data["halfHourEndTime"]
+            ) - timedelta(minutes=30)
+
             transformed = {
                 "account_id": account_id,
                 "certificate_status": CertificateStatus.ACTIVE,
@@ -201,7 +205,7 @@ class ElexonClient:
         df = df[df.bmUnit.notna()]
 
         # Filter by bmu_ids
-        df = df[df.bmUnit.str.contains("|".join(bmu_ids))]
+        df = df[df.bmUnit.isin(bmu_ids)]
         df = df[["bmUnit", "installedCapacity"]]
         df["installedCapacity"] = df["installedCapacity"].astype(int)
 

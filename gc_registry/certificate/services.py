@@ -147,6 +147,10 @@ def split_certificate_bundle(
     return db_gc_bundle_child_1[0], db_gc_bundle_child_2[0]  # type: ignore
 
 
+def create_issuance_id(gcb: GranularCertificateBundleBase) -> str:
+    return f"{gcb.device_id}-{gcb.production_starting_interval}"
+
+
 def get_max_certificate_id_by_device_id(
     db_session: Session, device_id: int
 ) -> int | None:
@@ -223,8 +227,8 @@ def validate_granular_certificate_bundle(
 def issue_certificates_in_date_range(
     from_datetime: datetime.datetime,
     to_datetime: datetime.datetime,
-    db_write_engine: Session,
-    db_read_engine: Session,
+    db_write_session: Session,
+    db_read_session: Session,
     esdb_client: EventStoreDBClient,
     issuance_metadata_id: int,
     meter_data_client: ElexonClient,
@@ -239,8 +243,8 @@ def issue_certificates_in_date_range(
     Args:
         from_datetime (datetime.datetime): The start of the period
         to_datetime (datetime.datetime): The end of the period
-        db_write_engine (Session): The database write session
-        db_read_engine (Session): The database read session
+        db_write_session (Session): The database write session
+        db_read_session (Session): The database read session
         issuance_metadata_id (int): The issuance metadata ID
         meter_data_client (MeterDataClient, optional): The meter data client. Defaults to Depends(ElexonClient).
 
@@ -250,14 +254,17 @@ def issue_certificates_in_date_range(
     """
 
     # Get the devices in the registry
-    devices = get_all_devices(db_read_engine)
+    devices = get_all_devices(db_read_session)
 
     if not devices:
         logging.error("No devices found in the registry")
         return None
 
+    created_entities = None
+
     # Issue certificates for each device
     certificates: list = []
+    bundle_id_range_start = None
     for device in devices:
         # Get the meter data for the device
         if not device.meter_data_id:
@@ -281,7 +288,7 @@ def issue_certificates_in_date_range(
 
         # Map the meter data to certificates
         bundle_id_range_start = get_max_certificate_id_by_device_id(
-            db_read_engine, device.id
+            db_read_session, device.id
         )
         if not bundle_id_range_start:
             bundle_id_range_start = 1
@@ -303,14 +310,16 @@ def issue_certificates_in_date_range(
 
         # Validate the certificates
         for certificate in certificates:
+            certificate.hash = create_bundle_hash(certificate, nonce="")
+            certificate.issuance_id = create_issuance_id(certificate)
             validate_granular_certificate_bundle(
-                db_read_engine, certificate, is_storage_device=device.is_storage
+                db_read_session, certificate, is_storage_device=device.is_storage
             )
 
             # Commit the certificate to the database
             # TODO: Consider using bulk transaction - will require change in validation of bundle_id_range_start and end
             created_entities = GranularCertificateBundle.create(
-                certificate, db_write_engine, db_read_engine, esdb_client
+                certificate, db_write_session, db_read_session, esdb_client
             )
 
     return created_entities
