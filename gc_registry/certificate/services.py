@@ -2,6 +2,7 @@ import datetime
 import logging
 from hashlib import sha256
 
+import pandas as pd
 from esdbclient import EventStoreDBClient
 from fluent_validator import validate  # type: ignore
 from sqlalchemy import func
@@ -274,6 +275,9 @@ def issue_certificates_in_date_range(
         if not meter_data:
             logging.info(f"No meter data retrieved for device: {device.meter_data_id}")
             continue
+
+        meter_data_df = pd.DataFrame(meter_data)
+        meter_data = meter_data_client.resample_hh_data_to_hourly(meter_data_df)
 
         # Map the meter data to certificates
         bundle_id_range_start = get_max_certificate_id_by_device_id(
