@@ -85,12 +85,12 @@ def verifiy_bundle_lineage(
 
 
 def split_certificate_bundle(
-    gc_bundle: GranularCertificateBundle,
+    gc_bundle: GranularCertificateBundle | GranularCertificateBundleRead,
     size_to_split: int,
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-):
+) -> tuple[GranularCertificateBundle, GranularCertificateBundle]:
     """Given a GC Bundle, split it into two child bundles and return them.
 
     Example operation: a parent bundle with 100 certificates, when passed a
@@ -135,12 +135,16 @@ def split_certificate_bundle(
     # Write the child bundles to the database
     db_gc_bundle_child_1 = GranularCertificateBundle.create(
         gc_bundle_child_1, write_session, read_session, esdb_client
-    )[0]
+    )
     db_gc_bundle_child_2 = GranularCertificateBundle.create(
         gc_bundle_child_2, write_session, read_session, esdb_client
-    )[0]
+    )
 
-    return db_gc_bundle_child_1, db_gc_bundle_child_2
+    if not db_gc_bundle_child_1 or not db_gc_bundle_child_2:
+        logging.error("Error creating child bundles")
+        return None
+
+    return db_gc_bundle_child_1[0], db_gc_bundle_child_2[0]
 
 
 def get_max_certificate_id_by_device_id(
@@ -282,12 +286,12 @@ def issue_certificates_in_date_range(
             bundle_id_range_start += 1
 
         certificates = meter_data_client.map_generation_to_certificates(
-            meter_data,
-            bundle_id_range_start,
-            device.account_id,
-            device.id,
-            device.is_storage,
-            issuance_metadata_id,
+            generation_data=meter_data,
+            bundle_id_range_start=bundle_id_range_start,
+            account_id=device.account_id,
+            device_id=device.id,
+            is_storage=device.is_storage,
+            issuance_metadata_id=issuance_metadata_id,
         )
 
         if not certificates:
@@ -346,7 +350,7 @@ def process_certificate_action(
 
     assert (
         certificate_action.action_type in certificate_action_functions
-    ), "Invalid action type."
+    ), "Invalid action type."  # type: ignore
 
     try:
         certificate_action_functions[certificate_action.action_type](
@@ -361,6 +365,10 @@ def process_certificate_action(
     db_certificate_action = GranularCertificateAction.create(
         certificate_action, write_session, read_session, esdb_client
     )
+    if not db_certificate_action:
+        logging.error("Error creating certificate action entity")
+        return None
+
     return db_certificate_action[0]
 
 
@@ -389,7 +397,7 @@ def query_certificates(
                         certificate_query_param_map[query_param],
                     )
                     >= query_value
-                )
+                )  # type: ignore
             elif query_param == "certificate_period_end":
                 stmt = stmt.where(
                     getattr(
@@ -397,7 +405,7 @@ def query_certificates(
                         certificate_query_param_map[query_param],
                     )
                     <= query_value
-                )
+                )  # type: ignore
             else:
                 stmt = stmt.where(
                     getattr(
@@ -405,7 +413,7 @@ def query_certificates(
                         certificate_query_param_map[query_param],
                     )
                     == query_value
-                )
+                )  # type: ignore
 
     certificates = db_read_engine.exec(stmt).all()
 
@@ -475,7 +483,7 @@ def transfer_certificates(
             account_id=certificate_bundle_action.target_id
         )
         certificate = write_session.merge(certificate)
-        certificate.update(certificate_update, write_session, read_session, esdb_client)
+        certificate.update(certificate_update, write_session, read_session, esdb_client)  # type: ignore
 
     return
 
@@ -498,6 +506,10 @@ def cancel_certificates(
 
     # Retrieve certificates to cancel
     certificates_to_cancel = query_certificates(certificate_bundle_action, read_session)
+
+    if not certificates_to_cancel:
+        logging.info("No certificates found to cancel with given query parameters.")
+        return
 
     # Cancel certificates
     for certificate in certificates_to_cancel:

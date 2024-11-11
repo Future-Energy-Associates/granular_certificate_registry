@@ -6,16 +6,16 @@ from sqlmodel import Session
 
 from gc_registry.account.models import Account
 from gc_registry.certificate.models import (
-    GranularCertificateBundle,
     GranularCertificateActionBase,
+    GranularCertificateBundle,
 )
 from gc_registry.certificate.schemas import GranularCertificateBundleBase
 from gc_registry.certificate.services import (
     get_max_certificate_id_by_device_id,
     issue_certificates_in_date_range,
-    split_certificate_bundle,
     process_certificate_action,
     query_certificates,
+    split_certificate_bundle,
     validate_granular_certificate_bundle,
 )
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient

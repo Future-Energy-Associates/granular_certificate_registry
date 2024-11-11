@@ -235,6 +235,11 @@ class GranularCertificateBundleRead(BaseModel):
     )
 
     ### Bundle Characteristics ###
+    issuance_id: str = Field(
+        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
+        If the bundle is split through partial transfer or cancellation, this issuance ID
+        remains unchanged across each child GC Bundle.""",
+    )
     energy_carrier: str = Field(
         description="The form of energy that the GC Bundle represents, for example: Electricity, Hydrogen, Ammonia. In the current version of the standard (v2), this field is always Electricity.",
     )
