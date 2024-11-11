@@ -34,8 +34,8 @@ from gc_registry.settings import settings
 
 
 def create_bundle_hash(
-    gc_bundle: GranularCertificateBundle | GranularCertificateBundleCreate,
-    nonce: str = "",
+    gc_bundle: GranularCertificateBundle | GranularCertificateBundleBase,
+    nonce: str | None = "",
 ):
     """
     Given a GC Bundle and a nonce taken from the hash of a parent bundle,
@@ -130,7 +130,7 @@ def split_certificate_bundle(
     gc_bundle_child_2.hash = create_bundle_hash(gc_bundle_child_2, gc_bundle.hash)
 
     # Mark the parent bundle as deleted
-    gc_bundle.delete(write_session, read_session, esdb_client)
+    gc_bundle.delete(write_session, read_session, esdb_client)  # type: ignore
 
     # Write the child bundles to the database
     db_gc_bundle_child_1 = GranularCertificateBundle.create(
@@ -141,10 +141,9 @@ def split_certificate_bundle(
     )
 
     if not db_gc_bundle_child_1 or not db_gc_bundle_child_2:
-        logging.error("Error creating child bundles")
-        return None
+        raise ValueError("Error creating child bundles")
 
-    return db_gc_bundle_child_1[0], db_gc_bundle_child_2[0]
+    return db_gc_bundle_child_1[0], db_gc_bundle_child_2[0]  # type: ignore
 
 
 def get_max_certificate_id_by_device_id(
@@ -353,7 +352,7 @@ def process_certificate_action(
     ), "Invalid action type."  # type: ignore
 
     try:
-        certificate_action_functions[certificate_action.action_type](
+        certificate_action_functions[certificate_action.action_type](  # type: ignore
             certificate_action, write_session, read_session, esdb_client
         )
     except Exception as e:
@@ -369,12 +368,12 @@ def process_certificate_action(
         logging.error("Error creating certificate action entity")
         return None
 
-    return db_certificate_action[0]
+    return db_certificate_action[0]  # type: ignore
 
 
 def query_certificates(
     certificate_query: GranularCertificateActionBase, db_read_engine: Session
-) -> list[GranularCertificateBundleRead] | None:
+) -> list[GranularCertificateBundle] | None:
     """Query certificates based on the given filter parameters.
 
     Args:
@@ -387,33 +386,33 @@ def query_certificates(
     """
 
     # Query certificates based on the given filter parameters
-    stmt = select(GranularCertificateBundle)
+    stmt = select(GranularCertificateBundle)  # type: ignore
     for query_param, query_value in certificate_query.model_dump().items():
         if (query_param in certificate_query_param_map) & (query_value is not None):
             if query_param == "certificate_period_start":
                 stmt = stmt.where(
                     getattr(
                         GranularCertificateBundle,
-                        certificate_query_param_map[query_param],
+                        certificate_query_param_map[query_param],  # type: ignore
                     )
                     >= query_value
-                )  # type: ignore
+                )
             elif query_param == "certificate_period_end":
                 stmt = stmt.where(
                     getattr(
                         GranularCertificateBundle,
-                        certificate_query_param_map[query_param],
+                        certificate_query_param_map[query_param],  # type: ignore
                     )
                     <= query_value
-                )  # type: ignore
+                )
             else:
                 stmt = stmt.where(
                     getattr(
                         GranularCertificateBundle,
-                        certificate_query_param_map[query_param],
+                        certificate_query_param_map[query_param],  # type: ignore
                     )
                     == query_value
-                )  # type: ignore
+                )
 
     certificates = db_read_engine.exec(stmt).all()
 
@@ -471,7 +470,8 @@ def transfer_certificates(
                     read_session,
                     esdb_client,
                 )
-                certificates_to_transfer.append(chlid_bundle_1)
+                if chlid_bundle_1:
+                    certificates_to_transfer.append(chlid_bundle_1)
             else:
                 certificates_to_transfer.append(certificate)
     else:
@@ -539,11 +539,15 @@ def claim_certificates(
 
     # Claims need a beneficiary
     assert (
-        certificate_bundle_action.beneficiary_id
+        certificate_bundle_action.beneficiary
     ), "Beneficiary ID is required for GC claims"
 
     # Retrieve certificates to claim
     certificates_to_claim = query_certificates(certificate_bundle_action, read_session)
+
+    if not certificates_to_claim:
+        logging.info("No certificates found to claim with given query parameters.")
+        return
 
     # Assert the certificates are in a cancelled state
     for certificate in certificates_to_claim:
@@ -583,6 +587,10 @@ def withdraw_certificates(
         certificate_bundle_action, read_session
     )
 
+    if not certificates_to_withdraw:
+        logging.info("No certificates found to withdraw with given query parameters.")
+        return
+
     # Withdraw certificates
     for certificate in certificates_to_withdraw:
         certificate_update = GranularCertificateBundleUpdate(
@@ -598,7 +606,7 @@ def lock_certificates(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> list[SQLModel] | None:
+) -> None:
     """Lock certificates matched to the given filter parameters.
 
     Args:
@@ -615,6 +623,10 @@ def lock_certificates(
     # Retrieve certificates to lock
     certificates_to_lock = query_certificates(certificate_bundle_action, read_session)
 
+    if not certificates_to_lock:
+        logging.info("No certificates found to lock with given query parameters.")
+        return
+
     # Lock certificates
     for certificate in certificates_to_lock:
         certificate_update = GranularCertificateBundleUpdate(
@@ -630,7 +642,7 @@ def reserve_certificates(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> list[SQLModel] | None:
+) -> None:
     """Reserve certificates matched to the given filter parameters.
 
     Args:
@@ -645,6 +657,10 @@ def reserve_certificates(
     certificates_to_reserve = query_certificates(
         certificate_bundle_action, read_session
     )
+
+    if not certificates_to_reserve:
+        logging.info("No certificates found to reserve with given query parameters.")
+        return
 
     # Reserve certificates
     for certificate in certificates_to_reserve:

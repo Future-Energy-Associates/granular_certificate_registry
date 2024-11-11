@@ -226,7 +226,7 @@ class TestCertificateServices:
             certificate_action, db_write_session, db_read_session, esdb_client
         )
 
-        assert db_certificate_action.action_response_status == "accepted"
+        assert db_certificate_action.action_response_status == "accepted"  # type: ignore
 
         # Check that the target account received the split bundle
         certificate_query = GranularCertificateActionBase(
@@ -236,4 +236,4 @@ class TestCertificateServices:
         )
         certificate_transfered = query_certificates(certificate_query, db_read_session)
 
-        assert certificate_transfered[0].bundle_quantity == 500
+        assert certificate_transfered[0].bundle_quantity == 500  # type: ignore

@@ -35,7 +35,7 @@ def create_certificate_bundle(
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
-    nonce: str = None,
+    nonce: str | None = None,
 ):
     """Create a GC Bundle with the specified properties."""
 
@@ -54,7 +54,7 @@ def create_certificate_bundle(
     if not db_certificate_bundles:
         raise HTTPException(status_code=500, detail="Could not create GC Bundle")
 
-    db_certificate_bundle = db_certificate_bundles[0].model_dump()
+    db_certificate_bundle = db_certificate_bundles[0].model_dump()  # type: ignore
 
     return db_certificate_bundle
 
@@ -81,7 +81,7 @@ def create_issuance_metadata(
             status_code=500, detail="Could not create Issuance Metadata"
         )
 
-    db_issuance_metadata = db_issuance_metadata[0].model_dump()
+    db_issuance_metadata = db_issuance_metadata[0].model_dump()  # type: ignore
 
     return db_issuance_metadata
 
