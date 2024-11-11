@@ -45,6 +45,10 @@ class ActiveRecord(SQLModel):
         return session.exec(select(cls)).all()
 
     @classmethod
+    def exists(cls, id_: int, session: Session) -> bool:
+        return session.get(cls, id_) is not None
+
+    @classmethod
     def create(
         cls,
         source: dict[str, Any] | BaseModel,

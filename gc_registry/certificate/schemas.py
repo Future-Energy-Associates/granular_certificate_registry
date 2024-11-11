@@ -54,6 +54,12 @@ class GranularCertificateBundleBase(BaseModel):
         If the bundle is split through partial transfer or cancellation, this issuance ID
         remains unchanged across each child GC Bundle.""",
     )
+    hash: str | None = Field(
+        default=None,
+        description="""A unique hash assigned to this bundle at the time of issuance,
+        formed from the sha256 of the bundle's properties and, if the result of a bundle
+        split, a nonce taken from the hash of the parent bundle.""",
+    )
 
     ### Mutable Attributes ###
     certificate_status: CertificateStatus = Field(
@@ -229,6 +235,11 @@ class GranularCertificateBundleRead(BaseModel):
     )
 
     ### Bundle Characteristics ###
+    issuance_id: str = Field(
+        description="""A unique identifier assigned to the GC Bundle at the time of issuance.
+        If the bundle is split through partial transfer or cancellation, this issuance ID
+        remains unchanged across each child GC Bundle.""",
+    )
     energy_carrier: str = Field(
         description="The form of energy that the GC Bundle represents, for example: Electricity, Hydrogen, Ammonia. In the current version of the standard (v2), this field is always Electricity.",
     )

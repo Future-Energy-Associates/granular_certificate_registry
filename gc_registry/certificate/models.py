@@ -24,7 +24,6 @@ class GranularCertificateBundle(
         primary_key=True,
         description="A unique, incremental integer ID assigned to this bundle.",
     )
-    hash: str
 
 
 class GranularCertificateBundleUpdate(BaseModel):

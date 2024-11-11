@@ -14,13 +14,16 @@ from testcontainers.core.waiting_utils import wait_for_logs  # type: ignore
 from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from gc_registry.account.models import Account
-from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
-from gc_registry.certificate.schemas import GranularCertificateBundleCreate
+from gc_registry.certificate.models import (
+    GranularCertificateBundle,
+    IssuanceMetaData,
+)
 from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import (
     CertificateStatus,
     DeviceTechnologyType,
+    EnergyCarrierType,
     EnergySourceType,
 )
 from gc_registry.device.models import Device
@@ -80,8 +83,9 @@ def get_db_url(target: str = "write") -> str | None:
 
 
 def get_esdb_url() -> str | None:
-    if os.environ["ENVIRONMENT"] == "CI":
-        return f"esdb://{os.environ['ESDB_CONNECTION_STRING']}:2113?tls=false"
+    logging.error(f"ENVIRONMENT: {settings.ENVIRONMENT}")
+    if settings.ENVIRONMENT == "CI":
+        return f"esdb://{settings.ESDB_CONNECTION_STRING}:2113?tls=false"
     else:
         try:
             esdb_container = (
@@ -128,7 +132,9 @@ def db_write_engine() -> Generator[Engine, None, None]:
         raise ValueError("No db url for write")
 
     db_engine = create_engine(url)
+
     SQLModel.metadata.create_all(db_engine)
+
     yield db_engine
     db_engine.dispose()
 
@@ -143,7 +149,9 @@ def db_read_engine() -> Generator[Engine, None, None]:
         raise ValueError("No db url for read")
 
     db_engine = create_engine(url)
+
     SQLModel.metadata.create_all(db_engine)
+
     yield db_engine
     db_engine.dispose()
 
@@ -184,7 +192,7 @@ def db_read_session(db_read_engine: Engine) -> Generator[Session, None, None]:
     connection.close()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def esdb_client() -> Generator[EventStoreDBClient, None, None]:
     """Returns an instance of the EventStoreDBClient that rolls back the event
     stream after each test.
@@ -207,22 +215,22 @@ def add_entity_to_write_and_read(
     # Write entities to database first using the write session
     write_session.add(entity)
     write_session.commit()
+
     write_session.refresh(entity)
 
     # check that the entity has an ID
     # assert entity.id is not None  # type: ignore
 
-    # validate the entity
-    entity_read = entity.model_validate(entity.model_dump())
-
-    # assert entity_read.id == entity.id  # type: ignore
+    read_entity = read_session.merge(entity)
+    assert read_entity.id == entity.id  # type: ignore
 
     # read_entity = read_session.merge(read_entity)
-    read_session.add(entity_read)
+    read_session.add(read_entity)
     read_session.commit()
-    read_session.refresh(entity_read)
+    read_session.refresh(read_entity)
 
-    return entity_read
+    print("read_entity: ", read_entity)
+    return read_entity
 
 
 @pytest.fixture()
@@ -246,14 +254,25 @@ def fake_db_user(db_write_session: Session, db_read_session: Session) -> User:
 def fake_db_account(db_write_session: Session, db_read_session: Session) -> Account:
     account_dict = {
         "account_name": "fake_account",
-        "account_type": "fake_account_type",
-        "account_status": "active",
-        "account_balance": 1000,
-        "account_currency": "USD",
-        "account_country": "USA",
-        "account_state": "NY",
+        "user_ids": [],
+        "roles": ["admin"],
     }
+    account_write = Account.model_validate(account_dict)
 
+    account_read = add_entity_to_write_and_read(
+        account_write, db_write_session, db_read_session
+    )
+
+    return account_read
+
+
+@pytest.fixture()
+def fake_db_account_2(db_write_session: Session, db_read_session: Session) -> Account:
+    account_dict = {
+        "account_name": "fake_account_2",
+        "user_ids": [],
+        "roles": ["admin"],
+    }
     account_write = Account.model_validate(account_dict)
 
     account_read = add_entity_to_write_and_read(
@@ -300,9 +319,9 @@ def fake_db_solar_device(
     device_dict = {
         "device_name": "fake_solar_device",
         "grid": "fake_grid",
+        "energy_source": EnergySourceType.solar_pv,
+        "technology_type": DeviceTechnologyType.solar_pv,
         "meter_data_id": "BMU-ABC",
-        "energy_source": "solar",
-        "technology_type": "solar",
         "capacity": 1000,
         "account_id": fake_db_account.id,
         "fuel_source": "solar",
@@ -363,32 +382,41 @@ def fake_db_gc_bundle(
         "metadata_id": fake_db_issuance_metadata.id,
         "bundle_id_range_start": 0,
         "bundle_id_range_end": 999,
-        "bundle_quantity": 999,
-        "energy_carrier": "electricity",
-        "energy_source": "wind",
-        "face_value": 999,
+        "bundle_quantity": 1000,
+        "energy_carrier": EnergyCarrierType.electricity,
+        "energy_source": EnergySourceType.wind,
+        "face_value": 1,
         "is_storage": False,
+        "sdr_allocation_id": None,
+        "storage_efficiency_factor": None,
         "issuance_post_energy_carrier_conversion": False,
         "device_id": fake_db_wind_device.id,
         "production_starting_interval": "2021-01-01T00:00:00",
         "production_ending_interval": "2021-01-01T01:00:00",
         "issuance_datestamp": "2021-01-01",
         "expiry_datestamp": "2024-01-01",
+        "country_of_issuance": "USA",
+        "connected_grid_identification": "ERCOT",
+        "issuing_body": "ERCOT",
+        "issue_market_zone": "USA",
         "emissions_factor_production_device": 0.0,
         "emissions_factor_source": "Some Data Source",
+        "hash": "Some Hash",
     }
 
-    gc_bundle_create = GranularCertificateBundleCreate.model_validate(gc_bundle_dict)
-
-    gc_bundle_create.hash = create_bundle_hash(gc_bundle_create, nonce="")
-    gc_bundle_create.issuance_id = (
-        f"{gc_bundle_create.device_id}-{gc_bundle_create.production_starting_interval}"
+    gc_bundle_dict["issuance_id"] = (
+        f"{gc_bundle_dict['device_id']}-{gc_bundle_dict['production_starting_interval']}"
     )
 
-    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_create.model_dump())
+    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+
+    gc_bundle.hash = create_bundle_hash(gc_bundle)
 
     gc_bundle_read = add_entity_to_write_and_read(
         gc_bundle, db_write_session, db_read_session
     )
 
-    return gc_bundle_read
+    # we actually want the bundle associated with the write session for these tests
+    gc_bundle_write = db_write_session.merge(gc_bundle_read)
+
+    return gc_bundle_write

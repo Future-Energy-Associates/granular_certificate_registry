@@ -1,6 +1,9 @@
 import datetime
 
+import pandas as pd
+
 from gc_registry.account.models import Account
+from gc_registry.certificate.models import IssuanceMetaData
 from gc_registry.core.database import cqrs, db, events
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
@@ -37,14 +40,31 @@ def seed_data():
         "name": "A User",
         "roles": ["Production User"],
     }
-    user = User.create(user_dict, write_session, read_session, esdb_client)
+    user = User.create(user_dict, write_session, read_session, esdb_client)[0]
 
     # Create an Account to add the certificates to
     account_dict = {
         "account_name": "Test Account",
         "user_ids": [user.id],
     }
-    account = Account.create(account_dict, write_session, read_session, esdb_client)
+    account = Account.create(account_dict, write_session, read_session, esdb_client)[0]
+
+    # Create issuance metadata for the certificates
+    issuance_metadata_dict = {
+        "country_of_issuance": "UK",
+        "connected_grid_identification": "NESO",
+        "issuing_body": "OFGEM",
+        "legal_status": "legal",
+        "issuance_purpose": "compliance",
+        "support_received": None,
+        "quality_scheme_reference": None,
+        "dissemination_level": None,
+        "issue_market_zone": "NESO",
+    }
+
+    issuance_metadata = IssuanceMetaData.create(
+        issuance_metadata_dict, write_session, read_session, esdb_client
+    )[0]
 
     for bmu_id in bmu_ids:
         device_dict = {
@@ -60,27 +80,32 @@ def seed_data():
             "account_id": account.id,
             "is_storage": False,
         }
-        device = Device.create(device_dict, write_session, read_session, esdb_client)
+        device = Device.create(device_dict, write_session, read_session, esdb_client)[0]
 
         # Use Elexon to get data from the Elexon API
         data_hh = client.get_generation_by_device_in_datetime_range(
             from_datetime, to_datetime, meter_data_id=bmu_id
         )
-        if data_hh.empty:
+        if len(data_hh) == 0:
             print(f"No data found for {bmu_id}")
             continue
-        data_hourly = client.resample_hh_data_to_hourly(data_hh)
+        data_hh_df = pd.DataFrame(data_hh)
+        data_hourly_dict = client.resample_hh_data_to_hourly(data_hh_df)
+
         certificate_bundles = client.map_generation_to_certificates(
-            data_hourly, account_id=account.id, device_id=device.id
+            data_hourly_dict,
+            account_id=account.id,
+            device_id=device.id,
+            is_storage=False,
+            issuance_metadata_id=issuance_metadata.id,
         )
 
         if not certificate_bundles:
             print(f"No certificate bundles found for {bmu_id}")
-            continue
-
-        _ = cqrs.write_to_database(
-            certificate_bundles, write_session, read_session, esdb_client
-        )
+        else:
+            _ = cqrs.write_to_database(
+                certificate_bundles, write_session, read_session, esdb_client
+            )
 
     print("Seeding complete!")
 

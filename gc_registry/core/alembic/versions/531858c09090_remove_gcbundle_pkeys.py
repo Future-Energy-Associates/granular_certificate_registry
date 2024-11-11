@@ -31,7 +31,6 @@ def upgrade() -> None:
         ALTER COLUMN id SET DEFAULT nextval('granularcertificatebundle_id_seq'),
         ALTER COLUMN id SET NOT NULL
     """)
-    op.alter_column('granularcertificatebundle', 'id', autoincrement=True)
     op.create_primary_key('granularcertificatebundle_pkey', 'granularcertificatebundle', ['id'])
 
 

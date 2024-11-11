@@ -5,7 +5,12 @@ from typing import Any
 import httpx
 import pandas as pd
 
-from gc_registry.certificate.schemas import GranularCertificateBundleCreate
+from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.core.models.base import (
+    CertificateStatus,
+    EnergyCarrierType,
+    EnergySourceType,
+)
 from gc_registry.settings import settings
 
 
@@ -61,7 +66,7 @@ class ElexonClient:
 
         return data
 
-    def resample_hh_data_to_hourly(self, data_hh_df: pd.DataFrame) -> pd.DataFrame:
+    def resample_hh_data_to_hourly(self, data_hh_df: pd.DataFrame) -> dict:
         data_hh_df["start_time"] = pd.to_datetime(
             data_hh_df.halfHourEndTime
         ) - pd.Timedelta(minutes=30)
@@ -83,7 +88,7 @@ class ElexonClient:
             .reset_index()
         )
 
-        return data_resampled
+        return data_resampled.to_dict(orient="records")
 
     def get_asset_dataset_in_datetime_range(
         self,
@@ -123,12 +128,12 @@ class ElexonClient:
     def map_generation_to_certificates(
         self,
         generation_data: list[dict[str, Any]],
-        bundle_id_range_start: int,
         account_id: int,
         device_id: int,
         is_storage: bool,
         issuance_metadata_id: int,
-    ) -> list[GranularCertificateBundleCreate]:
+        bundle_id_range_start: int = 0,
+    ) -> list[GranularCertificateBundle]:
         WH_IN_MWH = 1e6
 
         mapped_data: list = []
@@ -141,28 +146,23 @@ class ElexonClient:
             if mapped_data:
                 bundle_id_range_start = mapped_data[-1].bundle_id_range_end + 1
 
-            bundle_id_range_end = bundle_id_range_start + bundle_wh
-
-            production_starting_interval = datetime.fromisoformat(
-                data["halfHourEndTime"]
-            ) - timedelta(minutes=30)
+            # E.g., if bundle_wh = 1000, bundle_id_range_start = 0, bundle_id_range_end = 999
+            bundle_id_range_end = bundle_id_range_start + bundle_wh - 1
 
             transformed = {
                 "account_id": account_id,
-                "issuance_id": f"{device_id}-{production_starting_interval}",
-                "certificate_status": "Active",
+                "certificate_status": CertificateStatus.ACTIVE,
                 "bundle_id_range_start": bundle_id_range_start,
                 "bundle_id_range_end": bundle_id_range_end,
                 "bundle_quantity": bundle_id_range_end - bundle_id_range_start + 1,
-                "energy_carrier": "electricity",
-                "energy_source": "wind",
-                "face_value": bundle_wh,
+                "energy_carrier": EnergyCarrierType.electricity,
+                "energy_source": EnergySourceType.wind,
+                "face_value": 1,
                 "issuance_post_energy_carrier_conversion": False,
                 "device_id": device_id,
-                "production_starting_interval": production_starting_interval,
-                "production_ending_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                ),
+                "production_starting_interval": data["start_time"],
+                "production_ending_interval": data["start_time"]
+                + pd.Timedelta(minutes=60),
                 "issuance_datestamp": datetime.utcnow().date(),
                 "expiry_datestamp": (
                     datetime.utcnow()
@@ -170,10 +170,17 @@ class ElexonClient:
                 ).date(),
                 "metadata_id": issuance_metadata_id,
                 "is_storage": is_storage,
+                "hash": "Some hash",
             }
 
+            transformed["issuance_id"] = (
+                f"{device_id}-{transformed['production_starting_interval']}"
+            )
+
             # Validate and append the transformed data
-            valid_data = GranularCertificateBundleCreate.model_validate(transformed)
+            valid_data = GranularCertificateBundle.model_validate(transformed)
+            # Add this back in when moved to certificate services
+            # valid_data.hash = create_bundle_hash(valid_data, None)
             mapped_data.append(valid_data)
 
         return mapped_data

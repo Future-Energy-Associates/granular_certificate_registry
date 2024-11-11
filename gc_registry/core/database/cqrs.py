@@ -34,7 +34,7 @@ def write_to_database(
 
     except Exception as e:
         print(
-            f"Error during commit to write DB: {str(e)}, session ID {id(write_session)}"
+            f"Error during commit to write DB during create: {str(e)}, session ID {id(write_session)}"
         )
         write_session.rollback()
         return None
@@ -49,7 +49,7 @@ def write_to_database(
         read_session.flush()
 
     except Exception as e:
-        print(f"Error during commit to read DB: {str(e)}")
+        print(f"Error during commit to read DB during create: {str(e)}")
         write_session.rollback()
         read_session.rollback()
         return None
@@ -97,7 +97,7 @@ def update_database_entity(
         write_session.refresh(entity)
 
     except Exception as e:
-        print(f"Error during commit to write DB: {str(e)}")
+        print(f"Error during commit to write DB during update: {str(e)}")
         write_session.rollback()
         return None
 
@@ -109,18 +109,13 @@ def update_database_entity(
         read_session.flush()
 
     except Exception as e:
-        print(f"Error during commit to read DB: {str(e)}")
+        print(f"Error during commit to read DB during update: {str(e)}")
         write_session.rollback()
         read_session.rollback()
         return None
 
-    id_attribute = (
-        "id"
-        if entity.__class__.__name__ != "GranularCertificateBundle"
-        else "issuance_id"
-    )
     create_event(
-        entity_id=getattr(entity, id_attribute),  # type: ignore
+        entity_id=entity.id,  # type: ignore
         entity_name=entity.__class__.__name__,
         event_type=EventTypes.UPDATE,
         attributes_before=before_data,
@@ -157,7 +152,7 @@ def delete_database_entities(
             write_session.refresh(entity)
 
     except Exception as e:
-        print(f"Error during commit to write DB: {str(e)}")
+        print(f"Error during commit to write DB during delete: {str(e)}")
         write_session.rollback()
         return None
 
@@ -170,10 +165,11 @@ def delete_database_entities(
         read_session.flush()
 
     except Exception as e:
-        print(f"Error during commit to read DB: {str(e)}")
+        print(f"Error during commit to read DB during delete: {str(e)}")
         write_session.rollback()
         read_session.rollback()
         return None
+
     batch_create_events(
         entity_ids=[entity.id for entity in entities],  # type: ignore
         entity_names=[entity.__class__.__name__ for entity in entities],
