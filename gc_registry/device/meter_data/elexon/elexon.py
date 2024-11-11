@@ -66,7 +66,7 @@ class ElexonClient:
 
         return data
 
-    def resample_hh_data_to_hourly(self, data_hh_df: pd.DataFrame) -> pd.DataFrame:
+    def resample_hh_data_to_hourly(self, data_hh_df: pd.DataFrame) -> dict:
         data_hh_df["start_time"] = pd.to_datetime(
             data_hh_df.halfHourEndTime
         ) - pd.Timedelta(minutes=30)
@@ -88,7 +88,7 @@ class ElexonClient:
             .reset_index()
         )
 
-        return data_resampled
+        return data_resampled.to_dict(orient="records")
 
     def get_asset_dataset_in_datetime_range(
         self,
@@ -128,11 +128,11 @@ class ElexonClient:
     def map_generation_to_certificates(
         self,
         generation_data: list[dict[str, Any]],
-        bundle_id_range_start: int,
         account_id: int,
         device_id: int,
         is_storage: bool,
         issuance_metadata_id: int,
+        bundle_id_range_start: int = 0,
     ) -> list[GranularCertificateBundle]:
         WH_IN_MWH = 1e6
 
@@ -160,13 +160,9 @@ class ElexonClient:
                 "face_value": 1,
                 "issuance_post_energy_carrier_conversion": False,
                 "device_id": device_id,
-                "production_starting_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                )
-                - timedelta(minutes=30),
-                "production_ending_interval": datetime.fromisoformat(
-                    data["halfHourEndTime"]
-                ),
+                "production_starting_interval": data["start_time"],
+                "production_ending_interval": data["start_time"]
+                + pd.Timedelta(minutes=60),
                 "issuance_datestamp": datetime.utcnow().date(),
                 "expiry_datestamp": (
                     datetime.utcnow()
