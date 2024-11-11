@@ -11,7 +11,6 @@ from gc_registry.certificate.models import (
 )
 from gc_registry.certificate.schemas import GranularCertificateBundleBase
 from gc_registry.certificate.services import (
-    create_bundle_hash,
     get_max_certificate_id_by_device_id,
     issue_certificates_in_date_range,
     process_certificate_action,

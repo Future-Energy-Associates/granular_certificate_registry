@@ -141,9 +141,6 @@ def split_certificate_bundle(
         gc_bundle_child_2, write_session, read_session, esdb_client
     )
 
-    if not db_gc_bundle_child_1 or not db_gc_bundle_child_2:
-        raise ValueError("Error creating child bundles")
-
     return db_gc_bundle_child_1[0], db_gc_bundle_child_2[0]  # type: ignore
 
 
@@ -284,7 +281,7 @@ def issue_certificates_in_date_range(
             continue
 
         meter_data_df = pd.DataFrame(meter_data)
-        meter_data = meter_data_client.resample_hh_data_to_hourly(meter_data_df)
+        meter_data = meter_data_client.resample_hh_data_to_hourly(meter_data_df)  # type: ignore
 
         # Map the meter data to certificates
         bundle_id_range_start = get_max_certificate_id_by_device_id(
