@@ -3,7 +3,7 @@ from functools import partial
 
 from pydantic import BaseModel
 from sqlalchemy import Column, Float
-from sqlmodel import ARRAY, Field
+from sqlmodel import ARRAY, BigInteger, Field
 
 from gc_registry import utils
 from gc_registry.core.models.base import (
@@ -76,6 +76,7 @@ class GranularCertificateBundleBase(BaseModel):
         description="Reference to the associated issuance metadata",
     )
     bundle_id_range_start: int = Field(
+        sa_column=Column(BigInteger()),
         description="""The individual Granular Certificates within this GC Bundle, each representing a
                         contant volume of energy, generated within the production start and end time interval,
                         is issued an ID in a format that can be represented sequentially and in a
@@ -84,6 +85,7 @@ class GranularCertificateBundleBase(BaseModel):
                         within that range.""",
     )
     bundle_id_range_end: int = Field(
+        sa_column=Column(BigInteger()),
         description="""The start and end range IDs of GC Bundles may change as they are split and transferred between Accounts,
                        or partially cancelled.""",
     )

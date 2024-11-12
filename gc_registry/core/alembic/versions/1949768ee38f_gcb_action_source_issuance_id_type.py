@@ -33,14 +33,6 @@ def upgrade() -> None:
     op.alter_column('granularcertificatebundle', 'hash',
                existing_type=sa.VARCHAR(),
                nullable=True)
-    op.alter_column('granularcertificatebundle', 'bundle_id_range_start',
-               existing_type=sa.BIGINT(),
-               type_=sa.Integer(),
-               existing_nullable=False)
-    op.alter_column('granularcertificatebundle', 'bundle_id_range_end',
-               existing_type=sa.BIGINT(),
-               type_=sa.Integer(),
-               existing_nullable=False)
     op.alter_column('granularcertificatebundle', 'bundle_quantity',
                existing_type=sa.BIGINT(),
                type_=sa.Integer(),
@@ -54,14 +46,6 @@ def downgrade() -> None:
                existing_type=sa.Integer(),
                type_=sa.BIGINT(),
                existing_nullable=False)
-    op.alter_column('granularcertificatebundle', 'bundle_id_range_end',
-               existing_type=sa.Integer(),
-               type_=sa.BIGINT(),
-               existing_nullable=False)
-    op.alter_column('granularcertificatebundle', 'bundle_id_range_start',
-               existing_type=sa.Integer(),
-               type_=sa.BIGINT(),
-               existing_nullable=False)
     op.alter_column('granularcertificatebundle', 'hash',
                existing_type=sa.VARCHAR(),
                nullable=False)
@@ -71,6 +55,7 @@ def downgrade() -> None:
     op.alter_column('granularcertificateaction', 'source_certificate_issuance_id',
                existing_type=sa.VARCHAR(),
                type_=sa.INTEGER(),
+               postgresql_using="source_certificate_issuance_id::integer",
                existing_nullable=True)
     op.alter_column('granularcertificateaction', 'action_type',
                existing_type=sa.VARCHAR(),
