@@ -83,7 +83,7 @@ def seed_data():
         device = Device.create(device_dict, write_session, read_session, esdb_client)[0]
 
         # Use Elexon to get data from the Elexon API
-        data_hh = client.get_generation_by_device_in_datetime_range(
+        data_hh = client.get_metering_by_device_in_datetime_range(
             from_datetime, to_datetime, meter_data_id=bmu_id
         )
         if len(data_hh) == 0:
@@ -92,7 +92,7 @@ def seed_data():
         data_hh_df = pd.DataFrame(data_hh)
         data_hourly_dict = client.resample_hh_data_to_hourly(data_hh_df)
 
-        certificate_bundles = client.map_generation_to_certificates(
+        certificate_bundles = client.map_metering_to_certificates(
             data_hourly_dict,
             account_id=account.id,
             device_id=device.id,

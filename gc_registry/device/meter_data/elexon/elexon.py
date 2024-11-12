@@ -110,7 +110,7 @@ class ElexonClient:
 
         return response.json()
 
-    def get_generation_by_device_in_datetime_range(
+    def get_metering_by_device_in_datetime_range(
         self,
         from_datetime: datetime,
         to_datetime: datetime,
@@ -129,7 +129,7 @@ class ElexonClient:
 
         return data
 
-    def map_generation_to_certificates(
+    def map_metering_to_certificates(
         self,
         generation_data: list[dict[str, Any]],
         account_id: int,

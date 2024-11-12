@@ -137,7 +137,7 @@ def issue_certificates_by_device_in_date_range(
         logging.error(f"No device ID or meter data ID for device: {device}")
         return None
 
-    meter_data = meter_data_client.get_generation_by_device_in_datetime_range(
+    meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
         from_datetime, to_datetime, device.meter_data_id
     )
 
@@ -154,7 +154,7 @@ def issue_certificates_by_device_in_date_range(
     else:
         bundle_id_range_start += 1
 
-    certificates = meter_data_client.map_generation_to_certificates(
+    certificates = meter_data_client.map_metering_to_certificates(
         generation_data=meter_data,
         bundle_id_range_start=bundle_id_range_start,
         account_id=device.account_id,
