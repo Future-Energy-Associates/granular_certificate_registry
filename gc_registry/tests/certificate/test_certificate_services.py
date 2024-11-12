@@ -9,7 +9,6 @@ from gc_registry.certificate.models import (
     GranularCertificateActionBase,
     GranularCertificateBundle,
 )
-from gc_registry.certificate.schemas import GranularCertificateBundleBase
 from gc_registry.certificate.services import (
     get_max_certificate_id_by_device_id,
     issue_certificates_in_date_range,
@@ -56,13 +55,20 @@ class TestCertificateServices:
     ):
         hours = settings.CERTIFICATE_GRANULARITY_HOURS
 
+        gcb_dict = fake_db_gc_bundle.model_dump()
+
         # Test case 1: certificate already exists for the device in the given period
         # This will fail because the bundle_id_range_start is not equal to the max_certificate_id + 1
-        gcb_dict = fake_db_gc_bundle.model_dump()
-        fake_db_gc_bundle_base = GranularCertificateBundleBase.model_validate(gcb_dict)
+        device_max_certificate_id = get_max_certificate_id_by_device_id(
+            db_read_session, gcb_dict["device_id"]
+        )
+
         with pytest.raises(ValueError) as exc_info:
             validate_granular_certificate_bundle(
-                db_read_session, fake_db_gc_bundle_base, is_storage_device=False
+                db_read_session,
+                gcb_dict,
+                is_storage_device=False,
+                device_max_certificate_id=device_max_certificate_id,
             )
         assert "bundle_id_range_start does not match criteria for equal" in str(
             exc_info.value
@@ -70,49 +76,47 @@ class TestCertificateServices:
 
         # Lets update the bundle_id_range_start to be equal to the max_certificate_id + 1,
         # the bundle_quantity and bundle_id_range_end to be equal to the difference between the bundle ID range
-        fake_db_gc_bundle_base.bundle_id_range_start = (
-            fake_db_gc_bundle.bundle_id_range_end + 1
-        )
-        fake_db_gc_bundle_base.bundle_id_range_end = (
-            fake_db_gc_bundle_base.bundle_id_range_start
-            + fake_db_gc_bundle_base.bundle_quantity
-            - 1
+        gcb_dict["bundle_id_range_start"] = fake_db_gc_bundle.bundle_id_range_end + 1
+        gcb_dict["bundle_id_range_end"] = (
+            gcb_dict["bundle_id_range_start"] + gcb_dict["bundle_quantity"] - 1
         )
 
         validate_granular_certificate_bundle(
-            db_read_session, fake_db_gc_bundle_base, is_storage_device=False
+            db_read_session,
+            gcb_dict,
+            is_storage_device=False,
+            device_max_certificate_id=device_max_certificate_id,
         )
 
         # Test case 2: certificate face value is greater than the device max watts hours
         # This will fail because the bundle_quantity is greater than the device max watts hours
 
-        fake_db_gc_bundle_base.bundle_quantity = (
-            fake_db_wind_device.capacity * hours
-        ) + 1
-        fake_db_gc_bundle_base.bundle_id_range_end = (
-            fake_db_gc_bundle_base.bundle_id_range_start
-            + fake_db_gc_bundle_base.bundle_quantity
+        gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) + 1
+        gcb_dict["bundle_id_range_end"] = (
+            gcb_dict["bundle_id_range_start"] + gcb_dict["bundle_quantity"]
         )
 
         with pytest.raises(ValueError) as exc_info:
             validate_granular_certificate_bundle(
-                db_read_session, fake_db_gc_bundle_base, is_storage_device=False
+                db_read_session,
+                gcb_dict,
+                is_storage_device=False,
+                device_max_certificate_id=device_max_certificate_id,
             )
         assert "bundle_quantity does not match criteria for less_than" in str(
             exc_info.value
         )
 
-        fake_db_gc_bundle_base.bundle_quantity = (
-            fake_db_wind_device.capacity * hours - 1
-        )
-        fake_db_gc_bundle_base.bundle_id_range_end = (
-            fake_db_gc_bundle_base.bundle_id_range_start
-            + fake_db_gc_bundle_base.bundle_quantity
-            - 1
+        gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) - 1
+        gcb_dict["bundle_id_range_end"] = (
+            gcb_dict["bundle_id_range_start"] + gcb_dict["bundle_quantity"] - 1
         )
 
         validate_granular_certificate_bundle(
-            db_read_session, fake_db_gc_bundle_base, is_storage_device=False
+            db_read_session,
+            gcb_dict,
+            is_storage_device=False,
+            device_max_certificate_id=device_max_certificate_id,
         )
 
     def test_issue_certificates_in_date_range(
