@@ -467,7 +467,7 @@ def transfer_certificates(
 
     # Retrieve certificates to transfer
     certificates_from_query = query_certificates(
-        certificate_bundle_action, read_session
+        certificate_bundle_action, write_session=write_session
     )
 
     if not certificates_from_query:
@@ -507,7 +507,6 @@ def transfer_certificates(
         certificate_update = GranularCertificateBundleUpdate(
             account_id=certificate_bundle_action.target_id
         )
-        certificate = write_session.merge(certificate)
         certificate.update(certificate_update, write_session, read_session, esdb_client)  # type: ignore
 
     return
@@ -530,7 +529,9 @@ def cancel_certificates(
     """
 
     # Retrieve certificates to cancel
-    certificates_to_cancel = query_certificates(certificate_bundle_action, read_session)
+    certificates_to_cancel = query_certificates(
+        certificate_bundle_action, write_session=write_session
+    )
 
     if not certificates_to_cancel:
         logging.info("No certificates found to cancel with given query parameters.")
@@ -568,7 +569,9 @@ def claim_certificates(
     ), "Beneficiary ID is required for GC claims"
 
     # Retrieve certificates to claim
-    certificates_to_claim = query_certificates(certificate_bundle_action, read_session)
+    certificates_to_claim = query_certificates(
+        certificate_bundle_action, write_session=write_session
+    )
 
     if not certificates_to_claim:
         logging.info("No certificates found to claim with given query parameters.")
@@ -609,7 +612,7 @@ def withdraw_certificates(
 
     # Retrieve certificates to withdraw
     certificates_to_withdraw = query_certificates(
-        certificate_bundle_action, read_session
+        certificate_bundle_action, write_session=write_session
     )
 
     if not certificates_to_withdraw:
@@ -646,7 +649,9 @@ def lock_certificates(
     """
 
     # Retrieve certificates to lock
-    certificates_to_lock = query_certificates(certificate_bundle_action, read_session)
+    certificates_to_lock = query_certificates(
+        certificate_bundle_action, write_session=write_session
+    )
 
     if not certificates_to_lock:
         logging.info("No certificates found to lock with given query parameters.")
@@ -680,7 +685,7 @@ def reserve_certificates(
 
     # Retrieve certificates to reserve
     certificates_to_reserve = query_certificates(
-        certificate_bundle_action, read_session
+        certificate_bundle_action, write_session=write_session
     )
 
     if not certificates_to_reserve:
