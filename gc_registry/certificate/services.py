@@ -382,18 +382,33 @@ def process_certificate_action(
 
 
 def query_certificates(
-    certificate_query: GranularCertificateActionBase, db_read_engine: Session
+    certificate_query: GranularCertificateActionBase,
+    read_session: Session | None = None,
+    write_session: Session | None = None,
 ) -> list[GranularCertificateBundle] | None:
     """Query certificates based on the given filter parameters.
+
+    By default will return read versions of the GC bundles, but if update operations
+    are to be performed on them then passing a write session will override the
+    read session and return instances from the writer database with the associated
+    ActiveUtils methods.
+
+    If no certificates are found with the given query parameters, will return None.
 
     Args:
         certificate_query (GranularCertificateAction): The certificate action
         db_read_engine (Session): The database read session
+        db_write_engine (Session | None): The database write session
 
     Returns:
-        list[GranularCertificateAction]: The list of certificates
+        list[GranularCertificateBundle]: The list of certificates
 
     """
+
+    assert (read_session is not None) | (
+        write_session is not None
+    ), "A read or write session is required"
+    session = read_session if write_session is None else write_session
 
     # Query certificates based on the given filter parameters
     stmt = select(GranularCertificateBundle)  # type: ignore
@@ -424,7 +439,7 @@ def query_certificates(
                     == query_value
                 )
 
-    certificates = db_read_engine.exec(stmt).all()
+    certificates = session.exec(stmt).all()
 
     return certificates
 
