@@ -32,6 +32,8 @@ certificate_query_param_map = {
     "device_id": "device_id",
     "energy_source": "energy_source",
     "certificate_status": "certificate_status",
+    "certificate_quantity": "bundle_quantity",
+    "certificate_bundle_percentage": "certificate_bundle_percentage",
 }
 
 
@@ -434,17 +436,25 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     )
     certificate_period_start: datetime.datetime | None = Field(
         default=None,
-        description="The UTC datetime from which to filter GC Bundles within the specified Account.",
+        description="""The UTC datetime from which to filter GC Bundles within the specified Account.
+        If provided without certificate_period_end, returns all GC Bundles from the specified datetime to the present.""",
     )
     certificate_period_end: datetime.datetime | None = Field(
         default=None,
-        description="The UTC datetime up to which GC Bundles within the specified Account are to be filtered.",
+        description="""The UTC datetime up to which GC Bundles within the specified Account are to be filtered.
+        If provided without certificate_period_start, returns all GC Bundles up to the specified datetime.""",
     )
     certificate_quantity: int | None = Field(
         default=None,
         description="""Overrides GC Bundle range start and end IDs, if specified.
-        Of the GC Bundles identified, return the total number of certificates to action on,
-        splitting GC Bundles from the start of the range where necessary.""",
+        Returns the specified number of certificates from a given GC bundle to action on,
+        splitting from the start of the range.""",
+    )
+    certificate_bundle_percentage: float | None = Field(
+        default=None,
+        description="""Overrides GC Bundle range start and end IDs, if specified. 
+        The percentage from 0 to 100 of the identified GC bundle to action on, splitting from 
+        the start of the range and rounding down to the nearest Wh.""",
     )
     device_id: int | None = Field(
         default=None,
