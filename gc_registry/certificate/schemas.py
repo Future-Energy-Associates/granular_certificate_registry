@@ -20,6 +20,8 @@ mutable_gc_attributes = [
     "sdr_allocation_id",
     "storage_efficiency_factor",
     "is_deleted",
+    "bundle_id_range_start",
+    "bundle_id_range_end",
 ]
 
 certificate_query_param_map = {
