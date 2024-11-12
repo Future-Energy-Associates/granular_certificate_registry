@@ -33,6 +33,9 @@ from gc_registry.device.services import (
 )
 from gc_registry.settings import settings
 
+logger = logging.getLogger(__name__)
+logger.setLevel(settings.LOG_LEVEL)
+
 
 def create_bundle_hash(
     gc_bundle: GranularCertificateBundle | GranularCertificateBundleBase,
@@ -381,6 +384,18 @@ def process_certificate_action(
     return db_certificate_action[0]  # type: ignore
 
 
+def validate_query(certificate_query: GranularCertificateActionBase) -> bool:
+    # range start lower than range end
+
+    # date range start lower than or equal to date range end
+
+    # if quantity or percentage, date ranges if provided must be equal
+
+    # percentage must be between 0 and 100
+
+    return True
+
+
 def query_certificates(
     certificate_query: GranularCertificateActionBase,
     read_session: Session | None = None,
@@ -405,10 +420,16 @@ def query_certificates(
 
     """
 
-    assert (read_session is not None) | (
-        write_session is not None
-    ), "A read or write session is required"
+    if (read_session is None) & (write_session is None):
+        logger.error(
+            "Either a read or a write session is required for querying certificates."
+        )
+        return None
+
     session = read_session if write_session is None else write_session
+
+    if validate_query(certificate_query) is False:
+        return None
 
     # Query certificates based on the given filter parameters
     stmt = select(GranularCertificateBundle)  # type: ignore
