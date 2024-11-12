@@ -385,13 +385,69 @@ def process_certificate_action(
 
 
 def validate_query(certificate_query: GranularCertificateActionBase) -> bool:
-    # range start lower than range end
+    # Bunde ID range start must be lower than range end
+    if (
+        certificate_query.source_certificate_bundle_id_range_start
+        and certificate_query.source_certificate_bundle_id_range_end
+    ):
+        if (
+            certificate_query.source_certificate_bundle_id_range_start
+            > certificate_query.source_certificate_bundle_id_range_end
+        ):
+            logger.error("Bundle ID range start must be lower than bundle ID range end")
+            return False
 
-    # date range start lower than or equal to date range end
+    # Date range start must be lower than or equal to date range end
+    if (
+        certificate_query.certificate_period_start
+        and certificate_query.certificate_period_end
+    ):
+        if (
+            certificate_query.certificate_period_start
+            > certificate_query.certificate_period_end
+        ):
+            logger.error(
+                "Certificate period start must be lower than certificate period end"
+            )
+            return False
 
-    # if quantity or percentage, date ranges if provided must be equal
+    # If using either bundle quantity or percentage, only one can be used
+    if (
+        certificate_query.certificate_quantity
+        and certificate_query.certificate_bundle_percentage
+    ):
+        logger.error(
+            "Only one of certificate quantity or percentage can be used for each query."
+        )
+        return False
 
-    # percentage must be between 0 and 100
+    # If using bundle quantity or percentage, date ranges if provided must be equal to make sure that
+    # only one bundle is returned
+    if (
+        certificate_query.certificate_quantity
+        or certificate_query.certificate_bundle_percentage
+    ) and (
+        certificate_query.certificate_period_start
+        or certificate_query.certificate_period_end
+    ):
+        if (
+            certificate_query.certificate_period_start
+            != certificate_query.certificate_period_end
+        ):
+            logger.error(
+                """Certificate period start and end must be equal when using quantity or percentage,
+                   otherwise more than one bundle would be returned."""
+            )
+            return False
+
+    # Bundle percentage must be between 0 and 100
+    if certificate_query.certificate_bundle_percentage:
+        if (
+            certificate_query.certificate_bundle_percentage <= 0
+            or certificate_query.certificate_bundle_percentage > 100
+        ):
+            logger.error("Certificate percentage must be between 0 and 100")
+            return False
 
     return True
 
