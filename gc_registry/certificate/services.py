@@ -25,7 +25,7 @@ from gc_registry.certificate.validation import validate_granular_certificate_bun
 from gc_registry.core.database import cqrs
 from gc_registry.core.models.base import CertificateActionType
 from gc_registry.core.services import create_bundle_hash
-from gc_registry.device.meter_data.elexon.elexon import ElexonClient
+from gc_registry.device.meter_data.abstract_meter_client import AbstractMeterDataClient
 from gc_registry.device.models import Device
 from gc_registry.device.services import get_all_devices
 
@@ -131,7 +131,7 @@ def issue_certificates_by_device_in_date_range(
     db_read_session: Session,
     esdb_client: EventStoreDBClient,
     issuance_metadata_id: int,
-    meter_data_client: ElexonClient,
+    meter_data_client: AbstractMeterDataClient,
 ) -> list[SQLModel] | None:
     if not device.id or not device.meter_data_id:
         logging.error(f"No device ID or meter data ID for device: {device}")
@@ -203,7 +203,7 @@ def issue_certificates_in_date_range(
     db_read_session: Session,
     esdb_client: EventStoreDBClient,
     issuance_metadata_id: int,
-    meter_data_client: ElexonClient,
+    meter_data_client: AbstractMeterDataClient,
 ) -> list[SQLModel] | None:
     """Issues certificates for a device using the following process.
     1. Get a list of devices in the registry and their capacities
