@@ -14,12 +14,12 @@ from gc_registry.certificate.schemas import (
     IssuanceMetaDataBase,
 )
 from gc_registry.certificate.services import (
-    create_bundle_hash,
     process_certificate_action,
     query_certificates,
 )
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import CertificateActionType
+from gc_registry.core.services import create_bundle_hash
 
 # Router initialisation
 router = APIRouter(tags=["Certificates"])

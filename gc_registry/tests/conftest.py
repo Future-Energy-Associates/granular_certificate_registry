@@ -18,7 +18,6 @@ from gc_registry.certificate.models import (
     GranularCertificateBundle,
     IssuanceMetaData,
 )
-from gc_registry.certificate.services import create_bundle_hash
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import (
     CertificateStatus,
@@ -26,6 +25,7 @@ from gc_registry.core.models.base import (
     EnergyCarrierType,
     EnergySourceType,
 )
+from gc_registry.core.services import create_bundle_hash
 from gc_registry.device.models import Device
 from gc_registry.main import app
 from gc_registry.settings import settings
@@ -83,7 +83,6 @@ def get_db_url(target: str = "write") -> str | None:
 
 
 def get_esdb_url() -> str | None:
-    logging.error(f"ENVIRONMENT: {settings.ENVIRONMENT}")
     if settings.ENVIRONMENT == "CI":
         return f"esdb://{settings.ESDB_CONNECTION_STRING}:2113?tls=false"
     else:
