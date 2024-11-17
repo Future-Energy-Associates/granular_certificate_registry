@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+import datetime
 from typing import Any
 
 import httpx
@@ -13,7 +13,7 @@ from gc_registry.logging_config import logger
 from gc_registry.settings import settings
 
 
-def datetime_to_settlement_period(dt: datetime) -> int:
+def datetime_to_settlement_period(dt: datetime.datetime) -> int:
     return (dt.hour * 60 + dt.minute) // 30 + 1
 
 
@@ -24,8 +24,8 @@ class ElexonClient:
     def get_dataset_in_datetime_range(
         self,
         dataset,
-        from_datetime: datetime,
-        to_datetime: datetime,
+        from_datetime: datetime.datetime,
+        to_datetime: datetime.datetime,
         bmu_ids: list[str] | None = None,
         frequency: str = "30min",
     ) -> list[dict[str, Any]]:
@@ -94,8 +94,8 @@ class ElexonClient:
     def get_asset_dataset_in_datetime_range(
         self,
         dataset,
-        from_date: date,
-        to_date: date,
+        from_date: datetime.date,
+        to_date: datetime.date,
     ):
         params = {
             "publishDateTimeFrom": from_date,
@@ -112,8 +112,8 @@ class ElexonClient:
 
     def get_metering_by_device_in_datetime_range(
         self,
-        from_datetime: datetime,
-        to_datetime: datetime,
+        from_datetime: datetime.datetime,
+        to_datetime: datetime.datetime,
         meter_data_id: str,
         dataset="B1610",
     ) -> list[dict[str, Any]]:
@@ -167,10 +167,12 @@ class ElexonClient:
                 "production_starting_interval": data["start_time"],
                 "production_ending_interval": data["start_time"]
                 + pd.Timedelta(minutes=60),
-                "issuance_datestamp": datetime.now(tz=datetime.timezone.utc).date(),
+                "issuance_datestamp": datetime.datetime.now(
+                    tz=datetime.timezone.utc
+                ).date(),
                 "expiry_datestamp": (
-                    datetime.now(tz=datetime.timezone.utc)
-                    + timedelta(days=365 * settings.CERTIFICATE_EXPIRY_YEARS)
+                    datetime.datetime.now(tz=datetime.timezone.utc)
+                    + datetime.timedelta(days=365 * settings.CERTIFICATE_EXPIRY_YEARS)
                 ).date(),
                 "metadata_id": issuance_metadata_id,
                 "is_storage": is_storage,
@@ -188,8 +190,9 @@ class ElexonClient:
     def get_device_capacities(
         self,
         bmu_ids: list[str],
-        from_date: date = datetime.now().date() - timedelta(days=365 * 2),
-        to_date: date = datetime.now().date(),
+        from_date: datetime.date = datetime.datetime.now().date()
+        - datetime.timedelta(days=365 * 2),
+        to_date: datetime.date = datetime.datetime.now().date(),
         dataset: str = "IGCPU",
     ) -> dict[str, Any]:
         data = self.get_asset_dataset_in_datetime_range(dataset, from_date, to_date)

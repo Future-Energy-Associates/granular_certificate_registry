@@ -1,5 +1,6 @@
 import datetime
 import json
+from functools import partial
 from typing import Any, Type, TypeVar
 
 from esdbclient import EventStoreDBClient
@@ -13,10 +14,12 @@ from gc_registry.logging_config import logger
 
 T = TypeVar("T", bound="ActiveRecord")
 
+utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
+
 
 class ActiveRecord(SQLModel):
     created_at: datetime.datetime = Field(
-        default_factory=datetime.datetime.utcnow, nullable=False
+        default_factory=utc_datetime_now, nullable=False
     )
 
     @classmethod
