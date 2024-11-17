@@ -158,7 +158,7 @@ def issue_certificates_by_device_in_date_range(
         generation_data=meter_data,
         bundle_id_range_start=bundle_id_range_start,
         account_id=device.account_id,
-        device_id=device.id,
+        device=device,
         is_storage=device.is_storage,
         issuance_metadata_id=issuance_metadata_id,
     )

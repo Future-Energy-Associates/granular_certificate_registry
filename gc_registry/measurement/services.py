@@ -33,7 +33,7 @@ def serialise_measurement_csv(measurement_csv_path: str) -> str:
 def parse_measurement_json(
     recieved_json: str, to_df: bool = False
 ) -> dict | pd.DataFrame:
-    """Take a measurement JSON string and parse it into a pandas DataFrame.
+    """Take a measurement JSON string and parse it into a dict or a Pandas DataFrame.
 
     Asserts that the column names are 'device_id', 'interval_start_datetime', 'interval_end_datetime and 'interval_usage'.
 
