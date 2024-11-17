@@ -279,3 +279,44 @@ class TestCertificateServices:
         certificates_cancelled = query_certificates(certificate_query, db_read_session)
 
         assert certificates_cancelled[0].bundle_quantity == 750  # type: ignore
+
+    def test_sparse_filter_query(
+        self,
+        fake_db_gc_bundle: GranularCertificateBundle,
+        fake_db_gc_bundle_2: GranularCertificateBundle,
+        db_read_session: Session,
+    ):
+        """Test that the query_certificates function can handle sparse filter input on device ID
+        and production starting datetime."""
+
+        sparse_filter_list = [
+            (
+                fake_db_gc_bundle.device_id,
+                fake_db_gc_bundle.production_starting_interval,
+            ),
+            (
+                fake_db_gc_bundle_2.device_id,
+                fake_db_gc_bundle_2.production_starting_interval,
+            ),
+        ]
+
+        certificate_query = GranularCertificateActionBase(
+            action_type="query",
+            user_id=1,
+            source_id=fake_db_gc_bundle.account_id,
+            sparse_filter=sparse_filter_list,
+        )
+
+        certificates_from_query = query_certificates(certificate_query, db_read_session)
+
+        assert len(certificates_from_query) == 2
+        assert certificates_from_query[0].device_id == fake_db_gc_bundle.device_id
+        assert certificates_from_query[1].device_id == fake_db_gc_bundle_2.device_id
+        assert (
+            certificates_from_query[0].production_starting_interval
+            == fake_db_gc_bundle.production_starting_interval
+        )
+        assert (
+            certificates_from_query[1].production_starting_interval
+            == fake_db_gc_bundle_2.production_starting_interval
+        )

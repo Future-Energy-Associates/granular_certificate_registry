@@ -474,6 +474,7 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     )
     is_deleted: bool = Field(default=False)
     sparse_filter_list: list[tuple[str, str]] | None = Field(
+        default=None,
         description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
         sa_column=Column(ARRAY(String(), String())),
     )
