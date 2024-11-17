@@ -356,25 +356,6 @@ def validate_query(certificate_query: GranularCertificateActionBase) -> bool:
         )
         return False
 
-    # If using bundle quantity or percentage, date ranges if provided must be equal to make sure that
-    # only one bundle is returned
-    if (
-        certificate_query.certificate_quantity
-        or certificate_query.certificate_bundle_percentage
-    ) and (
-        certificate_query.certificate_period_start
-        or certificate_query.certificate_period_end
-    ):
-        if (
-            certificate_query.certificate_period_start
-            != certificate_query.certificate_period_end
-        ):
-            logger.error(
-                """Certificate period start and end must be equal when using quantity or percentage,
-                   otherwise more than one bundle would be returned."""
-            )
-            return False
-
     # Bundle percentage must be between 0 and 100
     if certificate_query.certificate_bundle_percentage:
         if (
@@ -385,6 +366,82 @@ def validate_query(certificate_query: GranularCertificateActionBase) -> bool:
             return False
 
     return True
+
+
+def apply_bundle_quantity_or_percentage(
+    certificates_from_query: list[GranularCertificateBundle],
+    certificate_bundle_action: GranularCertificateActionBase,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> list[GranularCertificateBundle]:
+    """Apply the bundle quantity or percentage to the certificates from the query.
+
+    For each GC Bundle returned from the query, this function will split the bundle
+    if the desired GC quantity or percentage is less than the GC Bundle quantity, otherwise
+    it will return the GC Bundle unsplit.
+
+    Args:
+        certificates_from_query (list[GranularCertificateBundle]): The certificates from the query
+        certificate_bundle_action (GranularCertificateAction): The certificate action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    Returns:
+        list[GranularCertificateBundle]: The list of certificates to transfer, split if required
+                                         such that the quantity of each bundle is equal to or
+                                         less than the desired bundle quantity, if provided, or
+                                         the percentage of the total certificates in the bundle.
+
+    """
+    # Just return the certificates from the query if no quantity or percentage is provided
+    if (certificate_bundle_action.certificate_quantity is None) & (
+        certificate_bundle_action.certificate_bundle_percentage is None
+    ):
+        return certificates_from_query
+
+    certificates_to_transfer = []
+
+    if certificate_bundle_action.certificate_quantity is not None:
+        certificates_to_split = [
+            certificate_bundle_action.certificate_quantity
+            for i in range(len(certificates_from_query))
+        ]
+    elif certificate_bundle_action.certificate_bundle_percentage is not None:
+        certificates_to_split = [
+            int(
+                certificate_bundle_action.certificate_bundle_percentage
+                * certificate_from_query.bundle_quantity
+                / 100
+            )
+            for certificate_from_query in certificates_from_query
+        ]
+
+    # Only check the bundle quantity if the query on bundle quantity parameter is provided,
+    # otherwise, split the bundle based on the percentage of the total certificates in the bundle
+    for idx, gc_bundle in enumerate(certificates_from_query):
+        gc_bundle = write_session.merge(gc_bundle)
+        if (
+            (certificate_bundle_action.certificate_quantity is not None)
+            & (
+                gc_bundle.bundle_quantity
+                > certificate_bundle_action.certificate_quantity
+            )
+        ) | (certificate_bundle_action.certificate_bundle_percentage is not None):
+            chlid_bundle_1, _child_bundle_2 = split_certificate_bundle(
+                gc_bundle,
+                certificates_to_split[idx],
+                write_session,
+                read_session,
+                esdb_client,
+            )
+            if chlid_bundle_1:
+                certificates_to_transfer.append(chlid_bundle_1)
+        else:
+            certificates_to_transfer.append(gc_bundle)
+
+    return certificates_to_transfer
 
 
 def query_certificates(
@@ -451,9 +508,9 @@ def query_certificates(
                     == query_value
                 )
 
-    certificates = session.exec(stmt).all()
+    gc_bundles = session.exec(stmt).all()
 
-    return certificates
+    return gc_bundles
 
 
 def transfer_certificates(
@@ -491,28 +548,14 @@ def transfer_certificates(
             certificate.certificate_status == CertificateStatus.ACTIVE
         ), f"Certificate with ID {certificate.issuance_id} is not active and cannot be transferred"
 
-    # Split bundles if required, but only if certificate_quantity is supplied
-    certificates_to_transfer = []
-    if certificate_bundle_action.certificate_quantity is not None:
-        for certificate in certificates_from_query:
-            certificate = write_session.merge(certificate)
-            if (
-                certificate.bundle_quantity
-                > certificate_bundle_action.certificate_quantity
-            ):
-                chlid_bundle_1, _child_bundle_2 = split_certificate_bundle(
-                    certificate,
-                    certificate_bundle_action.certificate_quantity,
-                    write_session,
-                    read_session,
-                    esdb_client,
-                )
-                if chlid_bundle_1:
-                    certificates_to_transfer.append(chlid_bundle_1)
-            else:
-                certificates_to_transfer.append(certificate)
-    else:
-        certificates_to_transfer = certificates_from_query
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_transfer = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Transfer certificates by updating account ID of target bundle
     for certificate in certificates_to_transfer:
@@ -541,13 +584,22 @@ def cancel_certificates(
     """
 
     # Retrieve certificates to cancel
-    certificates_to_cancel = query_certificates(
+    certificates_from_query = query_certificates(
         certificate_bundle_action, write_session=write_session
     )
 
-    if not certificates_to_cancel:
+    if not certificates_from_query:
         logger.info("No certificates found to cancel with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_cancel = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Cancel certificates
     for certificate in certificates_to_cancel:
@@ -581,13 +633,22 @@ def claim_certificates(
     ), "Beneficiary ID is required for GC claims"
 
     # Retrieve certificates to claim
-    certificates_to_claim = query_certificates(
+    certificates_from_query = query_certificates(
         certificate_bundle_action, write_session=write_session
     )
 
-    if not certificates_to_claim:
+    if not certificates_from_query:
         logger.info("No certificates found to claim with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_claim = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Assert the certificates are in a cancelled state
     for certificate in certificates_to_claim:
@@ -623,13 +684,22 @@ def withdraw_certificates(
     # TODO add logic for removing withdrawn GCs from the main table
 
     # Retrieve certificates to withdraw
-    certificates_to_withdraw = query_certificates(
+    certificates_from_query = query_certificates(
         certificate_bundle_action, write_session=write_session
     )
 
-    if not certificates_to_withdraw:
+    if not certificates_from_query:
         logger.info("No certificates found to withdraw with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_withdraw = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Withdraw certificates
     for certificate in certificates_to_withdraw:
@@ -661,13 +731,22 @@ def lock_certificates(
     """
 
     # Retrieve certificates to lock
-    certificates_to_lock = query_certificates(
+    certificates_from_query = query_certificates(
         certificate_bundle_action, write_session=write_session
     )
 
-    if not certificates_to_lock:
+    if not certificates_from_query:
         logger.info("No certificates found to lock with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_lock = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Lock certificates
     for certificate in certificates_to_lock:
@@ -696,13 +775,22 @@ def reserve_certificates(
     """
 
     # Retrieve certificates to reserve
-    certificates_to_reserve = query_certificates(
+    certificates_from_query = query_certificates(
         certificate_bundle_action, write_session=write_session
     )
 
-    if not certificates_to_reserve:
+    if not certificates_from_query:
         logger.info("No certificates found to reserve with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_reserve = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Reserve certificates
     for certificate in certificates_to_reserve:

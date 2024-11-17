@@ -34,8 +34,6 @@ certificate_query_param_map = {
     "device_id": "device_id",
     "energy_source": "energy_source",
     "certificate_status": "certificate_status",
-    "certificate_quantity": "bundle_quantity",
-    "certificate_bundle_percentage": "certificate_bundle_percentage",
 }
 
 
