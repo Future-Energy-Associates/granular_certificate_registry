@@ -2,7 +2,7 @@ import datetime
 from functools import partial
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Float
+from sqlalchemy import Column, Float, String
 from sqlmodel import ARRAY, BigInteger, Field
 
 from gc_registry import utils
@@ -473,11 +473,10 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         default=None, description="Update the status of a GC Bundle."
     )
     is_deleted: bool = Field(default=False)
-    # TODO this currently can't pass Pydantic validation, need to revisit
-    # sparse_filter_list: Tuple[str, str] | None = Field(
-    #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
-    #     sa_column=Column(ARRAY(String(), String())),
-    # )
+    sparse_filter_list: list[tuple[str, str]] | None = Field(
+        description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
+        sa_column=Column(ARRAY(String(), String())),
+    )
     action_response_status: str | None = Field(
         default=None,
         description="Specifies whether the requested action has been accepted or rejected by the registry.",

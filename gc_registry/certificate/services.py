@@ -3,7 +3,7 @@ from typing import Any
 
 from esdbclient import EventStoreDBClient
 from sqlalchemy import func
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import Session, SQLModel, or_, select
 from sqlmodel.sql.expression import SelectOfScalar
 
 from gc_registry.account.models import Account
@@ -483,7 +483,23 @@ def query_certificates(
     stmt = select(GranularCertificateBundle)  # type: ignore
     for query_param, query_value in certificate_query.model_dump().items():
         if (query_param in certificate_query_param_map) & (query_value is not None):
-            if query_param == "certificate_period_start":
+            # sparse_filter_list overrides all other search criteria if provided
+            if query_param == "sparse_filter_list":
+                sparse_filter_clauses = [
+                    (
+                        (GranularCertificateBundle.device_id == device_id)
+                        & (
+                            GranularCertificateBundle.production_starting_interval
+                            == production_starting_interval
+                        )
+                    )
+                    for (device_id, production_starting_interval) in query_value
+                ]
+                stmt = select(GranularCertificateBundle).where(
+                    or_(*sparse_filter_clauses)
+                )
+                break
+            elif query_param == "certificate_period_start":
                 stmt = stmt.where(
                     getattr(
                         GranularCertificateBundle,
