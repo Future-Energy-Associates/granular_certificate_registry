@@ -8,9 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import JSON, Column
 from sqlmodel import Field
 
-utc_datetime_now: datetime.datetime = partial(
-    datetime.datetime.now, datetime.timezone.utc
-)
+utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
 
 class DeviceTechnologyType(str, enum.Enum):
@@ -77,4 +75,4 @@ class Event(BaseModel):
     entity_name: str
     attributes_before: dict | None = Field(sa_column=Column(JSON))
     attributes_after: dict | None = Field(sa_column=Column(JSON))
-    timestamp: datetime.datetime = Field(default_factory=utc_datetime_now)
+    timestamp: datetime.datetime = Field(default_factory=utc_datetime_now)  # type: ignore

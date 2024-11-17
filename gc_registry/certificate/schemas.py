@@ -2,7 +2,7 @@ import datetime
 from functools import partial
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Float, String
+from sqlalchemy import JSON, Column, Float
 from sqlmodel import ARRAY, BigInteger, Field
 
 from gc_registry import utils
@@ -454,8 +454,8 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     )
     certificate_bundle_percentage: float | None = Field(
         default=None,
-        description="""Overrides GC Bundle range start and end IDs, if specified. 
-        The percentage from 0 to 100 of the identified GC bundle to action on, splitting from 
+        description="""Overrides GC Bundle range start and end IDs, if specified.
+        The percentage from 0 to 100 of the identified GC bundle to action on, splitting from
         the start of the range and rounding down to the nearest Wh.""",
     )
     device_id: int | None = Field(
@@ -476,7 +476,7 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     sparse_filter_list: list[tuple[str, str]] | None = Field(
         default=None,
         description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
-        sa_column=Column(ARRAY(String(), String())),
+        sa_column=Column(ARRAY(JSON)),
     )
     action_response_status: str | None = Field(
         default=None,

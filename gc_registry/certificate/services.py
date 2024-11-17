@@ -265,7 +265,7 @@ def process_certificate_action(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> GranularCertificateAction | None:
+) -> GranularCertificateAction:
     """Process the given certificate action.
 
     Args:
@@ -312,9 +312,6 @@ def process_certificate_action(
     db_certificate_action = GranularCertificateAction.create(
         certificate_action, write_session, read_session, esdb_client
     )
-    if not db_certificate_action:
-        logger.error("Error creating certificate action entity")
-        return None
 
     return db_certificate_action[0]  # type: ignore
 
@@ -474,7 +471,7 @@ def query_certificates(
         )
         return None
 
-    session = read_session if write_session is None else write_session
+    session: Session = read_session if write_session is None else write_session  # type: ignore
 
     if validate_query(certificate_query) is False:
         return None
