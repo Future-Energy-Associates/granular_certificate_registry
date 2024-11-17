@@ -6,6 +6,7 @@ import httpx
 import pandas as pd
 
 from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.device.meter_data.abstract_meter_client import AbstractMeterDataClient
 
 
 def mock_response(endpoint: str) -> httpx.Response:
@@ -21,11 +22,11 @@ def parse_datetime(date_str, format="%m/%d/%Y %I:%M:%S %p"):
     return datetime.datetime.strptime(date_str, format)
 
 
-class PJM:
+class PJM(AbstractMeterDataClient):
     def __init__(self):
         self.base_url = "https://dataminer2.pjm.com/feed"
 
-    def get_data(self, endpoint: str, test=False):
+    def get_metering_by_device_in_datetime_range(self, endpoint: str, test=False):
         if test:
             response = mock_response(endpoint)
         else:
@@ -35,7 +36,7 @@ class PJM:
 
         return response
 
-    def map_generation_to_certificates(
+    def map_metering_to_certificates(
         self,
         generation_data: list[dict[Any, Any]],
         account_id: str | None = None,
@@ -108,5 +109,5 @@ class PJM:
 
 if __name__ == "__main__":
     pjm = PJM()
-    r = pjm.get_data("gen_by_fuel", test=True)
-    print(pjm.map_generation_to_certificates(r.json()))
+    r = pjm.get_metering_by_device_in_datetime_range("gen_by_fuel", test=True)
+    print(pjm.map_metering_to_certificates(r.json()))

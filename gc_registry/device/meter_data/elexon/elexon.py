@@ -5,7 +5,6 @@ from typing import Any
 import httpx
 import pandas as pd
 
-from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.core.models.base import (
     CertificateStatus,
     EnergyCarrierType,
@@ -66,7 +65,9 @@ class ElexonClient:
 
         return data
 
-    def resample_hh_data_to_hourly(self, data_hh_df: pd.DataFrame) -> dict:
+    def resample_hh_data_to_hourly(
+        self, data_hh_df: pd.DataFrame
+    ) -> list[dict[str, Any]]:
         data_hh_df["start_time"] = pd.to_datetime(
             data_hh_df.halfHourEndTime
         ) - pd.Timedelta(minutes=30)
@@ -109,7 +110,7 @@ class ElexonClient:
 
         return response.json()
 
-    def get_generation_by_device_in_datetime_range(
+    def get_metering_by_device_in_datetime_range(
         self,
         from_datetime: datetime,
         to_datetime: datetime,
@@ -123,9 +124,12 @@ class ElexonClient:
             bmu_ids=[meter_data_id],
         )
 
+        meter_data_df = pd.DataFrame(data)
+        data = self.resample_hh_data_to_hourly(meter_data_df)
+
         return data
 
-    def map_generation_to_certificates(
+    def map_metering_to_certificates(
         self,
         generation_data: list[dict[str, Any]],
         account_id: int,
@@ -133,7 +137,7 @@ class ElexonClient:
         is_storage: bool,
         issuance_metadata_id: int,
         bundle_id_range_start: int = 0,
-    ) -> list[GranularCertificateBundle]:
+    ) -> list[dict[str, Any]]:
         WH_IN_MWH = 1e6
 
         mapped_data: list = []
@@ -144,7 +148,7 @@ class ElexonClient:
 
             # Get existing "bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
-                bundle_id_range_start = mapped_data[-1].bundle_id_range_end + 1
+                bundle_id_range_start = mapped_data[-1]["bundle_id_range_end"] + 1
 
             # E.g., if bundle_wh = 1000, bundle_id_range_start = 0, bundle_id_range_end = 999
             bundle_id_range_end = bundle_id_range_start + bundle_wh - 1
@@ -177,11 +181,7 @@ class ElexonClient:
                 f"{device_id}-{transformed['production_starting_interval']}"
             )
 
-            # Validate and append the transformed data
-            valid_data = GranularCertificateBundle.model_validate(transformed)
-            # Add this back in when moved to certificate services
-            # valid_data.hash = create_bundle_hash(valid_data, None)
-            mapped_data.append(valid_data)
+            mapped_data.append(transformed)
 
         return mapped_data
 

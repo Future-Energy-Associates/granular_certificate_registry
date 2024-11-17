@@ -173,7 +173,6 @@ def downgrade() -> None:
     )
     op.alter_column('granularcertificateaction', 'id',
                existing_type=sa.INTEGER(),
-               nullable=True,
                autoincrement=True)
     op.drop_column('granularcertificateaction', 'is_deleted')
     op.drop_column('granularcertificateaction', 'created_at')
