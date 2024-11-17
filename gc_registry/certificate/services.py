@@ -422,24 +422,24 @@ def apply_bundle_quantity_or_percentage(
     # otherwise, split the bundle based on the percentage of the total certificates in the bundle
     for idx, gc_bundle in enumerate(certificates_from_query):
         gc_bundle = write_session.merge(gc_bundle)
-        if (
-            (certificate_bundle_action.certificate_quantity is not None)
-            & (
+
+        if certificate_bundle_action.certificate_quantity is not None:
+            if (
                 gc_bundle.bundle_quantity
-                > certificate_bundle_action.certificate_quantity
-            )
-        ) | (certificate_bundle_action.certificate_bundle_percentage is not None):
-            chlid_bundle_1, _child_bundle_2 = split_certificate_bundle(
-                gc_bundle,
-                certificates_to_split[idx],
-                write_session,
-                read_session,
-                esdb_client,
-            )
-            if chlid_bundle_1:
-                certificates_to_transfer.append(chlid_bundle_1)
-        else:
-            certificates_to_transfer.append(gc_bundle)
+                <= certificate_bundle_action.certificate_quantity
+            ):
+                certificates_to_transfer.append(gc_bundle)
+                continue
+
+        chlid_bundle_1, _child_bundle_2 = split_certificate_bundle(
+            gc_bundle,
+            certificates_to_split[idx],
+            write_session,
+            read_session,
+            esdb_client,
+        )
+        if chlid_bundle_1:
+            certificates_to_transfer.append(chlid_bundle_1)
 
     return certificates_to_transfer
 

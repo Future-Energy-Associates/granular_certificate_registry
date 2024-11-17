@@ -17,6 +17,7 @@ from gc_registry.certificate.services import (
     split_certificate_bundle,
     validate_granular_certificate_bundle,
 )
+from gc_registry.core.models.base import CertificateStatus
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
 from gc_registry.settings import settings
@@ -241,3 +242,40 @@ class TestCertificateServices:
         certificate_transfered = query_certificates(certificate_query, db_read_session)
 
         assert certificate_transfered[0].bundle_quantity == 500  # type: ignore
+
+    def test_cancel_by_percentage(
+        self,
+        fake_db_gc_bundle: GranularCertificateBundle,
+        fake_db_user: User,
+        db_write_session: Session,
+        db_read_session: Session,
+        esdb_client: EventStoreDBClient,
+    ):
+        """
+        Cancel 75% of the bundle, and assert that the bundle was correctly
+        split and the correct percentage cancelled.
+        """
+        certificate_action = GranularCertificateActionBase(
+            action_type="cancel",
+            source_id=fake_db_gc_bundle.account_id,
+            user_id=fake_db_user.id,
+            source_certificate_issuance_id=fake_db_gc_bundle.issuance_id,
+            certificate_bundle_percentage=75,
+        )
+
+        db_certificate_action = process_certificate_action(
+            certificate_action, db_write_session, db_read_session, esdb_client
+        )
+
+        assert db_certificate_action.action_response_status == "accepted"
+
+        # Check that 75% of the bundle was cancelled
+        certificate_query = GranularCertificateActionBase(
+            action_type="query",
+            user_id=fake_db_user.id,
+            source_id=fake_db_gc_bundle.account_id,
+            certificate_status=CertificateStatus.CANCELLED,
+        )
+        certificates_cancelled = query_certificates(certificate_query, db_read_session)
+
+        assert certificates_cancelled[0].bundle_quantity == 750  # type: ignore

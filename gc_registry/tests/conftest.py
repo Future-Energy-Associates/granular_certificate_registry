@@ -376,7 +376,6 @@ def fake_db_gc_bundle(
     gc_bundle_dict = {
         "id": 1,
         "account_id": fake_db_account.id,
-        "issuance_id": "1-2021-01-01T00:00",
         "certificate_status": CertificateStatus.ACTIVE,
         "metadata_id": fake_db_issuance_metadata.id,
         "bundle_id_range_start": 0,
