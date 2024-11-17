@@ -63,6 +63,19 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
         issuance_metadata_id: int,
         bundle_id_range_start: int = 0,
     ) -> list[dict[str, Any]]:
+        """Map meter records to certificate bundles.
+
+        Args:
+            generation_data (list[MeasurementReport]): A list of meter records taken from the database.
+            account_id (int): The ID of the account to which the certificate bundles will be issued.
+            device (Device): The device for which the meter records were taken.
+            is_storage (bool): Whether the device is a storage device.
+            issuance_metadata_id (int): The ID of the issuance metadata associated with these records.
+            bundle_id_range_start (int): The starting ID of the bundle range, if not zero.
+
+        Returns:
+            list[dict[str, Any]]: A list of dictionaries containing the certificate bundle data.
+        """
         WH_IN_MWH = 1e6
 
         mapped_data: list = []
