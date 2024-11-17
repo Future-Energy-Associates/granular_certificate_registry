@@ -167,9 +167,9 @@ class ElexonClient:
                 "production_starting_interval": data["start_time"],
                 "production_ending_interval": data["start_time"]
                 + pd.Timedelta(minutes=60),
-                "issuance_datestamp": datetime.utcnow().date(),
+                "issuance_datestamp": datetime.now(tz=datetime.timezone.utc).date(),
                 "expiry_datestamp": (
-                    datetime.utcnow()
+                    datetime.now(tz=datetime.timezone.utc)
                     + timedelta(days=365 * settings.CERTIFICATE_EXPIRY_YEARS)
                 ).date(),
                 "metadata_id": issuance_metadata_id,

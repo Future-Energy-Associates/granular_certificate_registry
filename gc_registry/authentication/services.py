@@ -81,9 +81,11 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta | None = N
     # so we need to find an alternative e.g. datetime.now(datetime.UTC) that does not
     # break mypy
     if expires_delta:
-        expire = datetime.datetime.utcnow() + expires_delta
+        expire = datetime.datetime.now(tz=datetime.timezone.utc) + expires_delta
     else:
-        expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+        expire = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(
+            minutes=15
+        )
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
@@ -117,7 +119,7 @@ def validate_user_and_get_headers(oauth_token: str = Depends(oauth2_scheme)):
         expire: str = payload.get("exp", "60")
 
         # checking the expiry date
-        current_ts = datetime.datetime.utcnow().timestamp()
+        current_ts = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
         if (float(expire) - current_ts) < 0:
             with next(db.db_name_to_client["db_read"].yield_session()) as session:
