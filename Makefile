@@ -99,6 +99,11 @@ db.reset:
 		docker volume rm granular_certificate_registry_postgres_data_write && \
 		make db.update
 
+.PHONY: db.test.migrations
+db.test.migrations:
+	make db.reset && \
+	docker compose run --rm gc_registry alembic downgrade base
+
 .PHONY: db.seed
 db.seed:
 	docker compose run --rm gc_registry poetry run seed-db

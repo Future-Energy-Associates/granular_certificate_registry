@@ -1,10 +1,8 @@
 import datetime
 import logging
-from hashlib import sha256
+from typing import Any
 
-import pandas as pd
 from esdbclient import EventStoreDBClient
-from fluent_validator import validate  # type: ignore
 from sqlalchemy import func
 from sqlmodel import Session, SQLModel, select
 from sqlmodel.sql.expression import SelectOfScalar
@@ -22,70 +20,14 @@ from gc_registry.certificate.schemas import (
     GranularCertificateBundleCreate,
     GranularCertificateBundleRead,
     certificate_query_param_map,
-    mutable_gc_attributes,
 )
+from gc_registry.certificate.validation import validate_granular_certificate_bundle
+from gc_registry.core.database import cqrs
 from gc_registry.core.models.base import CertificateActionType
-from gc_registry.device.meter_data.elexon.elexon import ElexonClient
-from gc_registry.device.services import (
-    device_mw_capacity_to_wh_max,
-    get_all_devices,
-    get_device_capacity_by_id,
-)
-from gc_registry.settings import settings
-
-logger = logging.getLogger(__name__)
-logger.setLevel(settings.LOG_LEVEL)
-
-
-def create_bundle_hash(
-    gc_bundle: GranularCertificateBundle | GranularCertificateBundleBase,
-    nonce: str | None = "",
-):
-    """
-    Given a GC Bundle and a nonce taken from the hash of a parent bundle,
-    return a new hash for the child bundle that demonstrates the child's
-    lineage from the parent.
-
-    To ensure that a consistent string representation of the GC bundle is
-    used, a JSON model dump of the base bundle class is used to avoid
-    automcatically generated fields such as the bundle's ID. In addition,
-    only non-mutable fields are included such that lineage can be traced
-    no matter the lifecycle stage the GC is in.
-
-    Args:
-        gc_bundle (GranularCertificateBundle): The child GC Bundle
-        nonce (str): The hash of the parent GC Bundle
-
-    Returns:
-        str: The hash of the child GC Bundle
-    """
-
-    gc_bundle_dict = gc_bundle.model_dump_json(
-        exclude=set(["id", "created_at", "hash"] + mutable_gc_attributes)
-    )
-    return sha256(f"{gc_bundle_dict}{nonce}".encode()).hexdigest()
-
-
-def verifiy_bundle_lineage(
-    gc_bundle_parent: GranularCertificateBundle,
-    gc_bundle_child: GranularCertificateBundle,
-):
-    """
-    Given a parent and child GC Bundle, verify that the child's hash
-    can be recreated from the parent's hash and the child's nonce.
-
-    Args:
-        gc_bundle_parent (GranularCertificateBundle): The parent GC Bundle
-        gc_bundle_child (GranularCertificateBundle): The child GC Bundle
-
-    Returns:
-        bool: Whether the child's hash can be recreated from the parent's hash
-    """
-
-    return (
-        create_bundle_hash(gc_bundle_child, gc_bundle_parent.hash)
-        == gc_bundle_child.hash
-    )
+from gc_registry.core.services import create_bundle_hash
+from gc_registry.device.meter_data.abstract_meter_client import AbstractMeterDataClient
+from gc_registry.device.models import Device
+from gc_registry.device.services import get_all_devices
 
 
 def split_certificate_bundle(
@@ -181,47 +123,77 @@ def get_max_certificate_id_by_device_id(
         return int(max_certificate_id)
 
 
-def validate_granular_certificate_bundle(
-    db_session: Session,
-    gcb: GranularCertificateBundleBase,
-    is_storage_device: bool,
-    hours: float = settings.CERTIFICATE_GRANULARITY_HOURS,
-) -> None:
-    W_IN_MW = 1e6
-    device_id = gcb.device_id
-    device_w = get_device_capacity_by_id(db_session, device_id)
-    if not device_w:
-        raise ValueError(f"Device with ID {device_id} not found")
+def issue_certificates_by_device_in_date_range(
+    device: Device,
+    from_datetime: datetime.datetime,
+    to_datetime: datetime.datetime,
+    db_write_session: Session,
+    db_read_session: Session,
+    esdb_client: EventStoreDBClient,
+    issuance_metadata_id: int,
+    meter_data_client: AbstractMeterDataClient,
+) -> list[SQLModel] | None:
+    if not device.id or not device.meter_data_id:
+        logging.error(f"No device ID or meter data ID for device: {device}")
+        return None
 
-    device_mw = device_w / W_IN_MW
-    device_max_watts_hours = device_mw_capacity_to_wh_max(device_mw, hours)
-
-    device_max_certificate_id = get_max_certificate_id_by_device_id(
-        db_session, device_id
+    meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
+        from_datetime, to_datetime, device.meter_data_id
     )
 
-    if not device_max_certificate_id:
-        device_max_certificate_id = 0
+    if not meter_data:
+        logging.info(f"No meter data retrieved for device: {device.meter_data_id}")
+        return None
 
-    # Validate the bundle quantity is equal to the difference between the bundle ID range
-    # and less than the device max watts hours
-    validate(gcb.bundle_quantity, identifier="bundle_quantity").less_than(
-        device_max_watts_hours
-    ).equal(gcb.bundle_id_range_end - gcb.bundle_id_range_start + 1)
+    # Map the meter data to certificates
+    bundle_id_range_start = get_max_certificate_id_by_device_id(
+        db_read_session, device.id
+    )
+    if not bundle_id_range_start:
+        bundle_id_range_start = 1
+    else:
+        bundle_id_range_start += 1
 
-    # Validate the bundle ID range start is greater than the previous max certificate ID
-    validate(gcb.bundle_id_range_start, identifier="bundle_id_range_start").equal(
-        device_max_certificate_id + 1
+    certificates = meter_data_client.map_metering_to_certificates(
+        generation_data=meter_data,
+        bundle_id_range_start=bundle_id_range_start,
+        account_id=device.account_id,
+        device_id=device.id,
+        is_storage=device.is_storage,
+        issuance_metadata_id=issuance_metadata_id,
     )
 
-    # At this point if integrating wtih EAC registry or possibility of cross registry transfer
-    # add integrations with external sources for further validation e.g. cancellation of underlying EACs
+    if not certificates:
+        logging.error(f"No meter data retrieved for device: {device.meter_data_id}")
+        return None
 
-    if is_storage_device:
-        # TODO: add additional storage validation
-        pass
+    # Validate the certificates
+    valid_certificates = []
+    for certificate in certificates:
+        device_max_certificate_id = get_max_certificate_id_by_device_id(
+            db_read_session, device.id
+        )
 
-    return None
+        valid_certificate = validate_granular_certificate_bundle(
+            db_read_session,
+            certificate,
+            is_storage_device=device.is_storage,
+            device_max_certificate_id=device_max_certificate_id,
+        )
+        valid_certificate.hash = create_bundle_hash(valid_certificate, nonce="")
+        valid_certificate.issuance_id = create_issuance_id(valid_certificate)
+        valid_certificates.append(valid_certificate)
+
+    # Commit the certificate to the database
+    # TODO: Consider using bulk transaction - will require change in validation of bundle_id_range_start and end
+    created_entities = cqrs.write_to_database(
+        valid_certificates,  # type: ignore
+        db_write_session,
+        db_read_session,
+        esdb_client,
+    )
+
+    return created_entities
 
 
 def issue_certificates_in_date_range(
@@ -231,7 +203,7 @@ def issue_certificates_in_date_range(
     db_read_session: Session,
     esdb_client: EventStoreDBClient,
     issuance_metadata_id: int,
-    meter_data_client: ElexonClient,
+    meter_data_client: AbstractMeterDataClient,
 ) -> list[SQLModel] | None:
     """Issues certificates for a device using the following process.
     1. Get a list of devices in the registry and their capacities
@@ -260,11 +232,8 @@ def issue_certificates_in_date_range(
         logging.error("No devices found in the registry")
         return None
 
-    created_entities = None
-
     # Issue certificates for each device
-    certificates: list = []
-    bundle_id_range_start = None
+    certificates: list[Any] = []
     for device in devices:
         # Get the meter data for the device
         if not device.meter_data_id:
@@ -275,54 +244,20 @@ def issue_certificates_in_date_range(
             logging.error(f"No device ID for device: {device}")
             continue
 
-        meter_data = meter_data_client.get_generation_by_device_in_datetime_range(
-            from_datetime, to_datetime, device.meter_data_id
+        created_entities = issue_certificates_by_device_in_date_range(
+            device,
+            from_datetime,
+            to_datetime,
+            db_write_session,
+            db_read_session,
+            esdb_client,
+            issuance_metadata_id,
+            meter_data_client,
         )
+        if created_entities:
+            certificates.extend(created_entities)
 
-        if not meter_data:
-            logging.info(f"No meter data retrieved for device: {device.meter_data_id}")
-            continue
-
-        meter_data_df = pd.DataFrame(meter_data)
-        meter_data = meter_data_client.resample_hh_data_to_hourly(meter_data_df)  # type: ignore
-
-        # Map the meter data to certificates
-        bundle_id_range_start = get_max_certificate_id_by_device_id(
-            db_read_session, device.id
-        )
-        if not bundle_id_range_start:
-            bundle_id_range_start = 1
-        else:
-            bundle_id_range_start += 1
-
-        certificates = meter_data_client.map_generation_to_certificates(
-            generation_data=meter_data,
-            bundle_id_range_start=bundle_id_range_start,
-            account_id=device.account_id,
-            device_id=device.id,
-            is_storage=device.is_storage,
-            issuance_metadata_id=issuance_metadata_id,
-        )
-
-        if not certificates:
-            logging.info(f"No meter data retrieved for device: {device.meter_data_id}")
-            continue
-
-        # Validate the certificates
-        for certificate in certificates:
-            certificate.hash = create_bundle_hash(certificate, nonce="")
-            certificate.issuance_id = create_issuance_id(certificate)
-            validate_granular_certificate_bundle(
-                db_read_session, certificate, is_storage_device=device.is_storage
-            )
-
-            # Commit the certificate to the database
-            # TODO: Consider using bulk transaction - will require change in validation of bundle_id_range_start and end
-            created_entities = GranularCertificateBundle.create(
-                certificate, db_write_session, db_read_session, esdb_client
-            )
-
-    return created_entities
+    return certificates
 
 
 def process_certificate_action(
