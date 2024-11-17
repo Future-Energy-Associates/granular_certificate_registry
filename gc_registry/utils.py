@@ -49,7 +49,7 @@ class ActiveRecord(SQLModel):
     @classmethod
     def create(
         cls,
-        source: dict[str, Any] | BaseModel,
+        source: list[dict[str, Any]] | dict[str, Any] | BaseModel,
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
@@ -58,6 +58,8 @@ class ActiveRecord(SQLModel):
             obj = cls.model_validate(source)
         elif isinstance(source, dict):
             obj = cls.model_validate_json(json.dumps(source))
+        elif isinstance(source, list):
+            obj = [cls.model_validate_json(json.dumps(elem)) for elem in source]
         else:
             raise ValueError(f"The input type {type(source)} can not be processed")
 
