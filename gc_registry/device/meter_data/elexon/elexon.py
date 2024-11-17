@@ -1,4 +1,3 @@
-import logging
 from datetime import date, datetime, timedelta
 from typing import Any
 
@@ -10,6 +9,7 @@ from gc_registry.core.models.base import (
     EnergyCarrierType,
     EnergySourceType,
 )
+from gc_registry.logging_config import logger
 from gc_registry.settings import settings
 
 
@@ -144,7 +144,7 @@ class ElexonClient:
         for data in generation_data:
             bundle_wh = int(data["quantity"] * WH_IN_MWH)
 
-            logging.info(f"Data: {data}, Bundle WH: {bundle_wh}")
+            logger.info(f"Data: {data}, Bundle WH: {bundle_wh}")
 
             # Get existing "bundle_id_range_end" from the last item in mapped_data
             if mapped_data:

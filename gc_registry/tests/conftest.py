@@ -1,4 +1,3 @@
-import logging
 import os
 from typing import Generator
 
@@ -27,6 +26,7 @@ from gc_registry.core.models.base import (
 )
 from gc_registry.core.services import create_bundle_hash
 from gc_registry.device.models import Device
+from gc_registry.logging_config import logger
 from gc_registry.main import app
 from gc_registry.settings import settings
 from gc_registry.user.models import User
@@ -78,7 +78,7 @@ def get_db_url(target: str = "write") -> str | None:
             pg_container.start()
             return pg_container.get_connection_url()
         except Exception as e:
-            logging.error(f"Failed to start PostgreSQL container: {str(e)}")
+            logger.error(f"Failed to start PostgreSQL container: {str(e)}")
             return None
 
 

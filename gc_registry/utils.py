@@ -1,6 +1,5 @@
 import datetime
 import json
-import logging
 from typing import Any, Type, TypeVar
 
 from esdbclient import EventStoreDBClient
@@ -10,11 +9,7 @@ from pydantic import BaseModel
 from sqlmodel import Field, Session, SQLModel, select
 
 from gc_registry.core.database import cqrs
-from gc_registry.settings import settings
-
-logger = logging.getLogger(__name__)
-logger.setLevel(settings.LOG_LEVEL)
-
+from gc_registry.logging_config import logger
 
 T = TypeVar("T", bound="ActiveRecord")
 

@@ -1,5 +1,4 @@
 import datetime
-import logging
 from typing import Any
 
 from esdbclient import EventStoreDBClient
@@ -28,6 +27,7 @@ from gc_registry.core.services import create_bundle_hash
 from gc_registry.device.meter_data.abstract_meter_client import AbstractMeterDataClient
 from gc_registry.device.models import Device
 from gc_registry.device.services import get_all_devices
+from gc_registry.logging_config import logger
 
 
 def split_certificate_bundle(
@@ -134,7 +134,7 @@ def issue_certificates_by_device_in_date_range(
     meter_data_client: AbstractMeterDataClient,
 ) -> list[SQLModel] | None:
     if not device.id or not device.meter_data_id:
-        logging.error(f"No device ID or meter data ID for device: {device}")
+        logger.error(f"No device ID or meter data ID for device: {device}")
         return None
 
     meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
@@ -142,7 +142,7 @@ def issue_certificates_by_device_in_date_range(
     )
 
     if not meter_data:
-        logging.info(f"No meter data retrieved for device: {device.meter_data_id}")
+        logger.info(f"No meter data retrieved for device: {device.meter_data_id}")
         return None
 
     # Map the meter data to certificates
@@ -164,7 +164,7 @@ def issue_certificates_by_device_in_date_range(
     )
 
     if not certificates:
-        logging.error(f"No meter data retrieved for device: {device.meter_data_id}")
+        logger.error(f"No meter data retrieved for device: {device.meter_data_id}")
         return None
 
     # Validate the certificates
@@ -229,7 +229,7 @@ def issue_certificates_in_date_range(
     devices = get_all_devices(db_read_session)
 
     if not devices:
-        logging.error("No devices found in the registry")
+        logger.error("No devices found in the registry")
         return None
 
     # Issue certificates for each device
@@ -237,11 +237,11 @@ def issue_certificates_in_date_range(
     for device in devices:
         # Get the meter data for the device
         if not device.meter_data_id:
-            logging.error(f"No meter data ID for device: {device.id}")
+            logger.error(f"No meter data ID for device: {device.id}")
             continue
 
         if not device.id:
-            logging.error(f"No device ID for device: {device}")
+            logger.error(f"No device ID for device: {device}")
             continue
 
         created_entities = issue_certificates_by_device_in_date_range(
@@ -304,7 +304,7 @@ def process_certificate_action(
             certificate_action, write_session, read_session, esdb_client
         )
     except Exception as e:
-        logging.error(f"Error whilst processing certificate action: {str(e)}")
+        logger.error(f"Error whilst processing certificate action: {str(e)}")
         certificate_action.action_response_status = "rejected"
     else:
         certificate_action.action_response_status = "accepted"
@@ -313,7 +313,7 @@ def process_certificate_action(
         certificate_action, write_session, read_session, esdb_client
     )
     if not db_certificate_action:
-        logging.error("Error creating certificate action entity")
+        logger.error("Error creating certificate action entity")
         return None
 
     return db_certificate_action[0]  # type: ignore
@@ -483,7 +483,7 @@ def transfer_certificates(
     )
 
     if not certificates_from_query:
-        logging.error("No certificates found to transfer with given query parameters.")
+        logger.error("No certificates found to transfer with given query parameters.")
         return None
 
     for certificate in certificates_from_query:
@@ -546,7 +546,7 @@ def cancel_certificates(
     )
 
     if not certificates_to_cancel:
-        logging.info("No certificates found to cancel with given query parameters.")
+        logger.info("No certificates found to cancel with given query parameters.")
         return
 
     # Cancel certificates
@@ -586,7 +586,7 @@ def claim_certificates(
     )
 
     if not certificates_to_claim:
-        logging.info("No certificates found to claim with given query parameters.")
+        logger.info("No certificates found to claim with given query parameters.")
         return
 
     # Assert the certificates are in a cancelled state
@@ -628,7 +628,7 @@ def withdraw_certificates(
     )
 
     if not certificates_to_withdraw:
-        logging.info("No certificates found to withdraw with given query parameters.")
+        logger.info("No certificates found to withdraw with given query parameters.")
         return
 
     # Withdraw certificates
@@ -666,7 +666,7 @@ def lock_certificates(
     )
 
     if not certificates_to_lock:
-        logging.info("No certificates found to lock with given query parameters.")
+        logger.info("No certificates found to lock with given query parameters.")
         return
 
     # Lock certificates
@@ -701,7 +701,7 @@ def reserve_certificates(
     )
 
     if not certificates_to_reserve:
-        logging.info("No certificates found to reserve with given query parameters.")
+        logger.info("No certificates found to reserve with given query parameters.")
         return
 
     # Reserve certificates
