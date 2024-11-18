@@ -137,9 +137,15 @@ def issue_certificates_by_device_in_date_range(
         logger.error(f"No device ID or meter data ID for device: {device}")
         return None
 
-    meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
-        from_datetime, to_datetime, device.meter_data_id
-    )
+    # TODO CAG - this is messy by me, will refactor down the road
+    if meter_data_client.NAME == "ManualSubmissionMeterClient":
+        meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
+            from_datetime, to_datetime, device.id, db_read_session
+        )
+    else:
+        meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
+            from_datetime, to_datetime, device.meter_data_id
+        )
 
     if not meter_data:
         logger.info(f"No meter data retrieved for device: {device.meter_data_id}")
@@ -173,6 +179,8 @@ def issue_certificates_by_device_in_date_range(
         device_max_certificate_id = get_max_certificate_id_by_device_id(
             db_read_session, device.id
         )
+        logger.debug(f"Device max certificate ID: {device_max_certificate_id}")
+        logger.debug(f"Certificate: {certificate}")
 
         valid_certificate = validate_granular_certificate_bundle(
             db_read_session,
@@ -184,14 +192,14 @@ def issue_certificates_by_device_in_date_range(
         valid_certificate.issuance_id = create_issuance_id(valid_certificate)
         valid_certificates.append(valid_certificate)
 
-    # Commit the certificate to the database
-    # TODO: Consider using bulk transaction - will require change in validation of bundle_id_range_start and end
-    created_entities = cqrs.write_to_database(
-        valid_certificates,  # type: ignore
-        db_write_session,
-        db_read_session,
-        esdb_client,
-    )
+        # Commit the certificate to the database
+        # TODO: Consider using bulk transaction - will require change in validation of bundle_id_range_start and end
+        created_entities = cqrs.write_to_database(
+            valid_certificates,  # type: ignore
+            db_write_session,
+            db_read_session,
+            esdb_client,
+        )
 
     return created_entities
 

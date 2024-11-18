@@ -63,7 +63,9 @@ class ActiveRecord(SQLModel):
         else:
             raise ValueError(f"The input type {type(source)} can not be processed")
 
-        logger.debug(f"Creating {cls.__name__}: {obj.model_dump_json()}")
+        logger.debug(
+            f"Creating {cls.__name__}: {obj[0].model_dump_json() if isinstance(obj, list) else obj.model_dump_json()}"
+        )
         created_entities = cqrs.write_to_database(
             obj, write_session, read_session, esdb_client
         )

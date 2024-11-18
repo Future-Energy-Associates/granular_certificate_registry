@@ -25,6 +25,7 @@ def parse_datetime(date_str, format="%m/%d/%Y %I:%M:%S %p"):
 class PJM(AbstractMeterDataClient):
     def __init__(self):
         self.base_url = "https://dataminer2.pjm.com/feed"
+        self.name = "PJM"
 
     def get_metering_by_device_in_datetime_range(self, endpoint: str, test=False):
         if test:

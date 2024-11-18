@@ -1,26 +1,30 @@
+import datetime
 from typing import Any
+
+import pandas as pd
+from sqlalchemy.sql.expression import select
 from sqlmodel import Session
+
 from gc_registry.core.models.base import (
     CertificateStatus,
     EnergyCarrierType,
-    EnergySourceType,
 )
 from gc_registry.device.meter_data.abstract_meter_client import AbstractMeterDataClient
-from gc_registry.measurement.models import MeasurementReport
-from sqlalchemy.sql.expression import select
-import datetime
-from gc_registry.logging_config import logger
 from gc_registry.device.models import Device
-import pandas as pd
+from gc_registry.logging_config import logger
+from gc_registry.measurement.models import MeasurementReport
 from gc_registry.settings import settings
 
 
 class ManualSubmissionMeterClient(AbstractMeterDataClient):
+    def __init__(self):
+        self.NAME = "ManualSubmissionMeterClient"
+
     def get_metering_by_device_in_datetime_range(
         self,
-        device_id: int,
         start_datetime: datetime.datetime,
         end_datetime: datetime.datetime,
+        device_id: int,
         read_session: Session,
     ) -> list[MeasurementReport]:
         """Retrieve meter records from the database for a specific device in a specific time range.
@@ -52,6 +56,8 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
             )
             return None
 
+        meter_records = [meter[0].model_dump() for meter in meter_records]
+
         return meter_records
 
     def map_metering_to_certificates(
@@ -76,21 +82,17 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
         Returns:
             list[dict[str, Any]]: A list of dictionaries containing the certificate bundle data.
         """
-        WH_IN_MWH = 1e6
 
         mapped_data: list = []
 
         for data in generation_data:
-            bundle_wh = int(data["interval_usage"] * WH_IN_MWH)
-
-            logger.debug(f"Data: {data}, Bundle WH: {bundle_wh}")
-
             # Get existing "bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
                 bundle_id_range_start = mapped_data[-1]["bundle_id_range_end"] + 1
 
             # E.g., if bundle_wh = 1000, bundle_id_range_start = 0, bundle_id_range_end = 999
-            bundle_id_range_end = bundle_id_range_start + bundle_wh - 1
+            # TODO this breaks for a bundle of 1 Wh as bundle_id_range_end = bundle_id_range_start
+            bundle_id_range_end = bundle_id_range_start + data["interval_usage"] - 1
 
             transformed = {
                 "account_id": account_id,
@@ -103,9 +105,8 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
                 "face_value": 1,
                 "issuance_post_energy_carrier_conversion": False,
                 "device_id": device.id,
-                "production_starting_interval": data["start_time"],
-                "production_ending_interval": data["start_time"]
-                + pd.Timedelta(minutes=60),
+                "production_starting_interval": data["interval_start_datetime"],
+                "production_ending_interval": data["interval_end_datetime"],
                 "issuance_datestamp": datetime.datetime.now(
                     tz=datetime.timezone.utc
                 ).date(),

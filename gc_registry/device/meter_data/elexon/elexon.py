@@ -21,6 +21,7 @@ def datetime_to_settlement_period(dt: datetime.datetime) -> int:
 class ElexonClient:
     def __init__(self):
         self.base_url = "https://data.elexon.co.uk/bmrs/api/v1"
+        self.NAME = "ElexonClient"
 
     def get_dataset_in_datetime_range(
         self,

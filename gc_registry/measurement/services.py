@@ -56,11 +56,4 @@ def parse_measurement_json(
         ]
     ), "Dataframe columns must be 'device_id', 'interval_start_datetime', 'interval_usage', 'gross_net_indicator'"
 
-    raw_input["interval_start_datetime"] = pd.to_datetime(
-        raw_input["interval_start_datetime"]
-    )
-    raw_input["interval_end_datetime"] = pd.to_datetime(
-        raw_input["interval_end_datetime"]
-    )
-
     return raw_input if to_df else raw_input.to_dict(orient="records")
