@@ -168,7 +168,7 @@ class TestCertificateServices:
 
         assert issued_certificates is not None
 
-    def test_gc_bundle_split(
+    def test_split_certificate_bundle(
         self,
         fake_db_gc_bundle: GranularCertificateBundle,
         db_write_session: Session,
