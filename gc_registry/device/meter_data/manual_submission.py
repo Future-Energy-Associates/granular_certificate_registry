@@ -55,7 +55,7 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
             )
             return None
 
-        meter_records = [meter[0].model_dump() for meter in meter_records]
+        meter_records = [meter[0] for meter in meter_records]
 
         return meter_records
 
