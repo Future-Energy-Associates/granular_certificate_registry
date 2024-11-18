@@ -380,6 +380,6 @@ class TestCertificateServices:
             len(issued_certificates) == 24 * 31
         ), f"Incorrect number of certificates issued ({len(issued_certificates)}); expected {24 * 31}."
         assert (
-            sum([cert["bundle_quantity"] for cert in issued_certificates])
+            sum([cert.bundle_quantity for cert in issued_certificates])
             == measurement_df["interval_usage"].sum()
         ), "Incorrect total certificate quantity issued."

@@ -179,8 +179,6 @@ def issue_certificates_by_device_in_date_range(
         device_max_certificate_id = get_max_certificate_id_by_device_id(
             db_read_session, device.id
         )
-        logger.debug(f"Device max certificate ID: {device_max_certificate_id}")
-        logger.debug(f"Certificate: {certificate}")
 
         valid_certificate = validate_granular_certificate_bundle(
             db_read_session,
@@ -192,14 +190,14 @@ def issue_certificates_by_device_in_date_range(
         valid_certificate.issuance_id = create_issuance_id(valid_certificate)
         valid_certificates.append(valid_certificate)
 
-        # Commit the certificate to the database
-        # TODO: Consider using bulk transaction - will require change in validation of bundle_id_range_start and end
-        created_entities = cqrs.write_to_database(
-            valid_certificates,  # type: ignore
-            db_write_session,
-            db_read_session,
-            esdb_client,
-        )
+    # Commit the certificate to the database
+    # TODO: Consider using bulk transaction - will require change in validation of bundle_id_range_start and end
+    created_entities = cqrs.write_to_database(
+        valid_certificates,  # type: ignore
+        db_write_session,
+        db_read_session,
+        esdb_client,
+    )
 
     return created_entities
 
