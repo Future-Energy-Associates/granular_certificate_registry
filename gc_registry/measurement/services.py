@@ -1,4 +1,5 @@
 import json
+from typing import Literal, overload
 
 import pandas as pd
 
@@ -30,9 +31,17 @@ def serialise_measurement_csv(measurement_csv_path: str) -> str:
     return data.to_json(orient="columns")
 
 
+@overload
+def parse_measurement_json(
+    recieved_json: str, to_df: Literal[True] = ...
+) -> pd.DataFrame: ...
+@overload
+def parse_measurement_json(recieved_json: str, to_df: Literal[False]) -> list[dict]: ...
+
+
 def parse_measurement_json(
     recieved_json: str, to_df: bool = False
-) -> dict | pd.DataFrame:
+) -> list[dict] | pd.DataFrame:
     """Take a measurement JSON string and parse it into a dict or a Pandas DataFrame.
 
     Asserts that the column names are 'device_id', 'interval_start_datetime', 'interval_end_datetime and 'interval_usage'.

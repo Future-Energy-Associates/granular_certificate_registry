@@ -1,7 +1,7 @@
 import datetime
 import json
 from functools import partial
-from typing import Any, Type, TypeVar
+from typing import Any, Hashable, Type, TypeVar
 
 from esdbclient import EventStoreDBClient
 from fastapi import HTTPException
@@ -49,25 +49,26 @@ class ActiveRecord(SQLModel):
     @classmethod
     def create(
         cls,
-        source: list[dict[str, Any]] | dict[str, Any] | BaseModel,
+        source: list[dict[Hashable, Any]] | dict[Hashable, Any] | BaseModel,
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
     ) -> list[SQLModel] | None:
         if isinstance(source, (SQLModel, BaseModel)):
-            obj = cls.model_validate(source)
+            obj = [cls.model_validate(source)]
         elif isinstance(source, dict):
-            obj = cls.model_validate_json(json.dumps(source))
+            obj = [cls.model_validate_json(json.dumps(source))]
         elif isinstance(source, list):
             obj = [cls.model_validate_json(json.dumps(elem)) for elem in source]
         else:
             raise ValueError(f"The input type {type(source)} can not be processed")
 
-        logger.debug(
-            f"Creating {cls.__name__}: {obj[0].model_dump_json() if isinstance(obj, list) else obj.model_dump_json()}"
-        )
+        logger.debug(f"Creating {cls.__name__}: {obj[0].model_dump_json()}")
         created_entities = cqrs.write_to_database(
-            obj, write_session, read_session, esdb_client
+            obj,  # type: ignore
+            write_session,
+            read_session,
+            esdb_client,
         )
 
         return created_entities

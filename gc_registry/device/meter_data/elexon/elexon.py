@@ -7,7 +7,6 @@ import pandas as pd
 from gc_registry.core.models.base import (
     CertificateStatus,
     EnergyCarrierType,
-    EnergySourceType,
 )
 from gc_registry.device.models import Device
 from gc_registry.logging_config import logger

@@ -1,5 +1,6 @@
 import datetime
 
+import pandas as pd
 import pytest
 from esdbclient import EventStoreDBClient
 from sqlmodel import Session
@@ -342,7 +343,9 @@ class TestCertificateServices:
             "gc_registry/tests/data/test_measurements.csv"
         )
 
-        measurement_df = parse_measurement_json(measurement_json, to_df=True)
+        measurement_df: pd.DataFrame = parse_measurement_json(
+            measurement_json, to_df=True
+        )
 
         # The device ID may change during testing so we need to update the measurement data
         measurement_df["device_id"] = fake_db_wind_device.id
@@ -380,6 +383,6 @@ class TestCertificateServices:
             len(issued_certificates) == 24 * 31
         ), f"Incorrect number of certificates issued ({len(issued_certificates)}); expected {24 * 31}."
         assert (
-            sum([cert.bundle_quantity for cert in issued_certificates])
+            sum([cert.bundle_quantity for cert in issued_certificates])  # type: ignore
             == measurement_df["interval_usage"].sum()
         ), "Incorrect total certificate quantity issued."

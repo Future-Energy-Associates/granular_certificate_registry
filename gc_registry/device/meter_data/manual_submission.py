@@ -1,7 +1,6 @@
 import datetime
 from typing import Any
 
-import pandas as pd
 from sqlalchemy.sql.expression import select
 from sqlmodel import Session
 
@@ -26,7 +25,7 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
         end_datetime: datetime.datetime,
         device_id: int,
         read_session: Session,
-    ) -> list[MeasurementReport]:
+    ) -> list[MeasurementReport] | None:
         """Retrieve meter records from the database for a specific device in a specific time range.
 
         Will raise an error if no records are found for the specified device and time range.
@@ -48,7 +47,7 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
             MeasurementReport.interval_end_datetime <= end_datetime,
         )
 
-        meter_records = read_session.exec(stmt).all()
+        meter_records = read_session.exec(stmt).all()  # type: ignore
 
         if not meter_records:
             logger.error(
@@ -92,7 +91,7 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
 
             # E.g., if bundle_wh = 1000, bundle_id_range_start = 0, bundle_id_range_end = 999
             # TODO this breaks for a bundle of 1 Wh as bundle_id_range_end = bundle_id_range_start
-            bundle_id_range_end = bundle_id_range_start + data["interval_usage"] - 1
+            bundle_id_range_end = bundle_id_range_start + data.interval_usage - 1
 
             transformed = {
                 "account_id": account_id,
@@ -105,8 +104,8 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
                 "face_value": 1,
                 "issuance_post_energy_carrier_conversion": False,
                 "device_id": device.id,
-                "production_starting_interval": data["interval_start_datetime"],
-                "production_ending_interval": data["interval_end_datetime"],
+                "production_starting_interval": data.interval_start_datetime,
+                "production_ending_interval": data.interval_end_datetime,
                 "issuance_datestamp": datetime.datetime.now(
                     tz=datetime.timezone.utc
                 ).date(),
