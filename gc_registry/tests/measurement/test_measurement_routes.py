@@ -34,12 +34,7 @@ def valid_measurement_json():
 
 def test_submit_readings_success(
     api_client,
-    db_write_session,
-    db_read_session,
-    esdb_client,
     valid_measurement_json,
-    parsed_measurement_df,
-    monkeypatch,
 ):
     """Test successful submission of readings."""
 
@@ -54,6 +49,6 @@ def test_submit_readings_success(
 
     response_data = response.json()
     assert response_data["message"] == "Readings submitted successfully."
-    assert response_data["total_usage_per_device"] == {1: 25, 2: 20}
+    assert response_data["total_usage_per_device"] == {"1": 25, "2": 20}
     assert response_data["first_reading_datetime"] == "2024-11-18T10:00:00"
     assert response_data["last_reading_datetime"] == "2024-11-18T12:00:00"
