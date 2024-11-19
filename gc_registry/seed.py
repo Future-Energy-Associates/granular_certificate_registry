@@ -196,11 +196,11 @@ def seed_all_generators_from_elexon(
             "is_storage": False,
             "peak_demand": -bmu_dict["installedCapacity"] * 0.01,
         }
-        _ = Device.create(device_dict, write_session, read_session, esdb_client)[0]
+        _ = Device.create(device_dict, write_session, read_session, esdb_client)[0]  # type: ignore
 
 
 def seed_certificates_for_all_devices_in_date_range(
-    from_date: datetime.date, to_date: datetime.date
+    from_date: datetime.datetime, to_date: datetime.datetime
 ) -> None:
     """
     Seed the database with all generators data from the given source
@@ -232,7 +232,7 @@ def seed_certificates_for_all_devices_in_date_range(
 
     issuance_metadata = IssuanceMetaData.create(
         issuance_metadata_dict, write_session, read_session, esdb_client
-    )[0]
+    )[0]  # type: ignore
 
     issue_certificates_in_date_range(
         from_date,
@@ -240,13 +240,13 @@ def seed_certificates_for_all_devices_in_date_range(
         write_session,
         read_session,
         esdb_client,
-        issuance_metadata.id,
-        client,
+        issuance_metadata.id,  # type: ignore
+        client,  # type: ignore
     )
 
 
 if __name__ == "__main__":
     seed_all_generators_from_elexon()
-    to_date = datetime.datetime.now() - datetime.timedelta(days=7)
-    from_date = to_date - datetime.timedelta(days=1)
-    seed_certificates_for_all_devices_in_date_range(from_date, to_date)
+    to_datetime = datetime.datetime.now() - datetime.timedelta(days=7)
+    from_datetime = to_datetime - datetime.timedelta(days=1)
+    seed_certificates_for_all_devices_in_date_range(from_datetime, to_datetime)

@@ -174,13 +174,16 @@ def issue_certificates_by_device_in_date_range(
         max_certificate_id = 0
 
     # Validate the certificates
-    valid_certificates = []
+    valid_certificates:list[Any] = []
     for certificate in certificates:
         # get max valid certificate max bundle id
         if valid_certificates:
             max_certificate_id = max(
                 [v.bundle_id_range_end for v in valid_certificates]
             )
+
+        if max_certificate_id is None:
+            raise ValueError("Max certificate ID is None")
 
         valid_certificate = validate_granular_certificate_bundle(
             db_read_session,
