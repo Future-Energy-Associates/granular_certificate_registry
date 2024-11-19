@@ -174,7 +174,7 @@ def issue_certificates_by_device_in_date_range(
         max_certificate_id = 0
 
     # Validate the certificates
-    valid_certificates:list[Any] = []
+    valid_certificates: list[Any] = []
     for certificate in certificates:
         # get max valid certificate max bundle id
         if valid_certificates:
