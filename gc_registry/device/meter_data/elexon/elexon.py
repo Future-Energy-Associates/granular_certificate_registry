@@ -1,5 +1,4 @@
-import logging
-from datetime import date, datetime, timedelta
+import datetime
 from typing import Any
 
 import httpx
@@ -8,12 +7,13 @@ import pandas as pd
 from gc_registry.core.models.base import (
     CertificateStatus,
     EnergyCarrierType,
-    EnergySourceType,
 )
+from gc_registry.device.models import Device
+from gc_registry.logging_config import logger
 from gc_registry.settings import settings
 
 
-def datetime_to_settlement_period(dt: datetime) -> int:
+def datetime_to_settlement_period(dt: datetime.datetime) -> int:
     return (dt.hour * 60 + dt.minute) // 30 + 1
 
 
@@ -55,12 +55,13 @@ class ElexonClient:
         self.base_url = "https://data.elexon.co.uk/bmrs/api/v1"
         self.renewable_psr_types = [k for k, v in psr_type_renewable_flag.items() if v]
         self.psr_type_to_energy_source = psr_type_to_energy_source
+        self.NAME = "ElexonClient"
 
     def get_dataset_in_datetime_range(
         self,
         dataset,
-        from_datetime: datetime,
-        to_datetime: datetime,
+        from_datetime: datetime.datetime,
+        to_datetime: datetime.datetime,
         bmu_ids: list[str] | None = None,
         frequency: str = "30min",
     ) -> list[dict[str, Any]]:
@@ -129,8 +130,8 @@ class ElexonClient:
     def get_asset_dataset_in_datetime_range(
         self,
         dataset,
-        from_date: date,
-        to_date: date,
+        from_date: datetime.date,
+        to_date: datetime.date,
     ):
         params = {
             "publishDateTimeFrom": from_date,
@@ -147,8 +148,8 @@ class ElexonClient:
 
     def get_metering_by_device_in_datetime_range(
         self,
-        from_datetime: datetime,
-        to_datetime: datetime,
+        from_datetime: datetime.datetime,
+        to_datetime: datetime.datetime,
         meter_data_id: str,
         dataset="B1610",
     ) -> list[dict[str, Any]]:
@@ -172,7 +173,7 @@ class ElexonClient:
         self,
         generation_data: list[dict[str, Any]],
         account_id: int,
-        device_id: int,
+        device: Device,
         is_storage: bool,
         issuance_metadata_id: int,
         bundle_id_range_start: int = 0,
@@ -186,7 +187,7 @@ class ElexonClient:
             if bundle_wh <= 0:
                 continue
 
-            logging.info(f"Data: {data}, Bundle WH: {bundle_wh}")
+            logger.info(f"Data: {data}, Bundle WH: {bundle_wh}")
 
             # Get existing "bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
@@ -202,17 +203,19 @@ class ElexonClient:
                 "bundle_id_range_end": bundle_id_range_end,
                 "bundle_quantity": bundle_wh,
                 "energy_carrier": EnergyCarrierType.electricity,
-                "energy_source": EnergySourceType.wind,
+                "energy_source": device.energy_source,
                 "face_value": 1,
                 "issuance_post_energy_carrier_conversion": False,
-                "device_id": device_id,
+                "device_id": device.id,
                 "production_starting_interval": data["start_time"],
                 "production_ending_interval": data["start_time"]
                 + pd.Timedelta(minutes=60),
-                "issuance_datestamp": datetime.utcnow().date(),
+                "issuance_datestamp": datetime.datetime.now(
+                    tz=datetime.timezone.utc
+                ).date(),
                 "expiry_datestamp": (
-                    datetime.utcnow()
-                    + timedelta(days=365 * settings.CERTIFICATE_EXPIRY_YEARS)
+                    datetime.datetime.now(tz=datetime.timezone.utc)
+                    + datetime.timedelta(days=365 * settings.CERTIFICATE_EXPIRY_YEARS)
                 ).date(),
                 "metadata_id": issuance_metadata_id,
                 "is_storage": is_storage,
@@ -220,7 +223,7 @@ class ElexonClient:
             }
 
             transformed["issuance_id"] = (
-                f"{device_id}-{transformed['production_starting_interval']}"
+                f"{device.id}-{transformed['production_starting_interval']}"
             )
 
             mapped_data.append(transformed)
@@ -230,8 +233,9 @@ class ElexonClient:
     def get_device_capacities(
         self,
         bmu_ids: list[str],
-        from_date: date = datetime.now().date() - timedelta(days=365 * 2),
-        to_date: date = datetime.now().date(),
+        from_date: datetime.date = datetime.datetime.now().date()
+        - datetime.timedelta(days=365 * 2),
+        to_date: datetime.date = datetime.datetime.now().date(),
         dataset: str = "IGCPU",
     ) -> dict[str, Any]:
         data = self.get_asset_dataset_in_datetime_range(dataset, from_date, to_date)

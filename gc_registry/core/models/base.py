@@ -1,11 +1,14 @@
+import datetime
 import enum
 import uuid
-from datetime import datetime
 from enum import Enum
+from functools import partial
 
 from pydantic import BaseModel
 from sqlalchemy import JSON, Column
 from sqlmodel import Field
+
+utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
 
 class DeviceTechnologyType(str, enum.Enum):
@@ -72,4 +75,4 @@ class Event(BaseModel):
     entity_name: str
     attributes_before: dict | None = Field(sa_column=Column(JSON))
     attributes_after: dict | None = Field(sa_column=Column(JSON))
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime.datetime = Field(default_factory=utc_datetime_now)  # type: ignore

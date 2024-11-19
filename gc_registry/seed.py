@@ -97,7 +97,7 @@ def seed_data():
         certificate_bundles = client.map_metering_to_certificates(
             data_hourly_dict,
             account_id=account.id,
-            device_id=device.id,
+            device=device,
             is_storage=False,
             issuance_metadata_id=issuance_metadata.id,
         )

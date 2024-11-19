@@ -1,5 +1,6 @@
 import datetime
 
+import pandas as pd
 import pytest
 from esdbclient import EventStoreDBClient
 from sqlmodel import Session
@@ -8,17 +9,26 @@ from gc_registry.account.models import Account
 from gc_registry.certificate.models import (
     GranularCertificateActionBase,
     GranularCertificateBundle,
+    IssuanceMetaData,
 )
 from gc_registry.certificate.services import (
     get_max_certificate_id_by_device_id,
+    issue_certificates_by_device_in_date_range,
     issue_certificates_in_date_range,
     process_certificate_action,
     query_certificates,
     split_certificate_bundle,
     validate_granular_certificate_bundle,
 )
+from gc_registry.core.models.base import CertificateStatus
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
+from gc_registry.device.meter_data.manual_submission import ManualSubmissionMeterClient
 from gc_registry.device.models import Device
+from gc_registry.measurement.models import MeasurementReport
+from gc_registry.measurement.services import (
+    parse_measurement_json,
+    serialise_measurement_csv,
+)
 from gc_registry.settings import settings
 from gc_registry.user.models import User
 
@@ -28,7 +38,6 @@ class TestCertificateServices:
         self,
         db_read_session,
         fake_db_wind_device,
-        fake_db_solar_device,
         fake_db_gc_bundle,
     ):
         max_certificate_id = get_max_certificate_id_by_device_id(
@@ -50,7 +59,6 @@ class TestCertificateServices:
         self,
         db_read_session,
         fake_db_wind_device,
-        fake_db_solar_device,
         fake_db_gc_bundle,
     ):
         hours = settings.CERTIFICATE_GRANULARITY_HOURS
@@ -167,7 +175,7 @@ class TestCertificateServices:
 
         assert issued_certificates is not None
 
-    def test_gc_bundle_split(
+    def test_split_certificate_bundle(
         self,
         fake_db_gc_bundle: GranularCertificateBundle,
         db_write_session: Session,
@@ -241,3 +249,140 @@ class TestCertificateServices:
         certificate_transfered = query_certificates(certificate_query, db_read_session)
 
         assert certificate_transfered[0].bundle_quantity == 500  # type: ignore
+
+    def test_cancel_by_percentage(
+        self,
+        fake_db_gc_bundle: GranularCertificateBundle,
+        fake_db_user: User,
+        db_write_session: Session,
+        db_read_session: Session,
+        esdb_client: EventStoreDBClient,
+    ):
+        """
+        Cancel 75% of the bundle, and assert that the bundle was correctly
+        split and the correct percentage cancelled.
+        """
+        certificate_action = GranularCertificateActionBase(
+            action_type="cancel",
+            source_id=fake_db_gc_bundle.account_id,
+            user_id=fake_db_user.id,
+            source_certificate_issuance_id=fake_db_gc_bundle.issuance_id,
+            certificate_bundle_percentage=75,
+        )
+
+        db_certificate_action = process_certificate_action(
+            certificate_action, db_write_session, db_read_session, esdb_client
+        )
+
+        assert db_certificate_action.action_response_status == "accepted"
+
+        # Check that 75% of the bundle was cancelled
+        certificate_query = GranularCertificateActionBase(
+            action_type="query",
+            user_id=fake_db_user.id,
+            source_id=fake_db_gc_bundle.account_id,
+            certificate_status=CertificateStatus.CANCELLED,
+        )
+        certificates_cancelled = query_certificates(certificate_query, db_read_session)
+
+        assert certificates_cancelled[0].bundle_quantity == 750  # type: ignore
+
+    def test_sparse_filter_query(
+        self,
+        fake_db_gc_bundle: GranularCertificateBundle,
+        fake_db_gc_bundle_2: GranularCertificateBundle,
+        db_read_session: Session,
+    ):
+        """Test that the query_certificates function can handle sparse filter input on device ID
+        and production starting datetime."""
+
+        sparse_filter_list = [
+            (
+                fake_db_gc_bundle.device_id,
+                fake_db_gc_bundle.production_starting_interval,
+            ),
+            (
+                fake_db_gc_bundle_2.device_id,
+                fake_db_gc_bundle_2.production_starting_interval,
+            ),
+        ]
+
+        certificate_query = GranularCertificateActionBase(
+            action_type="query",
+            user_id=1,
+            source_id=fake_db_gc_bundle.account_id,
+            sparse_filter=sparse_filter_list,
+        )
+
+        certificates_from_query = query_certificates(certificate_query, db_read_session)
+
+        if certificates_from_query is not None:
+            assert len(certificates_from_query) == 2
+            assert certificates_from_query[0].device_id == fake_db_gc_bundle.device_id
+            assert certificates_from_query[1].device_id == fake_db_gc_bundle_2.device_id
+            assert (
+                certificates_from_query[0].production_starting_interval
+                == fake_db_gc_bundle.production_starting_interval
+            )
+            assert (
+                certificates_from_query[1].production_starting_interval
+                == fake_db_gc_bundle_2.production_starting_interval
+            )
+        else:
+            raise AssertionError("No certificates returned from query.")
+
+    def test_issue_certificates_from_manual_submission(
+        self,
+        db_write_session: Session,
+        db_read_session: Session,
+        fake_db_wind_device: Device,
+        fake_db_issuance_metadata: IssuanceMetaData,
+        esdb_client: EventStoreDBClient,
+    ):
+        measurement_json = serialise_measurement_csv(
+            "gc_registry/tests/data/test_measurements.csv"
+        )
+
+        measurement_df: pd.DataFrame = parse_measurement_json(
+            measurement_json, to_df=True
+        )
+
+        # The device ID may change during testing so we need to update the measurement data
+        measurement_df["device_id"] = fake_db_wind_device.id
+
+        readings = MeasurementReport.create(
+            measurement_df.to_dict(orient="records"),
+            db_write_session,
+            db_read_session,
+            esdb_client,
+        )
+
+        assert readings is not None, "No readings found in the database."
+        assert (
+            len(readings) == 24 * 31
+        ), f"Incorrect number of readings found ({len(readings)}); expected {24 * 31}."
+
+        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        to_datetime = from_datetime + datetime.timedelta(days=31)
+
+        client = ManualSubmissionMeterClient()
+
+        issued_certificates = issue_certificates_by_device_in_date_range(
+            fake_db_wind_device,
+            from_datetime,
+            to_datetime,
+            db_write_session,
+            db_read_session,
+            esdb_client,
+            fake_db_issuance_metadata.id,
+            client,
+        )
+
+        assert issued_certificates is not None
+        assert (
+            len(issued_certificates) == 24 * 31
+        ), f"Incorrect number of certificates issued ({len(issued_certificates)}); expected {24 * 31}."
+        assert (
+            sum([cert.bundle_quantity for cert in issued_certificates])  # type: ignore
+            == measurement_df["interval_usage"].sum()
+        ), "Incorrect total certificate quantity issued."

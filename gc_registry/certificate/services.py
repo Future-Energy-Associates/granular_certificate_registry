@@ -1,10 +1,9 @@
 import datetime
-import logging
 from typing import Any
 
 from esdbclient import EventStoreDBClient
 from sqlalchemy import func
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import Session, SQLModel, or_, select
 from sqlmodel.sql.expression import SelectOfScalar
 
 from gc_registry.account.models import Account
@@ -28,6 +27,7 @@ from gc_registry.core.services import create_bundle_hash
 from gc_registry.device.meter_data.abstract_meter_client import AbstractMeterDataClient
 from gc_registry.device.models import Device
 from gc_registry.device.services import get_all_devices
+from gc_registry.logging_config import logger
 
 
 def split_certificate_bundle(
@@ -134,69 +134,78 @@ def issue_certificates_by_device_in_date_range(
     meter_data_client: AbstractMeterDataClient,
 ) -> list[SQLModel] | None:
     if not device.id or not device.meter_data_id:
-        logging.error(f"No device ID or meter data ID for device: {device}")
+        logger.error(f"No device ID or meter data ID for device: {device}")
         return None
 
-    meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
-        from_datetime, to_datetime, device.meter_data_id
-    )
+    # TODO CAG - this is messy by me, will refactor down the road
+    # Also, validation later on assumes the metering data is datetime sorted -
+    # can we guarantee this at the meter client level?
+    if meter_data_client.NAME == "ManualSubmissionMeterClient":
+        meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
+            from_datetime, to_datetime, device.id, db_read_session
+        )
+    else:
+        meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
+            from_datetime, to_datetime, device.meter_data_id
+        )
 
     if not meter_data:
-        logging.info(f"No meter data retrieved for device: {device.meter_data_id}")
+        logger.info(f"No meter data retrieved for device: {device.meter_data_id}")
         return None
 
     # Map the meter data to certificates
-    bundle_id_range_start = get_max_certificate_id_by_device_id(
+    device_max_certificate_id = get_max_certificate_id_by_device_id(
         db_read_session, device.id
     )
-
-    if not bundle_id_range_start:
+    if not device_max_certificate_id:
         bundle_id_range_start = 1
     else:
-        bundle_id_range_start += 1
+        bundle_id_range_start = device_max_certificate_id + 1
 
     certificates = meter_data_client.map_metering_to_certificates(
         generation_data=meter_data,
         bundle_id_range_start=bundle_id_range_start,
         account_id=device.account_id,
-        device_id=device.id,
+        device=device,
         is_storage=device.is_storage,
         issuance_metadata_id=issuance_metadata_id,
     )
 
     if not certificates:
-        logging.error(f"No meter data retrieved for device: {device.meter_data_id}")
+        logger.error(f"No meter data retrieved for device: {device.meter_data_id}")
         return None
 
-    max_certificate_id = get_max_certificate_id_by_device_id(db_read_session, device.id)
-
-    if not max_certificate_id:
-        max_certificate_id = 0
+    if not device_max_certificate_id:
+        device_max_certificate_id = 0
 
     # Validate the certificates
     valid_certificates: list[Any] = []
     for certificate in certificates:
         # get max valid certificate max bundle id
         if valid_certificates:
-            max_certificate_id = max(
+            device_max_certificate_id = max(
                 [v.bundle_id_range_end for v in valid_certificates]
             )
 
-        if max_certificate_id is None:
+        if device_max_certificate_id is None:
             raise ValueError("Max certificate ID is None")
 
         valid_certificate = validate_granular_certificate_bundle(
             db_read_session,
             certificate,
             is_storage_device=device.is_storage,
-            max_certificate_id=max_certificate_id,
+            max_certificate_id=device_max_certificate_id,
         )
         valid_certificate.hash = create_bundle_hash(valid_certificate, nonce="")
         valid_certificate.issuance_id = create_issuance_id(valid_certificate)
         valid_certificates.append(valid_certificate)
 
-    # Commit the certificate to the database
-    # TODO: Consider using bulk transaction - will require change in validation of bundle_id_range_start and end
+        # Because this function is only applied to one device at a time, we can be
+        # certain that the highest bundle id range end is from the most recent bundle
+        # in this collection
+        device_max_certificate_id = valid_certificate.bundle_id_range_end
+
+    # Batch commit the GC bundles to the database
     created_entities = cqrs.write_to_database(
         valid_certificates,  # type: ignore
         db_write_session,
@@ -240,7 +249,7 @@ def issue_certificates_in_date_range(
     devices = get_all_devices(db_read_session)
 
     if not devices:
-        logging.error("No devices found in the registry")
+        logger.error("No devices found in the registry")
         return None
 
     # Issue certificates for each device
@@ -250,11 +259,11 @@ def issue_certificates_in_date_range(
 
         # Get the meter data for the device
         if not device.meter_data_id:
-            logging.error(f"No meter data ID for device: {device.id}")
+            logger.error(f"No meter data ID for device: {device.id}")
             continue
 
         if not device.id:
-            logging.error(f"No device ID for device: {device}")
+            logger.error(f"No device ID for device: {device}")
             continue
 
         created_entities = issue_certificates_by_device_in_date_range(
@@ -278,7 +287,7 @@ def process_certificate_action(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> GranularCertificateAction | None:
+) -> GranularCertificateAction:
     """Process the given certificate action.
 
     Args:
@@ -317,7 +326,7 @@ def process_certificate_action(
             certificate_action, write_session, read_session, esdb_client
         )
     except Exception as e:
-        logging.error(f"Error whilst processing certificate action: {str(e)}")
+        logger.error(f"Error whilst processing certificate action: {str(e)}")
         certificate_action.action_response_status = "rejected"
     else:
         certificate_action.action_response_status = "accepted"
@@ -325,32 +334,191 @@ def process_certificate_action(
     db_certificate_action = GranularCertificateAction.create(
         certificate_action, write_session, read_session, esdb_client
     )
-    if not db_certificate_action:
-        logging.error("Error creating certificate action entity")
-        return None
 
     return db_certificate_action[0]  # type: ignore
 
 
+def validate_query(certificate_query: GranularCertificateActionBase) -> bool:
+    # Bunde ID range start must be lower than range end
+    if (
+        certificate_query.source_certificate_bundle_id_range_start
+        and certificate_query.source_certificate_bundle_id_range_end
+    ):
+        if (
+            certificate_query.source_certificate_bundle_id_range_start
+            > certificate_query.source_certificate_bundle_id_range_end
+        ):
+            logger.error("Bundle ID range start must be lower than bundle ID range end")
+            return False
+
+    # Date range start must be lower than or equal to date range end
+    if (
+        certificate_query.certificate_period_start
+        and certificate_query.certificate_period_end
+    ):
+        if (
+            certificate_query.certificate_period_start
+            > certificate_query.certificate_period_end
+        ):
+            logger.error(
+                "Certificate period start must be lower than certificate period end"
+            )
+            return False
+
+    # If using either bundle quantity or percentage, only one can be used
+    if (
+        certificate_query.certificate_quantity
+        and certificate_query.certificate_bundle_percentage
+    ):
+        logger.error(
+            "Only one of certificate quantity or percentage can be used for each query."
+        )
+        return False
+
+    # Bundle percentage must be between 0 and 100
+    if certificate_query.certificate_bundle_percentage:
+        if (
+            certificate_query.certificate_bundle_percentage <= 0
+            or certificate_query.certificate_bundle_percentage > 100
+        ):
+            logger.error("Certificate percentage must be between 0 and 100")
+            return False
+
+    return True
+
+
+def apply_bundle_quantity_or_percentage(
+    certificates_from_query: list[GranularCertificateBundle],
+    certificate_bundle_action: GranularCertificateActionBase,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> list[GranularCertificateBundle]:
+    """Apply the bundle quantity or percentage to the certificates from the query.
+
+    For each GC Bundle returned from the query, this function will split the bundle
+    if the desired GC quantity or percentage is less than the GC Bundle quantity, otherwise
+    it will return the GC Bundle unsplit.
+
+    Args:
+        certificates_from_query (list[GranularCertificateBundle]): The certificates from the query
+        certificate_bundle_action (GranularCertificateAction): The certificate action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    Returns:
+        list[GranularCertificateBundle]: The list of certificates to transfer, split if required
+                                         such that the quantity of each bundle is equal to or
+                                         less than the desired bundle quantity, if provided, or
+                                         the percentage of the total certificates in the bundle.
+
+    """
+    # Just return the certificates from the query if no quantity or percentage is provided
+    if (certificate_bundle_action.certificate_quantity is None) & (
+        certificate_bundle_action.certificate_bundle_percentage is None
+    ):
+        return certificates_from_query
+
+    certificates_to_transfer = []
+
+    if certificate_bundle_action.certificate_quantity is not None:
+        certificates_to_split = [
+            certificate_bundle_action.certificate_quantity
+            for i in range(len(certificates_from_query))
+        ]
+    elif certificate_bundle_action.certificate_bundle_percentage is not None:
+        certificates_to_split = [
+            int(
+                certificate_bundle_action.certificate_bundle_percentage
+                * certificate_from_query.bundle_quantity
+                / 100
+            )
+            for certificate_from_query in certificates_from_query
+        ]
+
+    # Only check the bundle quantity if the query on bundle quantity parameter is provided,
+    # otherwise, split the bundle based on the percentage of the total certificates in the bundle
+    for idx, gc_bundle in enumerate(certificates_from_query):
+        gc_bundle = write_session.merge(gc_bundle)
+
+        if certificate_bundle_action.certificate_quantity is not None:
+            if (
+                gc_bundle.bundle_quantity
+                <= certificate_bundle_action.certificate_quantity
+            ):
+                certificates_to_transfer.append(gc_bundle)
+                continue
+
+        child_bundle_1, _child_bundle_2 = split_certificate_bundle(
+            gc_bundle,
+            certificates_to_split[idx],
+            write_session,
+            read_session,
+            esdb_client,
+        )
+        if child_bundle_1:
+            certificates_to_transfer.append(child_bundle_1)
+
+    return certificates_to_transfer
+
+
 def query_certificates(
-    certificate_query: GranularCertificateActionBase, db_read_engine: Session
+    certificate_query: GranularCertificateActionBase,
+    read_session: Session | None = None,
+    write_session: Session | None = None,
 ) -> list[GranularCertificateBundle] | None:
     """Query certificates based on the given filter parameters.
+
+    By default will return read versions of the GC bundles, but if update operations
+    are to be performed on them then passing a write session will override the
+    read session and return instances from the writer database with the associated
+    ActiveUtils methods.
+
+    If no certificates are found with the given query parameters, will return None.
 
     Args:
         certificate_query (GranularCertificateAction): The certificate action
         db_read_engine (Session): The database read session
+        db_write_engine (Session | None): The database write session
 
     Returns:
-        list[GranularCertificateAction]: The list of certificates
+        list[GranularCertificateBundle]: The list of certificates
 
     """
+
+    if (read_session is None) & (write_session is None):
+        logger.error(
+            "Either a read or a write session is required for querying certificates."
+        )
+        return None
+
+    session: Session = read_session if write_session is None else write_session  # type: ignore
+
+    if validate_query(certificate_query) is False:
+        return None
 
     # Query certificates based on the given filter parameters
     stmt = select(GranularCertificateBundle)  # type: ignore
     for query_param, query_value in certificate_query.model_dump().items():
         if (query_param in certificate_query_param_map) & (query_value is not None):
-            if query_param == "certificate_period_start":
+            # sparse_filter_list overrides all other search criteria if provided
+            if query_param == "sparse_filter_list":
+                sparse_filter_clauses = [
+                    (
+                        (GranularCertificateBundle.device_id == device_id)
+                        & (
+                            GranularCertificateBundle.production_starting_interval
+                            == production_starting_interval
+                        )
+                    )
+                    for (device_id, production_starting_interval) in query_value
+                ]
+                stmt = select(GranularCertificateBundle).where(
+                    or_(*sparse_filter_clauses)
+                )
+                break
+            elif query_param == "certificate_period_start":
                 stmt = stmt.where(
                     getattr(
                         GranularCertificateBundle,
@@ -375,9 +543,9 @@ def query_certificates(
                     == query_value
                 )
 
-    certificates = db_read_engine.exec(stmt).all()
+    gc_bundles = session.exec(stmt).all()
 
-    return certificates
+    return gc_bundles
 
 
 def transfer_certificates(
@@ -403,11 +571,11 @@ def transfer_certificates(
 
     # Retrieve certificates to transfer
     certificates_from_query = query_certificates(
-        certificate_bundle_action, read_session
+        certificate_bundle_action, write_session=write_session
     )
 
     if not certificates_from_query:
-        logging.error("No certificates found to transfer with given query parameters.")
+        logger.error("No certificates found to transfer with given query parameters.")
         return None
 
     for certificate in certificates_from_query:
@@ -415,35 +583,20 @@ def transfer_certificates(
             certificate.certificate_status == CertificateStatus.ACTIVE
         ), f"Certificate with ID {certificate.issuance_id} is not active and cannot be transferred"
 
-    # Split bundles if required, but only if certificate_quantity is supplied
-    certificates_to_transfer = []
-    if certificate_bundle_action.certificate_quantity is not None:
-        for certificate in certificates_from_query:
-            certificate = write_session.merge(certificate)
-            if (
-                certificate.bundle_quantity
-                > certificate_bundle_action.certificate_quantity
-            ):
-                chlid_bundle_1, _child_bundle_2 = split_certificate_bundle(
-                    certificate,
-                    certificate_bundle_action.certificate_quantity,
-                    write_session,
-                    read_session,
-                    esdb_client,
-                )
-                if chlid_bundle_1:
-                    certificates_to_transfer.append(chlid_bundle_1)
-            else:
-                certificates_to_transfer.append(certificate)
-    else:
-        certificates_to_transfer = certificates_from_query
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_transfer = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Transfer certificates by updating account ID of target bundle
     for certificate in certificates_to_transfer:
         certificate_update = GranularCertificateBundleUpdate(
             account_id=certificate_bundle_action.target_id
         )
-        certificate = write_session.merge(certificate)
         certificate.update(certificate_update, write_session, read_session, esdb_client)  # type: ignore
 
     return
@@ -466,11 +619,22 @@ def cancel_certificates(
     """
 
     # Retrieve certificates to cancel
-    certificates_to_cancel = query_certificates(certificate_bundle_action, read_session)
+    certificates_from_query = query_certificates(
+        certificate_bundle_action, write_session=write_session
+    )
 
-    if not certificates_to_cancel:
-        logging.info("No certificates found to cancel with given query parameters.")
+    if not certificates_from_query:
+        logger.info("No certificates found to cancel with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_cancel = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Cancel certificates
     for certificate in certificates_to_cancel:
@@ -504,11 +668,22 @@ def claim_certificates(
     ), "Beneficiary ID is required for GC claims"
 
     # Retrieve certificates to claim
-    certificates_to_claim = query_certificates(certificate_bundle_action, read_session)
+    certificates_from_query = query_certificates(
+        certificate_bundle_action, write_session=write_session
+    )
 
-    if not certificates_to_claim:
-        logging.info("No certificates found to claim with given query parameters.")
+    if not certificates_from_query:
+        logger.info("No certificates found to claim with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_claim = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Assert the certificates are in a cancelled state
     for certificate in certificates_to_claim:
@@ -544,13 +719,22 @@ def withdraw_certificates(
     # TODO add logic for removing withdrawn GCs from the main table
 
     # Retrieve certificates to withdraw
-    certificates_to_withdraw = query_certificates(
-        certificate_bundle_action, read_session
+    certificates_from_query = query_certificates(
+        certificate_bundle_action, write_session=write_session
     )
 
-    if not certificates_to_withdraw:
-        logging.info("No certificates found to withdraw with given query parameters.")
+    if not certificates_from_query:
+        logger.info("No certificates found to withdraw with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_withdraw = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Withdraw certificates
     for certificate in certificates_to_withdraw:
@@ -582,11 +766,22 @@ def lock_certificates(
     """
 
     # Retrieve certificates to lock
-    certificates_to_lock = query_certificates(certificate_bundle_action, read_session)
+    certificates_from_query = query_certificates(
+        certificate_bundle_action, write_session=write_session
+    )
 
-    if not certificates_to_lock:
-        logging.info("No certificates found to lock with given query parameters.")
+    if not certificates_from_query:
+        logger.info("No certificates found to lock with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_lock = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Lock certificates
     for certificate in certificates_to_lock:
@@ -615,13 +810,22 @@ def reserve_certificates(
     """
 
     # Retrieve certificates to reserve
-    certificates_to_reserve = query_certificates(
-        certificate_bundle_action, read_session
+    certificates_from_query = query_certificates(
+        certificate_bundle_action, write_session=write_session
     )
 
-    if not certificates_to_reserve:
-        logging.info("No certificates found to reserve with given query parameters.")
+    if not certificates_from_query:
+        logger.info("No certificates found to reserve with given query parameters.")
         return
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_to_reserve = apply_bundle_quantity_or_percentage(
+        certificates_from_query,
+        certificate_bundle_action,
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     # Reserve certificates
     for certificate in certificates_to_reserve:
