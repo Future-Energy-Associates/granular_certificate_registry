@@ -168,9 +168,7 @@ def issue_certificates_by_device_in_date_range(
         logging.error(f"No meter data retrieved for device: {device.meter_data_id}")
         return None
 
-    max_certificate_id = get_max_certificate_id_by_device_id(
-            db_read_session, device.id
-        )
+    max_certificate_id = get_max_certificate_id_by_device_id(db_read_session, device.id)
 
     if not max_certificate_id:
         max_certificate_id = 0
@@ -178,10 +176,11 @@ def issue_certificates_by_device_in_date_range(
     # Validate the certificates
     valid_certificates = []
     for certificate in certificates:
-
         # get max valid certificate max bundle id
         if valid_certificates:
-            max_certificate_id = max([v.bundle_id_range_end for v in valid_certificates])
+            max_certificate_id = max(
+                [v.bundle_id_range_end for v in valid_certificates]
+            )
 
         valid_certificate = validate_granular_certificate_bundle(
             db_read_session,
@@ -244,7 +243,6 @@ def issue_certificates_in_date_range(
     # Issue certificates for each device
     certificates: list[Any] = []
     for device in devices:
-
         print(f"Issuing certificates for device: {device.id}")
 
         # Get the meter data for the device

@@ -16,42 +16,44 @@ from gc_registry.settings import settings
 def datetime_to_settlement_period(dt: datetime) -> int:
     return (dt.hour * 60 + dt.minute) // 30 + 1
 
+
 psr_type_renewable_flag = {
-    "Wind Offshore":True,
-    "Generation":False,
-    "Other":False,
-    "Wind Onshore":True,
-    "Fossil Gas":False,
-    "Fossil Oil":False,
-    "Hydro Run-of-river and poundage":True,
-    "Biomass":True,
-    "Fossil Hard coal":False,
-    "Hydro Water Reservoir":True,
-    "Nuclear":True,
-    "Other renewable":True,
-    "Solar":True,
+    "Wind Offshore": True,
+    "Generation": False,
+    "Other": False,
+    "Wind Onshore": True,
+    "Fossil Gas": False,
+    "Fossil Oil": False,
+    "Hydro Run-of-river and poundage": True,
+    "Biomass": True,
+    "Fossil Hard coal": False,
+    "Hydro Water Reservoir": True,
+    "Nuclear": True,
+    "Other renewable": True,
+    "Solar": True,
 }
 
 psr_type_to_energy_source = {
-        "Wind Offshore":"wind",
-    "Generation":"other",
-    "Other":"other",
-    "Wind Onshore":"wind",
-    "Fossil Gas":"gas",
-    "Fossil Oil":"oil",
-    "Hydro Run-of-river and poundage":"hydro",
-    "Biomass":"biomass",
-    "Fossil Hard coal":"coal",
-    "Hydro Water Reservoir":"hydro",
-    "Nuclear":"nuclear",
-    "Other renewable":"other renewable",
-    "Solar":"solar",
+    "Wind Offshore": "wind",
+    "Generation": "other",
+    "Other": "other",
+    "Wind Onshore": "wind",
+    "Fossil Gas": "gas",
+    "Fossil Oil": "oil",
+    "Hydro Run-of-river and poundage": "hydro",
+    "Biomass": "biomass",
+    "Fossil Hard coal": "coal",
+    "Hydro Water Reservoir": "hydro",
+    "Nuclear": "nuclear",
+    "Other renewable": "other renewable",
+    "Solar": "solar",
 }
+
 
 class ElexonClient:
     def __init__(self):
         self.base_url = "https://data.elexon.co.uk/bmrs/api/v1"
-        self.renewable_psr_types = [k for k,v in psr_type_renewable_flag.items() if v]
+        self.renewable_psr_types = [k for k, v in psr_type_renewable_flag.items() if v]
         self.psr_type_to_energy_source = psr_type_to_energy_source
 
     def get_dataset_in_datetime_range(
@@ -101,7 +103,6 @@ class ElexonClient:
     def resample_hh_data_to_hourly(
         self, data_hh_df: pd.DataFrame
     ) -> list[dict[str, Any]]:
-
         data_hh_df["start_time"] = pd.to_datetime(
             data_hh_df.halfHourEndTime
         ) - pd.Timedelta(minutes=30)
@@ -258,19 +259,22 @@ class ElexonClient:
         }
 
         return device_capacities
-    
+
 
 if __name__ == "__main__":
-
     client = ElexonClient()
 
-    from_date = datetime.now() - timedelta(weeks=52*30)
+    from_date = datetime.now() - timedelta(weeks=52 * 30)
     to_date = datetime.now()
 
     # Create year long ranges from the from_date to the to_date
     data_list = []
-    for from_datetime in pd.date_range(from_date,to_date,freq="Y"):
-        to_datetime = from_datetime + timedelta(days=365) if from_datetime + timedelta(days=365) < to_date else to_date
+    for from_datetime in pd.date_range(from_date, to_date, freq="Y"):
+        to_datetime = (
+            from_datetime + timedelta(days=365)
+            if from_datetime + timedelta(days=365) < to_date
+            else to_date
+        )
 
         print(f"Getting data from {from_datetime} to {to_datetime}")
 
@@ -279,7 +283,7 @@ if __name__ == "__main__":
             from_date=from_datetime,
             to_date=to_datetime,
         )
-        data_list.extend(data['data'])
+        data_list.extend(data["data"])
 
     df = pd.DataFrame(data_list)
 
