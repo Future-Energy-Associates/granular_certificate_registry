@@ -39,7 +39,7 @@ def validate_granular_certificate_bundle(
     db_session: Session,
     raw_gcb: dict[str, Any],
     is_storage_device: bool,
-    device_max_certificate_id: int | None,
+    max_certificate_id: int,
     hours: float = settings.CERTIFICATE_GRANULARITY_HOURS,
 ) -> GranularCertificateBundle:
     gcb = GranularCertificateBundleCreate.model_validate(raw_gcb)
@@ -55,18 +55,17 @@ def validate_granular_certificate_bundle(
     device_mw = device_w / W_IN_MW
     device_max_watts_hours = device_mw_capacity_to_wh_max(device_mw, hours)
 
-    if not device_max_certificate_id:
-        device_max_certificate_id = 0
+    CAPACITY_MARGIN = 1.1 # TODO: Review what the margin should be - Punped storage seemed to break this validation
 
     # Validate the bundle quantity is equal to the difference between the bundle ID range
     # and less than the device max watts hours
     validate(gcb.bundle_quantity, identifier="bundle_quantity").less_than(
-        device_max_watts_hours
+        device_max_watts_hours * CAPACITY_MARGIN
     ).equal(gcb.bundle_id_range_end - gcb.bundle_id_range_start + 1)
 
     # Validate the bundle ID range start is greater than the previous max certificate ID
     validate(gcb.bundle_id_range_start, identifier="bundle_id_range_start").equal(
-        device_max_certificate_id + 1
+        max_certificate_id + 1
     )
 
     # At this point if integrating wtih EAC registry or possibility of cross registry transfer

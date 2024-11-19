@@ -16,10 +16,43 @@ from gc_registry.settings import settings
 def datetime_to_settlement_period(dt: datetime) -> int:
     return (dt.hour * 60 + dt.minute) // 30 + 1
 
+psr_type_renewable_flag = {
+    "Wind Offshore":True,
+    "Generation":False,
+    "Other":False,
+    "Wind Onshore":True,
+    "Fossil Gas":False,
+    "Fossil Oil":False,
+    "Hydro Run-of-river and poundage":True,
+    "Biomass":True,
+    "Fossil Hard coal":False,
+    "Hydro Water Reservoir":True,
+    "Nuclear":True,
+    "Other renewable":True,
+    "Solar":True,
+}
+
+psr_type_to_energy_source = {
+        "Wind Offshore":"wind",
+    "Generation":"other",
+    "Other":"other",
+    "Wind Onshore":"wind",
+    "Fossil Gas":"gas",
+    "Fossil Oil":"oil",
+    "Hydro Run-of-river and poundage":"hydro",
+    "Biomass":"biomass",
+    "Fossil Hard coal":"coal",
+    "Hydro Water Reservoir":"hydro",
+    "Nuclear":"nuclear",
+    "Other renewable":"other renewable",
+    "Solar":"solar",
+}
 
 class ElexonClient:
     def __init__(self):
         self.base_url = "https://data.elexon.co.uk/bmrs/api/v1"
+        self.renewable_psr_types = [k for k,v in psr_type_renewable_flag.items() if v]
+        self.psr_type_to_energy_source = psr_type_to_energy_source
 
     def get_dataset_in_datetime_range(
         self,
@@ -68,6 +101,7 @@ class ElexonClient:
     def resample_hh_data_to_hourly(
         self, data_hh_df: pd.DataFrame
     ) -> list[dict[str, Any]]:
+
         data_hh_df["start_time"] = pd.to_datetime(
             data_hh_df.halfHourEndTime
         ) - pd.Timedelta(minutes=30)
@@ -124,6 +158,10 @@ class ElexonClient:
             bmu_ids=[meter_data_id],
         )
 
+        print(f"Data for {meter_data_id}: {len(data)}")
+        if not data:
+            return []
+
         meter_data_df = pd.DataFrame(data)
         data = self.resample_hh_data_to_hourly(meter_data_df)
 
@@ -144,6 +182,9 @@ class ElexonClient:
         for data in generation_data:
             bundle_wh = int(data["quantity"] * WH_IN_MWH)
 
+            if bundle_wh <= 0:
+                continue
+
             logging.info(f"Data: {data}, Bundle WH: {bundle_wh}")
 
             # Get existing "bundle_id_range_end" from the last item in mapped_data
@@ -158,7 +199,7 @@ class ElexonClient:
                 "certificate_status": CertificateStatus.ACTIVE,
                 "bundle_id_range_start": bundle_id_range_start,
                 "bundle_id_range_end": bundle_id_range_end,
-                "bundle_quantity": bundle_id_range_end - bundle_id_range_start + 1,
+                "bundle_quantity": bundle_wh,
                 "energy_carrier": EnergyCarrierType.electricity,
                 "energy_source": EnergySourceType.wind,
                 "face_value": 1,
