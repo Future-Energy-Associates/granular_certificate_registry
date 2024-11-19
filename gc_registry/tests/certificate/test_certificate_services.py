@@ -76,7 +76,7 @@ class TestCertificateServices:
                 db_read_session,
                 gcb_dict,
                 is_storage_device=False,
-                device_max_certificate_id=device_max_certificate_id,
+                max_certificate_id=device_max_certificate_id,
             )
         assert "bundle_id_range_start does not match criteria for equal" in str(
             exc_info.value
@@ -93,13 +93,13 @@ class TestCertificateServices:
             db_read_session,
             gcb_dict,
             is_storage_device=False,
-            device_max_certificate_id=device_max_certificate_id,
+            max_certificate_id=device_max_certificate_id,
         )
 
-        # Test case 2: certificate face value is greater than the device max watts hours
+        # Test case 2: certificate quantity is greater than the device max watts hours
         # This will fail because the bundle_quantity is greater than the device max watts hours
 
-        gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) + 1
+        gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) * 1.5
         gcb_dict["bundle_id_range_end"] = (
             gcb_dict["bundle_id_range_start"] + gcb_dict["bundle_quantity"]
         )
@@ -109,7 +109,7 @@ class TestCertificateServices:
                 db_read_session,
                 gcb_dict,
                 is_storage_device=False,
-                device_max_certificate_id=device_max_certificate_id,
+                max_certificate_id=device_max_certificate_id,
             )
         assert "bundle_quantity does not match criteria for less_than" in str(
             exc_info.value
@@ -124,7 +124,7 @@ class TestCertificateServices:
             db_read_session,
             gcb_dict,
             is_storage_device=False,
-            device_max_certificate_id=device_max_certificate_id,
+            max_certificate_id=device_max_certificate_id,
         )
 
     def test_issue_certificates_in_date_range(

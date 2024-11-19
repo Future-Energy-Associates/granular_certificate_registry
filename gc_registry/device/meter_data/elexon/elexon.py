@@ -263,37 +263,3 @@ class ElexonClient:
         }
 
         return device_capacities
-
-
-if __name__ == "__main__":
-    client = ElexonClient()
-
-    from_date = datetime.now() - timedelta(weeks=52 * 30)
-    to_date = datetime.now()
-
-    # Create year long ranges from the from_date to the to_date
-    data_list = []
-    for from_datetime in pd.date_range(from_date, to_date, freq="Y"):
-        to_datetime = (
-            from_datetime + timedelta(days=365)
-            if from_datetime + timedelta(days=365) < to_date
-            else to_date
-        )
-
-        print(f"Getting data from {from_datetime} to {to_datetime}")
-
-        data = client.get_asset_dataset_in_datetime_range(
-            dataset="IGCPU",
-            from_date=from_datetime,
-            to_date=to_datetime,
-        )
-        data_list.extend(data["data"])
-
-    df = pd.DataFrame(data_list)
-
-    df.sort_values("effectiveFrom", inplace=True, ascending=True)
-    df.drop_duplicates(subset=["registeredResourceName"], inplace=True, keep="last")
-    df = df[df.bmUnit.notna()]
-
-    # drop all non-renewable psr types
-    df = df[df.psrType.isin(client.renewable_psr_types)]

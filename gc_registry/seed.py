@@ -231,7 +231,10 @@ def seed_certificates_for_all_devices_in_date_range(
     }
 
     issuance_metadata = IssuanceMetaData.create(
-        issuance_metadata_dict, write_session, read_session, esdb_client
+        issuance_metadata_dict,
+        write_session,
+        read_session,
+        esdb_client,  # type: ignore
     )[0]  # type: ignore
 
     issue_certificates_in_date_range(
