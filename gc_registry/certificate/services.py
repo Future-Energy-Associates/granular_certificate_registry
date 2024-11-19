@@ -436,15 +436,15 @@ def apply_bundle_quantity_or_percentage(
                 certificates_to_transfer.append(gc_bundle)
                 continue
 
-        chlid_bundle_1, _child_bundle_2 = split_certificate_bundle(
+        child_bundle_1, _child_bundle_2 = split_certificate_bundle(
             gc_bundle,
             certificates_to_split[idx],
             write_session,
             read_session,
             esdb_client,
         )
-        if chlid_bundle_1:
-            certificates_to_transfer.append(chlid_bundle_1)
+        if child_bundle_1:
+            certificates_to_transfer.append(child_bundle_1)
 
     return certificates_to_transfer
 
