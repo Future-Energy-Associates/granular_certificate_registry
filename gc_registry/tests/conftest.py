@@ -1,4 +1,3 @@
-import logging
 import os
 from typing import Generator
 
@@ -27,6 +26,7 @@ from gc_registry.core.models.base import (
 )
 from gc_registry.core.services import create_bundle_hash
 from gc_registry.device.models import Device
+from gc_registry.logging_config import logger
 from gc_registry.main import app
 from gc_registry.settings import settings
 from gc_registry.user.models import User
@@ -78,7 +78,7 @@ def get_db_url(target: str = "write") -> str | None:
             pg_container.start()
             return pg_container.get_connection_url()
         except Exception as e:
-            logging.error(f"Failed to start PostgreSQL container: {str(e)}")
+            logger.error(f"Failed to start PostgreSQL container: {str(e)}")
             return None
 
 
@@ -374,9 +374,7 @@ def fake_db_gc_bundle(
     fake_db_issuance_metadata: IssuanceMetaData,
 ) -> GranularCertificateBundle:
     gc_bundle_dict = {
-        "id": 1,
         "account_id": fake_db_account.id,
-        "issuance_id": "1-2021-01-01T00:00",
         "certificate_status": CertificateStatus.ACTIVE,
         "metadata_id": fake_db_issuance_metadata.id,
         "bundle_id_range_start": 0,
@@ -392,6 +390,60 @@ def fake_db_gc_bundle(
         "device_id": fake_db_wind_device.id,
         "production_starting_interval": "2021-01-01T00:00:00",
         "production_ending_interval": "2021-01-01T01:00:00",
+        "issuance_datestamp": "2021-01-01",
+        "expiry_datestamp": "2024-01-01",
+        "country_of_issuance": "USA",
+        "connected_grid_identification": "ERCOT",
+        "issuing_body": "ERCOT",
+        "issue_market_zone": "USA",
+        "emissions_factor_production_device": 0.0,
+        "emissions_factor_source": "Some Data Source",
+        "hash": "Some Hash",
+    }
+
+    gc_bundle_dict["issuance_id"] = (
+        f"{gc_bundle_dict['device_id']}-{gc_bundle_dict['production_starting_interval']}"
+    )
+
+    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+
+    gc_bundle.hash = create_bundle_hash(gc_bundle)
+
+    gc_bundle_read = add_entity_to_write_and_read(
+        gc_bundle, db_write_session, db_read_session
+    )
+
+    # we actually want the bundle associated with the write session for these tests
+    gc_bundle_write = db_write_session.merge(gc_bundle_read)
+
+    return gc_bundle_write
+
+
+@pytest.fixture()
+def fake_db_gc_bundle_2(
+    db_write_session: Session,
+    db_read_session: Session,
+    fake_db_account: Account,
+    fake_db_solar_device: Device,
+    fake_db_issuance_metadata: IssuanceMetaData,
+) -> GranularCertificateBundle:
+    gc_bundle_dict = {
+        "account_id": fake_db_account.id,
+        "certificate_status": CertificateStatus.ACTIVE,
+        "metadata_id": fake_db_issuance_metadata.id,
+        "bundle_id_range_start": 0,
+        "bundle_id_range_end": 499,
+        "bundle_quantity": 500,
+        "energy_carrier": EnergyCarrierType.electricity,
+        "energy_source": EnergySourceType.solar_pv,
+        "face_value": 1,
+        "is_storage": False,
+        "sdr_allocation_id": None,
+        "storage_efficiency_factor": None,
+        "issuance_post_energy_carrier_conversion": False,
+        "device_id": fake_db_solar_device.id,
+        "production_starting_interval": "2021-01-01T12:00:00",
+        "production_ending_interval": "2021-01-01T13:00:00",
         "issuance_datestamp": "2021-01-01",
         "expiry_datestamp": "2024-01-01",
         "country_of_issuance": "USA",

@@ -2,7 +2,7 @@ import datetime
 from functools import partial
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Float
+from sqlalchemy import JSON, Column, Float
 from sqlmodel import ARRAY, BigInteger, Field
 
 from gc_registry import utils
@@ -438,17 +438,25 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     )
     certificate_period_start: datetime.datetime | None = Field(
         default=None,
-        description="The UTC datetime from which to filter GC Bundles within the specified Account.",
+        description="""The UTC datetime from which to filter GC Bundles within the specified Account.
+        If provided without certificate_period_end, returns all GC Bundles from the specified datetime to the present.""",
     )
     certificate_period_end: datetime.datetime | None = Field(
         default=None,
-        description="The UTC datetime up to which GC Bundles within the specified Account are to be filtered.",
+        description="""The UTC datetime up to which GC Bundles within the specified Account are to be filtered.
+        If provided without certificate_period_start, returns all GC Bundles up to the specified datetime.""",
     )
     certificate_quantity: int | None = Field(
         default=None,
         description="""Overrides GC Bundle range start and end IDs, if specified.
-        Of the GC Bundles identified, return the total number of certificates to action on,
-        splitting GC Bundles from the start of the range where necessary.""",
+        Returns the specified number of certificates from a given GC bundle to action on,
+        splitting from the start of the range.""",
+    )
+    certificate_bundle_percentage: float | None = Field(
+        default=None,
+        description="""Overrides GC Bundle range start and end IDs, if specified.
+        The percentage from 0 to 100 of the identified GC bundle to action on, splitting from
+        the start of the range and rounding down to the nearest Wh.""",
     )
     device_id: int | None = Field(
         default=None,
@@ -465,11 +473,11 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         default=None, description="Update the status of a GC Bundle."
     )
     is_deleted: bool = Field(default=False)
-    # TODO this currently can't pass Pydantic validation, need to revisit
-    # sparse_filter_list: Tuple[str, str] | None = Field(
-    #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
-    #     sa_column=Column(ARRAY(String(), String())),
-    # )
+    sparse_filter_list: list[tuple[str, str]] | None = Field(
+        default=None,
+        description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
+        sa_column=Column(ARRAY(JSON)),
+    )
     action_response_status: str | None = Field(
         default=None,
         description="Specifies whether the requested action has been accepted or rejected by the registry.",

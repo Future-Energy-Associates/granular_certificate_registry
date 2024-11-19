@@ -34,7 +34,7 @@ class TestRoutes:
         new_account = AccountBase(account_name="Test Account", user_ids=[1, 2, 3])
 
         created_account = api_client.post(
-            "account/create", data=new_account.model_dump_json()
+            "account/create", content=new_account.model_dump_json()
         )
         created_account = Account(**created_account.json())
 
@@ -56,7 +56,7 @@ class TestRoutes:
 
         updated_account_response = api_client.patch(
             f"account/update/{fake_db_account.id}",
-            data=updated_account.model_dump_json(),
+            content=updated_account.model_dump_json(),
         )
         updated_account = AccountUpdate(**updated_account_response.json())
 

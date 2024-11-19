@@ -88,9 +88,12 @@ class PJM(AbstractMeterDataClient):
                 "production_ending_interval": parse_datetime(
                     data["datetime_beginning_utc"]
                 ),  # Assuming 1-hour interval
-                "issuance_datestamp": datetime.datetime.utcnow().date(),
+                "issuance_datestamp": datetime.datetime.now(
+                    tz=datetime.timezone.utc
+                ).date(),
                 "expiry_datestamp": (
-                    datetime.datetime.utcnow() + datetime.timedelta(days=365 * 3)
+                    datetime.datetime.now(tz=datetime.timezone.utc)
+                    + datetime.timedelta(days=365 * 3)
                 ).date(),
                 ### Issuing Body Characteristics ###
                 "country_of_issuance": "USA",
