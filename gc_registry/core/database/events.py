@@ -9,7 +9,7 @@ from gc_registry.settings import settings
 
 
 def yield_esdb_client() -> Generator[EventStoreDBClient, None, None]:
-    with EventStoreDBClient(uri=settings.ESDB_CONNECTION_STRING) as esdb_client:
+    with EventStoreDBClient(uri=f"esdb://{settings.ESDB_CONNECTION_STRING}:2113?tls=false") as esdb_client:
         try:
             yield esdb_client
         finally:
