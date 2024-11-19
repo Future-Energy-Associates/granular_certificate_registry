@@ -7,8 +7,8 @@ import pandas as pd
 from gc_registry.core.models.base import (
     CertificateStatus,
     EnergyCarrierType,
-    EnergySourceType,
 )
+from gc_registry.device.models import Device
 from gc_registry.logging_config import logger
 from gc_registry.settings import settings
 
@@ -20,6 +20,7 @@ def datetime_to_settlement_period(dt: datetime.datetime) -> int:
 class ElexonClient:
     def __init__(self):
         self.base_url = "https://data.elexon.co.uk/bmrs/api/v1"
+        self.NAME = "ElexonClient"
 
     def get_dataset_in_datetime_range(
         self,
@@ -133,7 +134,7 @@ class ElexonClient:
         self,
         generation_data: list[dict[str, Any]],
         account_id: int,
-        device_id: int,
+        device: Device,
         is_storage: bool,
         issuance_metadata_id: int,
         bundle_id_range_start: int = 0,
@@ -160,10 +161,10 @@ class ElexonClient:
                 "bundle_id_range_end": bundle_id_range_end,
                 "bundle_quantity": bundle_id_range_end - bundle_id_range_start + 1,
                 "energy_carrier": EnergyCarrierType.electricity,
-                "energy_source": EnergySourceType.wind,
+                "energy_source": device.energy_source,
                 "face_value": 1,
                 "issuance_post_energy_carrier_conversion": False,
-                "device_id": device_id,
+                "device_id": device.id,
                 "production_starting_interval": data["start_time"],
                 "production_ending_interval": data["start_time"]
                 + pd.Timedelta(minutes=60),
@@ -180,7 +181,7 @@ class ElexonClient:
             }
 
             transformed["issuance_id"] = (
-                f"{device_id}-{transformed['production_starting_interval']}"
+                f"{device.id}-{transformed['production_starting_interval']}"
             )
 
             mapped_data.append(transformed)

@@ -1,5 +1,6 @@
 import datetime
 
+import pandas as pd
 import pytest
 from esdbclient import EventStoreDBClient
 from sqlmodel import Session
@@ -8,9 +9,11 @@ from gc_registry.account.models import Account
 from gc_registry.certificate.models import (
     GranularCertificateActionBase,
     GranularCertificateBundle,
+    IssuanceMetaData,
 )
 from gc_registry.certificate.services import (
     get_max_certificate_id_by_device_id,
+    issue_certificates_by_device_in_date_range,
     issue_certificates_in_date_range,
     process_certificate_action,
     query_certificates,
@@ -19,7 +22,13 @@ from gc_registry.certificate.services import (
 )
 from gc_registry.core.models.base import CertificateStatus
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
+from gc_registry.device.meter_data.manual_submission import ManualSubmissionMeterClient
 from gc_registry.device.models import Device
+from gc_registry.measurement.models import MeasurementReport
+from gc_registry.measurement.services import (
+    parse_measurement_json,
+    serialise_measurement_csv,
+)
 from gc_registry.settings import settings
 from gc_registry.user.models import User
 
@@ -29,7 +38,6 @@ class TestCertificateServices:
         self,
         db_read_session,
         fake_db_wind_device,
-        fake_db_solar_device,
         fake_db_gc_bundle,
     ):
         max_certificate_id = get_max_certificate_id_by_device_id(
@@ -51,7 +59,6 @@ class TestCertificateServices:
         self,
         db_read_session,
         fake_db_wind_device,
-        fake_db_solar_device,
         fake_db_gc_bundle,
     ):
         hours = settings.CERTIFICATE_GRANULARITY_HOURS
@@ -323,3 +330,59 @@ class TestCertificateServices:
             )
         else:
             raise AssertionError("No certificates returned from query.")
+
+    def test_issue_certificates_from_manual_submission(
+        self,
+        db_write_session: Session,
+        db_read_session: Session,
+        fake_db_wind_device: Device,
+        fake_db_issuance_metadata: IssuanceMetaData,
+        esdb_client: EventStoreDBClient,
+    ):
+        measurement_json = serialise_measurement_csv(
+            "gc_registry/tests/data/test_measurements.csv"
+        )
+
+        measurement_df: pd.DataFrame = parse_measurement_json(
+            measurement_json, to_df=True
+        )
+
+        # The device ID may change during testing so we need to update the measurement data
+        measurement_df["device_id"] = fake_db_wind_device.id
+
+        readings = MeasurementReport.create(
+            measurement_df.to_dict(orient="records"),
+            db_write_session,
+            db_read_session,
+            esdb_client,
+        )
+
+        assert readings is not None, "No readings found in the database."
+        assert (
+            len(readings) == 24 * 31
+        ), f"Incorrect number of readings found ({len(readings)}); expected {24 * 31}."
+
+        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        to_datetime = from_datetime + datetime.timedelta(days=31)
+
+        client = ManualSubmissionMeterClient()
+
+        issued_certificates = issue_certificates_by_device_in_date_range(
+            fake_db_wind_device,
+            from_datetime,
+            to_datetime,
+            db_write_session,
+            db_read_session,
+            esdb_client,
+            fake_db_issuance_metadata.id,
+            client,
+        )
+
+        assert issued_certificates is not None
+        assert (
+            len(issued_certificates) == 24 * 31
+        ), f"Incorrect number of certificates issued ({len(issued_certificates)}); expected {24 * 31}."
+        assert (
+            sum([cert.bundle_quantity for cert in issued_certificates])  # type: ignore
+            == measurement_df["interval_usage"].sum()
+        ), "Incorrect total certificate quantity issued."
