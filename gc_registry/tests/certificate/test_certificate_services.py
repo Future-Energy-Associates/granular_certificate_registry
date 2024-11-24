@@ -1,4 +1,5 @@
 import datetime
+from typing import Any, Hashable
 
 import pandas as pd
 import pytest
@@ -13,6 +14,7 @@ from gc_registry.certificate.models import (
 )
 from gc_registry.certificate.services import (
     get_max_certificate_id_by_device_id,
+    get_max_certificate_timestamp_by_device_id,
     issue_certificates_by_device_in_date_range,
     issue_certificates_in_date_range,
     process_certificate_action,
@@ -54,6 +56,18 @@ class TestCertificateServices:
             db_read_session, fake_db_wind_device.id
         )
         assert max_certificate_id is None
+
+    def test_get_max_certificate_timestamp_by_device_id(
+        self,
+        db_read_session,
+        fake_db_wind_device,
+        fake_db_gc_bundle,
+    ):
+        max_certificate_timestamp = get_max_certificate_timestamp_by_device_id(
+            db_read_session, fake_db_wind_device.id
+        )
+        assert max_certificate_timestamp == fake_db_gc_bundle.production_ending_interval
+        assert isinstance(max_certificate_timestamp, datetime.datetime)
 
     def test_validate_granular_certificate_bundle(
         self,
@@ -386,3 +400,68 @@ class TestCertificateServices:
             sum([cert.bundle_quantity for cert in issued_certificates])  # type: ignore
             == measurement_df["interval_usage"].sum()
         ), "Incorrect total certificate quantity issued."
+
+    def test_issue_certificates_from_elexon(
+        self,
+        db_write_session: Session,
+        db_read_session: Session,
+        fake_db_account: Account,
+        fake_db_wind_device: Device,
+        fake_db_issuance_metadata: IssuanceMetaData,
+        esdb_client: EventStoreDBClient,
+    ):
+        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        to_datetime = from_datetime + datetime.timedelta(hours=4)
+        meter_data_ids = [
+            "E_MARK-1",
+            "T_RATS-1",
+            "T_RATS-2",
+            "T_RATS-3",
+            "T_RATS-4",
+            "T_RATSGT-2",
+            "T_RATSGT-4",
+        ]
+        meter_data_id = meter_data_ids[0]
+
+        client = ElexonClient()
+
+        device_capacities = client.get_device_capacities([meter_data_id])
+
+        W_IN_MW = 1e6
+
+        # create a new device
+        device_dict: dict[Hashable, Any] = {
+            "device_name": "Ratcliffe on Soar",
+            "meter_data_id": meter_data_id,
+            "grid": "National Grid",
+            "energy_source": "wind",
+            "technology_type": "wind",
+            "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
+            "capacity": device_capacities[meter_data_id] * W_IN_MW,
+            "peak_demand": 100,
+            "location": "Some Location",
+            "account_id": fake_db_account.id,
+            "is_storage": False,
+        }
+        devices = Device.create(
+            device_dict, db_write_session, db_read_session, esdb_client
+        )
+
+        if isinstance(devices, list):
+            device = devices[0]
+
+        assert devices is not None
+
+        issued_certificates = issue_certificates_by_device_in_date_range(
+            device,  # type: ignore
+            from_datetime,
+            to_datetime,
+            db_write_session,
+            db_read_session,
+            esdb_client,
+            fake_db_issuance_metadata.id,
+            client,  # type: ignore
+        )
+
+        assert issued_certificates is not None
+        assert len(issued_certificates) == 5

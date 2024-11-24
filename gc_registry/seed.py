@@ -1,5 +1,5 @@
 import datetime
-from typing import Any
+from typing import Any, Hashable
 
 import pandas as pd
 
@@ -218,7 +218,7 @@ def seed_certificates_for_all_devices_in_date_range(
     client = ElexonClient()
 
     # Create issuance metadata for the certificates
-    issuance_metadata_dict = {
+    issuance_metadata_dict: dict[Hashable, Any] = {
         "country_of_issuance": "UK",
         "connected_grid_identification": "NESO",
         "issuing_body": "OFGEM",
@@ -230,12 +230,17 @@ def seed_certificates_for_all_devices_in_date_range(
         "issue_market_zone": "NESO",
     }
 
-    issuance_metadata = IssuanceMetaData.create(
+    issuance_metadata_list = IssuanceMetaData.create(
         issuance_metadata_dict,
         write_session,
         read_session,
-        esdb_client,  # type: ignore
-    )[0]  # type: ignore
+        esdb_client,
+    )
+
+    if not issuance_metadata_list:
+        raise ValueError("Could not create issuance metadata")
+
+    issuance_metadata = issuance_metadata_list[0]
 
     issue_certificates_in_date_range(
         from_date,

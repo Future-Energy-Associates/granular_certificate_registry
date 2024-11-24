@@ -9,7 +9,6 @@ from gc_registry.core.models.base import (
     EnergyCarrierType,
 )
 from gc_registry.device.models import Device
-from gc_registry.logging_config import logger
 from gc_registry.settings import settings
 
 
@@ -187,8 +186,6 @@ class ElexonClient:
             if bundle_wh <= 0:
                 continue
 
-            logger.info(f"Data: {data}, Bundle WH: {bundle_wh}")
-
             # Get existing "bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
                 bundle_id_range_start = mapped_data[-1]["bundle_id_range_end"] + 1
@@ -238,6 +235,18 @@ class ElexonClient:
         to_date: datetime.date = datetime.datetime.now().date(),
         dataset: str = "IGCPU",
     ) -> dict[str, Any]:
+        """
+        Get the device capacities for the given BMU IDs
+
+        Args:
+            bmu_ids: The BMU IDs to query
+            from_date: The start date
+            to_date: The end date
+            dataset: The dataset to query
+
+        Returns:
+            The device capacities for the given BMU IDs in the given date range in MW
+        """
         data = self.get_asset_dataset_in_datetime_range(dataset, from_date, to_date)
 
         df = pd.DataFrame(data["data"])
