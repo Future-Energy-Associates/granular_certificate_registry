@@ -418,8 +418,6 @@ def apply_bundle_quantity_or_percentage(
     # Only check the bundle quantity if the query on bundle quantity parameter is provided,
     # otherwise, split the bundle based on the percentage of the total certificates in the bundle
     for idx, gc_bundle in enumerate(certificates_from_query):
-        gc_bundle = write_session.merge(gc_bundle)
-
         if certificate_bundle_action.certificate_quantity is not None:
             if (
                 gc_bundle.bundle_quantity
@@ -498,14 +496,26 @@ def query_certificates(
                     or_(*sparse_filter_clauses)
                 )
                 break
-            elif query_param == "certificate_period_start":
+            elif query_param in (
+                "certificate_period_start",
+                "source_certificate_bundle_id_range_start",
+            ):
                 stmt = stmt.where(
-                    GranularCertificateBundle.production_starting_interval
+                    getattr(
+                        GranularCertificateBundle,
+                        certificate_query_param_map[query_param],
+                    )
                     >= query_value
                 )
-            elif query_param == "certificate_period_end":
+            elif query_param in (
+                "certificate_period_end",
+                "source_certificate_bundle_id_range_end",
+            ):
                 stmt = stmt.where(
-                    GranularCertificateBundle.production_starting_interval
+                    getattr(
+                        GranularCertificateBundle,
+                        certificate_query_param_map[query_param],
+                    )
                     <= query_value
                 )
             else:

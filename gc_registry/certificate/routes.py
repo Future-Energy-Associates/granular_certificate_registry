@@ -108,9 +108,9 @@ def certificate_bundle_transfer(
     return db_certificate_action
 
 
-@router.get(
+@router.post(
     "/query",
-    response_model=GranularCertificateBundle,
+    response_model=list[GranularCertificateBundle],
     status_code=202,
 )
 def query_certificate_bundles(
