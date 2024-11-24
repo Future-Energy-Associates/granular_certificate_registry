@@ -25,7 +25,6 @@ mutable_gc_attributes = [
 ]
 
 certificate_query_param_map = {
-    "source_id": "account_id",
     "source_certificate_issuance_id": "issuance_id",
     "source_certificate_bundle_id_range_start": "bundle_id_range_start",
     "source_certificate_bundle_id_range_end": "bundle_id_range_end",

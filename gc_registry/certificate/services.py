@@ -477,7 +477,9 @@ def query_certificates(
         return None
 
     # Query certificates based on the given filter parameters
-    stmt = select(GranularCertificateBundle)  # type: ignore
+    stmt = select(GranularCertificateBundle).where(
+        GranularCertificateBundle.account_id == certificate_query.source_id
+    )  # type: ignore
     for query_param, query_value in certificate_query.model_dump().items():
         if (query_param in certificate_query_param_map) & (query_value is not None):
             # sparse_filter_list overrides all other search criteria if provided
@@ -498,18 +500,12 @@ def query_certificates(
                 break
             elif query_param == "certificate_period_start":
                 stmt = stmt.where(
-                    getattr(
-                        GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
-                    )
+                    GranularCertificateBundle.production_starting_interval
                     >= query_value
                 )
             elif query_param == "certificate_period_end":
                 stmt = stmt.where(
-                    getattr(
-                        GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
-                    )
+                    GranularCertificateBundle.production_starting_interval
                     <= query_value
                 )
             else:
