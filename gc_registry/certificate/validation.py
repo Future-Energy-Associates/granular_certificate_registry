@@ -55,12 +55,10 @@ def validate_granular_certificate_bundle(
     device_mw = device_w / W_IN_MW
     device_max_watts_hours = device_mw_capacity_to_wh_max(device_mw, hours)
 
-    CAPACITY_MARGIN = 1.1  # TODO: Review what the margin should be - Punped storage seemed to break this validation
-
     # Validate the bundle quantity is equal to the difference between the bundle ID range
     # and less than the device max watts hours
     validate(gcb.bundle_quantity, identifier="bundle_quantity").less_than(
-        device_max_watts_hours * CAPACITY_MARGIN
+        device_max_watts_hours * settings.CAPACITY_MARGIN
     ).equal(gcb.bundle_id_range_end - gcb.bundle_id_range_start + 1)
 
     # Validate the bundle ID range start is greater than the previous max certificate ID

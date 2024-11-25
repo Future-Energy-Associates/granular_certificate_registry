@@ -9,8 +9,8 @@ from gc_registry.core.models.base import (
     EnergyCarrierType,
 )
 from gc_registry.device.models import Device
-from gc_registry.settings import settings
 from gc_registry.logging_config import logger
+from gc_registry.settings import settings
 
 
 def datetime_to_settlement_period(dt: datetime.datetime) -> int:
@@ -97,7 +97,9 @@ class ElexonClient:
 
                 data.extend(response.json()["data"])
             except Exception as e:
-                logger.error(f"Error fetching data for {half_hour_dt} for {bmu_ids}: {e}")
+                logger.error(
+                    f"Error fetching data for {half_hour_dt} for {bmu_ids}: {e}"
+                )
 
         return data
 
