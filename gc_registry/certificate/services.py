@@ -320,7 +320,7 @@ def issue_certificates_in_date_range(
     # Issue certificates for each device
     certificates: list[Any] = []
     for device in devices:
-        print(f"Issuing certificates for device: {device.id}")
+        logger.info(f"Issuing certificates for device: {device.id}")
 
         # Get the meter data for the device
         if not device.meter_data_id:
