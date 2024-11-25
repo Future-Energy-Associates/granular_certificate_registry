@@ -123,6 +123,35 @@ def get_max_certificate_id_by_device_id(
         return int(max_certificate_id)
 
 
+def get_max_certificate_timestamp_by_device_id(
+    db_session: Session, device_id: int
+) -> datetime.datetime | None:
+    """Gets the maximum certificate timestamp from any bundle for a given device, excluding any withdrawn certificates
+
+    Args:
+        db_session (Session): The database session
+        device_id (int): The device ID
+
+    Returns:
+        datetime.datetime: The maximum certificate timestamp
+
+    """
+
+    stmt: SelectOfScalar = select(
+        func.max(GranularCertificateBundle.production_ending_interval)
+    ).where(
+        GranularCertificateBundle.device_id == device_id,
+        GranularCertificateBundle.certificate_status != CertificateStatus.WITHDRAWN,
+    )
+
+    max_certificate_timestamp = db_session.exec(stmt).first()
+
+    if not max_certificate_timestamp:
+        return None
+    else:
+        return max_certificate_timestamp
+
+
 def issue_certificates_by_device_in_date_range(
     device: Device,
     from_datetime: datetime.datetime,
@@ -133,9 +162,45 @@ def issue_certificates_by_device_in_date_range(
     issuance_metadata_id: int,
     meter_data_client: AbstractMeterDataClient,
 ) -> list[SQLModel] | None:
+    """Issue certificates for a device using the following process.
+    1. Get max timestamp already issued for the device
+    2. Get the meter data for the device for the given period
+    3. Map the meter data to certificates
+    4. Validate the certificates
+    5. Commit the certificates to the database
+    Args:
+        device (Device): The device
+        from_datetime (datetime.datetime): The start of the period
+        to_datetime (datetime.datetime): The end of the period
+        db_write_session (Session): The database write session
+        db_read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+        issuance_metadata_id (int): The issuance metadata ID
+        meter_data_client (MeterDataClient, optional): The meter data client.
+
+    Returns:
+        list[GranularCertificateBundle]: The list of certificates issued
+    """
+
     if not device.id or not device.meter_data_id:
         logger.error(f"No device ID or meter data ID for device: {device}")
         return None
+
+    # get max timestamp already issued for the device
+    max_issued_timestamp = get_max_certificate_timestamp_by_device_id(
+        db_read_session, device.id
+    )
+
+    # check if the device has already been issued certificates for the given period
+    if max_issued_timestamp and max_issued_timestamp >= to_datetime:
+        logger.info(
+            f"Device {device.id} has already been issued certificates for the period {from_datetime} to {to_datetime}"
+        )
+        return None
+
+    # If max timestamp ias after from them use the max timestamp as the from_datetime
+    if max_issued_timestamp and max_issued_timestamp > from_datetime:
+        from_datetime = max_issued_timestamp
 
     # TODO CAG - this is messy by me, will refactor down the road
     # Also, validation later on assumes the metering data is datetime sorted -
@@ -175,14 +240,26 @@ def issue_certificates_by_device_in_date_range(
         logger.error(f"No meter data retrieved for device: {device.meter_data_id}")
         return None
 
+    if not device_max_certificate_id:
+        device_max_certificate_id = 0
+
     # Validate the certificates
-    valid_certificates = []
+    valid_certificates: list[Any] = []
     for certificate in certificates:
+        # get max valid certificate max bundle id
+        if valid_certificates:
+            device_max_certificate_id = max(
+                [v.bundle_id_range_end for v in valid_certificates]
+            )
+
+        if device_max_certificate_id is None:
+            raise ValueError("Max certificate ID is None")
+
         valid_certificate = validate_granular_certificate_bundle(
             db_read_session,
             certificate,
             is_storage_device=device.is_storage,
-            device_max_certificate_id=device_max_certificate_id,
+            max_certificate_id=device_max_certificate_id,
         )
         valid_certificate.hash = create_bundle_hash(valid_certificate, nonce="")
         valid_certificate.issuance_id = create_issuance_id(valid_certificate)
@@ -243,6 +320,8 @@ def issue_certificates_in_date_range(
     # Issue certificates for each device
     certificates: list[Any] = []
     for device in devices:
+        logger.info(f"Issuing certificates for device: {device.id}")
+
         # Get the meter data for the device
         if not device.meter_data_id:
             logger.error(f"No meter data ID for device: {device.id}")

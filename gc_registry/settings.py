@@ -4,8 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    CERTIFICATE_GRANULARITY_HOURS: float
-    CERTIFICATE_EXPIRY_YEARS: int
+    CERTIFICATE_GRANULARITY_HOURS: float = 1
+    CERTIFICATE_EXPIRY_YEARS: int = 2
+    CAPACITY_MARGIN: float = 1.1  # TODO: Review what the margin should be - Punped storage seemed to break this validation
 
     DATABASE_HOST_WRITE: str
     DATABASE_HOST_READ: str

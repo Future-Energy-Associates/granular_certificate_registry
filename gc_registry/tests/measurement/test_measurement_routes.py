@@ -43,8 +43,6 @@ def test_submit_readings_success(
         params={"measurement_json": valid_measurement_json},
     )
 
-    print(response.json())
-
     assert response.status_code == 200
 
     response_data = response.json()

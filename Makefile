@@ -97,6 +97,8 @@ db.reset:
 	docker compose down && \
 		docker volume rm granular_certificate_registry_postgres_data_read && \
 		docker volume rm granular_certificate_registry_postgres_data_write && \
+		docker volume rm granular_certificate_registry_eventstore-volume-data && \
+		docker volume rm granular_certificate_registry_eventstore-volume-logs && \
 		make db.update
 
 .PHONY: db.test.migrations
