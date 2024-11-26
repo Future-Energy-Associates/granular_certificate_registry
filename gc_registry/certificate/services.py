@@ -564,7 +564,7 @@ def query_certificates(
 
     # Query certificates based on the given filter parameters
     stmt = select(GranularCertificateBundle).where(
-        GranularCertificateBundle.account_id == certificate_query.source_id
+        GranularCertificateBundle.account_id == certificate_query.source_id,
     )  # type: ignore
     for query_param, query_value in certificate_query.model_dump().items():
         if (query_param in certificate_query_param_map) & (query_value is not None):
@@ -694,6 +694,13 @@ def cancel_certificates(
     certificates_from_query = query_certificates(
         certificate_bundle_action, write_session=write_session
     )
+
+    # Do not apply to deleted certificates
+    certificates_from_query = [
+        certificate
+        for certificate in certificates_from_query
+        if certificate.is_deleted is False
+    ]
 
     if not certificates_from_query:
         logger.info("No certificates found to cancel with given query parameters.")
