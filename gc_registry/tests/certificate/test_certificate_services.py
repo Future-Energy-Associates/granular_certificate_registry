@@ -1,5 +1,7 @@
 import datetime
+from typing import Any, Hashable
 
+import pandas as pd
 import pytest
 from esdbclient import EventStoreDBClient
 from sqlmodel import Session
@@ -8,9 +10,12 @@ from gc_registry.account.models import Account
 from gc_registry.certificate.models import (
     GranularCertificateActionBase,
     GranularCertificateBundle,
+    IssuanceMetaData,
 )
 from gc_registry.certificate.services import (
     get_max_certificate_id_by_device_id,
+    get_max_certificate_timestamp_by_device_id,
+    issue_certificates_by_device_in_date_range,
     issue_certificates_in_date_range,
     process_certificate_action,
     query_certificates,
@@ -19,7 +24,13 @@ from gc_registry.certificate.services import (
 )
 from gc_registry.core.models.base import CertificateStatus
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
+from gc_registry.device.meter_data.manual_submission import ManualSubmissionMeterClient
 from gc_registry.device.models import Device
+from gc_registry.measurement.models import MeasurementReport
+from gc_registry.measurement.services import (
+    parse_measurement_json,
+    serialise_measurement_csv,
+)
 from gc_registry.settings import settings
 from gc_registry.user.models import User
 
@@ -29,7 +40,6 @@ class TestCertificateServices:
         self,
         db_read_session,
         fake_db_wind_device,
-        fake_db_solar_device,
         fake_db_gc_bundle,
     ):
         max_certificate_id = get_max_certificate_id_by_device_id(
@@ -47,11 +57,22 @@ class TestCertificateServices:
         )
         assert max_certificate_id is None
 
+    def test_get_max_certificate_timestamp_by_device_id(
+        self,
+        db_read_session,
+        fake_db_wind_device,
+        fake_db_gc_bundle,
+    ):
+        max_certificate_timestamp = get_max_certificate_timestamp_by_device_id(
+            db_read_session, fake_db_wind_device.id
+        )
+        assert max_certificate_timestamp == fake_db_gc_bundle.production_ending_interval
+        assert isinstance(max_certificate_timestamp, datetime.datetime)
+
     def test_validate_granular_certificate_bundle(
         self,
         db_read_session,
         fake_db_wind_device,
-        fake_db_solar_device,
         fake_db_gc_bundle,
     ):
         hours = settings.CERTIFICATE_GRANULARITY_HOURS
@@ -69,7 +90,7 @@ class TestCertificateServices:
                 db_read_session,
                 gcb_dict,
                 is_storage_device=False,
-                device_max_certificate_id=device_max_certificate_id,
+                max_certificate_id=device_max_certificate_id,
             )
         assert "bundle_id_range_start does not match criteria for equal" in str(
             exc_info.value
@@ -86,13 +107,13 @@ class TestCertificateServices:
             db_read_session,
             gcb_dict,
             is_storage_device=False,
-            device_max_certificate_id=device_max_certificate_id,
+            max_certificate_id=device_max_certificate_id,
         )
 
-        # Test case 2: certificate face value is greater than the device max watts hours
+        # Test case 2: certificate quantity is greater than the device max watts hours
         # This will fail because the bundle_quantity is greater than the device max watts hours
 
-        gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) + 1
+        gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) * 1.5
         gcb_dict["bundle_id_range_end"] = (
             gcb_dict["bundle_id_range_start"] + gcb_dict["bundle_quantity"]
         )
@@ -102,7 +123,7 @@ class TestCertificateServices:
                 db_read_session,
                 gcb_dict,
                 is_storage_device=False,
-                device_max_certificate_id=device_max_certificate_id,
+                max_certificate_id=device_max_certificate_id,
             )
         assert "bundle_quantity does not match criteria for less_than" in str(
             exc_info.value
@@ -117,7 +138,7 @@ class TestCertificateServices:
             db_read_session,
             gcb_dict,
             is_storage_device=False,
-            device_max_certificate_id=device_max_certificate_id,
+            max_certificate_id=device_max_certificate_id,
         )
 
     def test_issue_certificates_in_date_range(
@@ -323,3 +344,124 @@ class TestCertificateServices:
             )
         else:
             raise AssertionError("No certificates returned from query.")
+
+    def test_issue_certificates_from_manual_submission(
+        self,
+        db_write_session: Session,
+        db_read_session: Session,
+        fake_db_wind_device: Device,
+        fake_db_issuance_metadata: IssuanceMetaData,
+        esdb_client: EventStoreDBClient,
+    ):
+        measurement_json = serialise_measurement_csv(
+            "gc_registry/tests/data/test_measurements.csv"
+        )
+
+        measurement_df: pd.DataFrame = parse_measurement_json(
+            measurement_json, to_df=True
+        )
+
+        # The device ID may change during testing so we need to update the measurement data
+        measurement_df["device_id"] = fake_db_wind_device.id
+
+        readings = MeasurementReport.create(
+            measurement_df.to_dict(orient="records"),
+            db_write_session,
+            db_read_session,
+            esdb_client,
+        )
+
+        assert readings is not None, "No readings found in the database."
+        assert (
+            len(readings) == 24 * 31
+        ), f"Incorrect number of readings found ({len(readings)}); expected {24 * 31}."
+
+        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        to_datetime = from_datetime + datetime.timedelta(days=31)
+
+        client = ManualSubmissionMeterClient()
+
+        issued_certificates = issue_certificates_by_device_in_date_range(
+            fake_db_wind_device,
+            from_datetime,
+            to_datetime,
+            db_write_session,
+            db_read_session,
+            esdb_client,
+            fake_db_issuance_metadata.id,
+            client,
+        )
+
+        assert issued_certificates is not None
+        assert (
+            len(issued_certificates) == 24 * 31
+        ), f"Incorrect number of certificates issued ({len(issued_certificates)}); expected {24 * 31}."
+        assert (
+            sum([cert.bundle_quantity for cert in issued_certificates])  # type: ignore
+            == measurement_df["interval_usage"].sum()
+        ), "Incorrect total certificate quantity issued."
+
+    def test_issue_certificates_from_elexon(
+        self,
+        db_write_session: Session,
+        db_read_session: Session,
+        fake_db_account: Account,
+        fake_db_wind_device: Device,
+        fake_db_issuance_metadata: IssuanceMetaData,
+        esdb_client: EventStoreDBClient,
+    ):
+        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        to_datetime = from_datetime + datetime.timedelta(hours=4)
+        meter_data_ids = [
+            "E_MARK-1",
+            "T_RATS-1",
+            "T_RATS-2",
+            "T_RATS-3",
+            "T_RATS-4",
+            "T_RATSGT-2",
+            "T_RATSGT-4",
+        ]
+        meter_data_id = meter_data_ids[0]
+
+        client = ElexonClient()
+
+        device_capacities = client.get_device_capacities([meter_data_id])
+
+        W_IN_MW = 1e6
+
+        # create a new device
+        device_dict: dict[Hashable, Any] = {
+            "device_name": "Ratcliffe on Soar",
+            "meter_data_id": meter_data_id,
+            "grid": "National Grid",
+            "energy_source": "wind",
+            "technology_type": "wind",
+            "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
+            "capacity": device_capacities[meter_data_id] * W_IN_MW,
+            "peak_demand": 100,
+            "location": "Some Location",
+            "account_id": fake_db_account.id,
+            "is_storage": False,
+        }
+        devices = Device.create(
+            device_dict, db_write_session, db_read_session, esdb_client
+        )
+
+        if isinstance(devices, list):
+            device = devices[0]
+
+        assert devices is not None
+
+        issued_certificates = issue_certificates_by_device_in_date_range(
+            device,  # type: ignore
+            from_datetime,
+            to_datetime,
+            db_write_session,
+            db_read_session,
+            esdb_client,
+            fake_db_issuance_metadata.id,
+            client,  # type: ignore
+        )
+
+        assert issued_certificates is not None
+        assert len(issued_certificates) == 5
