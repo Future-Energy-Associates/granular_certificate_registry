@@ -75,7 +75,8 @@ def split_certificate_bundle(
     gc_bundle_child_2.bundle_id_range_start = gc_bundle_child_1.bundle_id_range_end + 1
     gc_bundle_child_2.hash = create_bundle_hash(gc_bundle_child_2, gc_bundle.hash)
 
-    # Mark the parent bundle as deleted
+    # Mark the parent bundle as withdrawn and apply soft delete
+    gc_bundle.certificate_status = CertificateStatus.BUNDLE_SPLIT
     gc_bundle.delete(write_session, read_session, esdb_client)  # type: ignore
 
     # Write the child bundles to the database

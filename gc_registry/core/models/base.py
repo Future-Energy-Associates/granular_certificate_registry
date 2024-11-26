@@ -51,6 +51,7 @@ class CertificateStatus(str, Enum):
     WITHDRAWN = "Withdrawn"
     LOCKED = "Locked"
     RESERVED = "Reserved"
+    BUNDLE_SPLIT = "Bundle Split"
 
 
 class CertificateActionType(str, Enum):
