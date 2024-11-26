@@ -3,6 +3,7 @@ import enum
 import uuid
 from enum import Enum
 from functools import partial
+import logging
 
 from pydantic import BaseModel
 from sqlalchemy import JSON, Column
@@ -76,3 +77,15 @@ class Event(BaseModel):
     attributes_before: dict | None = Field(sa_column=Column(JSON))
     attributes_after: dict | None = Field(sa_column=Column(JSON))
     timestamp: datetime.datetime = Field(default_factory=utc_datetime_now)  # type: ignore
+
+
+class logging_levels(str, enum.Enum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+class LoggingLevelRequest(BaseModel):
+    level: logging_levels
