@@ -94,6 +94,11 @@ class GranularCertificateBundleBase(BaseModel):
                         standardised energy volume per Granular Certificate, rounded down to the nearest Wh. Equal to
                         (bundle_id_range_end - bundle_id_range_start + 1)."""
     )
+    beneficiary: str | None = Field(
+        default=None,
+        description="""The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. 
+                        If not specified, the Account holder is treated as the Beneficiary.""",
+    )
 
     ### Bundle Characteristics ###
     energy_carrier: EnergyCarrierType = Field(
