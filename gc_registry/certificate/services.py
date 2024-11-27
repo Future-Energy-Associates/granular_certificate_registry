@@ -483,7 +483,6 @@ def apply_bundle_quantity_or_percentage(
             int(
                 certificate_bundle_action.certificate_bundle_percentage
                 * certificate_from_query.bundle_quantity
-                / 100
             )
             for certificate_from_query in certificates_from_query
         ]

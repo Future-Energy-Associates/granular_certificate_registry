@@ -400,7 +400,7 @@ class GranularCertificateActionBase(BaseModel):
     )
 
 
-class GranularCertificateQuery(GranularCertificateActionBase):
+class GranularCertificateQuery(BaseModel):
     source_id: int = Field(
         description="The Account ID of the Account within which the action shall occur or originate from."
     )
