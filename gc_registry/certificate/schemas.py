@@ -96,7 +96,7 @@ class GranularCertificateBundleBase(BaseModel):
     )
     beneficiary: str | None = Field(
         default=None,
-        description="""The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. 
+        description="""The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles.
                         If not specified, the Account holder is treated as the Beneficiary.""",
     )
 
