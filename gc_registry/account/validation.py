@@ -47,6 +47,11 @@ def validate_account_whitelist_update(
     """
     if account_whitelist_update.add_to_whitelist is not None:
         for account_id_to_add in account_whitelist_update.add_to_whitelist:
+            if account_id_to_add == account.id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot add an account to its own whitelist.",
+                )
             if not Account.exists(account_id_to_add, read_session):
                 raise HTTPException(
                     status_code=404,
