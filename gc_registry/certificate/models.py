@@ -33,6 +33,7 @@ class GranularCertificateBundleUpdate(BaseModel):
     bundle_id_range_start: int | None = None
     bundle_id_range_end: int | None = None
     bundle_quantity: int | None = None
+    beneficiary: str | None = None
 
 
 # A Transfer object is specified by a User, and is stored in a transaction table that
