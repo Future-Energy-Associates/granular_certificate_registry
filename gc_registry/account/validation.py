@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from gc_registry.account.models import Account, AccountWhitelist
 from gc_registry.user.models import User
@@ -11,12 +11,12 @@ def validate_account(account, read_session):
         raise HTTPException(status_code=400, detail="Cannot update deleted accounts.")
 
     # Account names must be unique
-    account_exists = (
-        read_session.query(Account)
-        .filter(Account.account_name == account.account_name)
-        .exists()
+    account_exists_query = (
+        select(Account).filter(Account.account_name == account.account_name).exists()
     )
-    if account_exists.scalar():
+    account_exists = read_session.execute(select(account_exists_query)).scalar()
+
+    if account_exists:
         raise HTTPException(
             status_code=400, detail="Account name already exists in the database."
         )

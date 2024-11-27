@@ -31,7 +31,7 @@ class AccountRead(AccountBase):
 class AccountUpdate(BaseModel):
     account_name: str | None = None
     user_ids: List[int] | None = None
-    account_ids: List[int] | None = None
+    account_whitelist: List[int] | None = None
 
 
 class AccountWhitelist(BaseModel):

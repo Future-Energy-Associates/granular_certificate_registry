@@ -17,9 +17,9 @@ class TestAccountRoutes:
         updated_whitelist_from_db = api_client.get(f"account/{fake_db_account.id}")
         updated_whitelist_from_db = Account(**updated_whitelist_from_db.json())
 
-        assert updated_whitelist_from_db.account_whitelist == [
-            fake_db_account_2.id
-        ], f"Expected {[fake_db_account_2.id]} but got {updated_whitelist_from_db}"
+        assert (
+            updated_whitelist_from_db.account_whitelist == [fake_db_account_2.id]
+        ), f"Expected {[fake_db_account_2.id]} but got {updated_whitelist_from_db.account_whitelist}"
 
         # Test revoking access from the account
         updated_whitelist = AccountWhitelist(
@@ -36,7 +36,7 @@ class TestAccountRoutes:
 
         assert (
             updated_whitelist_from_db.account_whitelist == []
-        ), f"Expected '[]' but got {updated_whitelist_from_db}"
+        ), f"Expected '[]' but got {updated_whitelist_from_db.account_whitelist}"
 
         # Test adding an account that does not exist
         updated_whitelist = AccountWhitelist(add_to_whitelist=[999])

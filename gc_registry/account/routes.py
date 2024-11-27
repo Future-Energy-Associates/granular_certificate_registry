@@ -90,7 +90,7 @@ def update_whitelist(
             account, account_whitelist_update, read_session
         )
 
-        account_update = models.AccountUpdate(account_ids=modified_whitelist)
+        account_update = models.AccountUpdate(account_whitelist=modified_whitelist)
 
         updated_account = account.update(
             account_update, write_session, read_session, esdb_client
