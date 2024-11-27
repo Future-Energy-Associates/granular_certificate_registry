@@ -67,6 +67,55 @@ def update_account(
         )
 
 
+@router.patch("/update_whitelist/{account_id}", response_model=models.AccountRead)
+def update_whitelist(
+    account_id: int,
+    account_whitelist_update: models.AccountWhitelist,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+):
+    try:
+        account = models.Account.by_id(account_id, write_session)
+        if not account:
+            raise HTTPException(
+                status_code=404, detail=f"Account ID not found: {account_id}"
+            )
+
+        if account_whitelist_update.add_to_whitelist is not None:
+            for account_id_to_add in account_whitelist_update.add_to_whitelist:
+                if not models.Account.exists(account_id_to_add, read_session):
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Account ID not found: {account_id_to_add}",
+                    )
+            modified_whitelist = list(
+                set(account.user_ids + account_whitelist_update.add_to_whitelist)
+            )
+
+        if account_whitelist_update.remove_from_whitelist is not None:
+            modified_whitelist = list(
+                set(account.user_ids)
+                - set(account_whitelist_update.remove_from_whitelist)
+            )
+
+        account_update = models.AccountUpdate(account_ids=modified_whitelist)
+
+        updated_account = account.update(
+            account_update, write_session, read_session, esdb_client
+        )
+        if not updated_account:
+            raise HTTPException(
+                status_code=404, detail=f"Account id {account_id} not found"
+            )
+        return updated_account.model_dump()
+    except Exception:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Account id {account_id} not found: updated_account",
+        )
+
+
 @router.delete(
     "/delete/{account_id}", status_code=200, response_model=models.AccountRead
 )
