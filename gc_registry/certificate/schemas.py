@@ -1,8 +1,7 @@
 import datetime
 from functools import partial
-from typing import Annotated
 
-from pydantic import BaseModel, PrivateAttr, model_validator, root_validator
+from pydantic import BaseModel, model_validator
 from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, BigInteger, Field
 
@@ -377,6 +376,23 @@ class GranularCertificateActionBase(BaseModel):
     user_id: int = Field(
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified."
     )
+    granular_certificate_bundle_ids: list[int] = Field(
+        description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID.",
+    )
+    certificate_quantity: int | None = Field(
+        default=None,
+        description="""Overrides GC Bundle range start and end IDs, if specified.
+        Returns the specified number of certificates from a given GC bundle to action on,
+        splitting from the start of the range.""",
+    )
+    certificate_bundle_percentage: float | None = Field(
+        default=None,
+        gt=0,
+        le=1,
+        description="""Overrides GC Bundle range start and end IDs, if specified.
+        The percentage from 0 to 100 of the identified GC bundle to action on, splitting from
+        the start of the range and rounding down to the nearest Wh.""",
+    )
     localise_time: bool = Field(
         default=True,
         description="Indicates whether the request should be localised to the Account's timezone.",
@@ -384,6 +400,16 @@ class GranularCertificateActionBase(BaseModel):
 
 
 class GranularCertificateQuery(GranularCertificateActionBase):
+    source_id: int = Field(
+        description="The Account ID of the Account within which the action shall occur or originate from."
+    )
+    user_id: int = Field(
+        description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified."
+    )
+    localise_time: bool = Field(
+        default=True,
+        description="Indicates whether the request should be localised to the Account's timezone.",
+    )
     issuance_ids: list[str] | None = Field(
         default=None,
         description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID.",
@@ -415,7 +441,9 @@ class GranularCertificateQuery(GranularCertificateActionBase):
         start = values.certificate_period_start
         end = values.certificate_period_end
         if start and end and start >= end:
-            raise ValueError("certificate_period_end must be greater than certificate_period_start.")
+            raise ValueError(
+                "certificate_period_end must be greater than certificate_period_start."
+            )
         return values
 
 
@@ -424,30 +452,13 @@ class GranularCertificateTransfer(GranularCertificateActionBase):
         default=CertificateActionType.TRANSFER,
         const=True,
     )
-    granular_certificate_bundle_ids: list[int] = Field(
-        description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID.",
-    )
     target_id: int = Field(
         description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to.",
     )
-    certificate_quantity: int | None = Field(
-        default=None,
-        description="""Overrides GC Bundle range start and end IDs, if specified.
-        Returns the specified number of certificates from a given GC bundle to action on,
-        splitting from the start of the range.""",
-    )
-    certificate_bundle_percentage: float | None = Field(
-        default=None,
-        gt=0,
-        le=1,
-        description="""Overrides GC Bundle range start and end IDs, if specified.
-        The percentage from 0 to 100 of the identified GC bundle to action on, splitting from
-        the start of the range and rounding down to the nearest Wh.""",
-    )
-    
-    @model_validator(mode='before')
+
+    @model_validator(mode="before")
     def ensure_action_type_is_not_set(cls, values):
-        if 'action_type' in values:
+        if "action_type" in values:
             raise ValueError("`action_type` cannot be set explicitly.")
         return values
 
@@ -457,34 +468,78 @@ class GranularCertificateCancel(GranularCertificateActionBase):
         default=CertificateActionType.CANCEL,
         const=True,
     )
-    granular_certificate_bundle_ids: list[int] = Field(
-        description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID.",
-    )
-    certificate_quantity: int | None = Field(
-        default=None,
-        description="""Overrides GC Bundle range start and end IDs, if specified.
-        Returns the specified number of certificates from a given GC bundle to action on,
-        splitting from the start of the range.""",
-    )
-    certificate_bundle_percentage: float | None = Field(
-        default=None,
-        gt=0,
-        le=1,
-        description="""Overrides GC Bundle range start and end IDs, if specified.
-        The percentage from 0 to 100 of the identified GC bundle to action on, splitting from
-        the start of the range and rounding down to the nearest Wh.""",
-    )
     beneficiary: str | None = Field(
         default=None,
         description="The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. If not specified, the Account holder is treated as the Beneficiary.",
     )
-    
-    @model_validator(mode='before')
+
+    @model_validator(mode="before")
     def ensure_action_type_is_not_set(cls, values):
-        if 'action_type' in values:
+        if "action_type" in values:
             raise ValueError("`action_type` cannot be set explicitly.")
         return values
 
+
+class GranularCertificateReserve(GranularCertificateActionBase):
+    action_type: CertificateActionType = Field(
+        default=CertificateActionType.RESERVE,
+        const=True,
+    )
+    target_id: int = Field(
+        description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to.",
+    )
+
+    @model_validator(mode="before")
+    def ensure_action_type_is_not_set(cls, values):
+        if "action_type" in values:
+            raise ValueError("`action_type` cannot be set explicitly.")
+        return values
+
+
+class GranularCertificateClaim(GranularCertificateActionBase):
+    action_type: CertificateActionType = Field(
+        default=CertificateActionType.CLAIM,
+        const=True,
+    )
+    beneficiary: str = Field(
+        default=None,
+        description="The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. If not specified, the Account holder is treated as the Beneficiary.",
+    )
+    target_id: int = Field(
+        description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to.",
+    )
+
+    @model_validator(mode="before")
+    def ensure_action_type_is_not_set(cls, values):
+        if "action_type" in values:
+            raise ValueError("`action_type` cannot be set explicitly.")
+        return values
+
+
+class GranularCertificateWithdraw(GranularCertificateActionBase):
+    action_type: CertificateActionType = Field(
+        default=CertificateActionType.WITHDRAW,
+        const=True,
+    )
+
+    @model_validator(mode="before")
+    def ensure_action_type_is_not_set(cls, values):
+        if "action_type" in values:
+            raise ValueError("`action_type` cannot be set explicitly.")
+        return values
+
+
+class GranularCertificateLock(GranularCertificateActionBase):
+    action_type: CertificateActionType = Field(
+        default=CertificateActionType.LOCK,
+        const=True,
+    )
+
+    @model_validator(mode="before")
+    def ensure_action_type_is_not_set(cls, values):
+        if "action_type" in values:
+            raise ValueError("`action_type` cannot be set explicitly.")
+        return values
 
 
 class GranularCertificateActionRead(GranularCertificateActionBase):

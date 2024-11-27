@@ -4,7 +4,6 @@ from sqlmodel import Session, SQLModel
 
 from gc_registry.core.database.events import batch_create_events, create_event
 from gc_registry.core.models.base import EventTypes
-
 from gc_registry.logging_config import logger
 
 

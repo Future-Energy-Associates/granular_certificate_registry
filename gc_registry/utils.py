@@ -93,7 +93,9 @@ class ActiveRecord(SQLModel):
         debug: bool = False,
     ) -> SQLModel | None:
         if debug:
-            logger.debug(f"Updating {self.__class__.__name__}: {self.model_dump_json()}")
+            logger.debug(
+                f"Updating {self.__class__.__name__}: {self.model_dump_json()}"
+            )
         updated_entity = cqrs.update_database_entity(
             entity=self,
             update_entity=update_entity,
@@ -112,7 +114,9 @@ class ActiveRecord(SQLModel):
         debug: bool = False,
     ) -> list[SQLModel] | None:
         if debug:
-            logger.debug(f"Deleting {self.__class__.__name__}: {self.model_dump_json()}")
+            logger.debug(
+                f"Deleting {self.__class__.__name__}: {self.model_dump_json()}"
+            )
         deleted_entities = cqrs.delete_database_entities(
             entities=self,
             write_session=write_session,

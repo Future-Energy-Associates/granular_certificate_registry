@@ -44,7 +44,10 @@ class GranularCertificateBundleUpdate(BaseModel):
 # "transfer", "recurring_transfer", "cancel", "claim", "withdraw"
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
-class GranularCertificateAction(utils.ActiveRecord,GranularCertificateActionBase, table=True):
+
+class GranularCertificateAction(
+    utils.ActiveRecord, GranularCertificateActionBase, table=True
+):
     id: int | None = Field(
         primary_key=True,
         default=None,
@@ -58,6 +61,9 @@ class GranularCertificateAction(utils.ActiveRecord,GranularCertificateActionBase
     action_completed_datetime: datetime.datetime = Field(
         default_factory=utc_datetime_now,
         description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
+    )
+    certificate_status: CertificateStatus | None = Field(
+        default=None, description="""Filter on the status of the GC Bundles."""
     )
 
 

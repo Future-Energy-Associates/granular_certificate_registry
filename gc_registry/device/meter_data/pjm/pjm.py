@@ -109,4 +109,3 @@ class PJM(AbstractMeterDataClient):
             mapped_data.append(valid_data)
 
         return mapped_data
-

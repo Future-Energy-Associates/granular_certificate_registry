@@ -1,7 +1,6 @@
 from esdbclient import EventStoreDBClient
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
-from gc_registry.account.models import Account
 
 from gc_registry.certificate.models import (
     GranularCertificateAction,
@@ -12,6 +11,7 @@ from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleBase,
     GranularCertificateCancel,
+    GranularCertificateQuery,
     GranularCertificateTransfer,
     IssuanceMetaDataBase,
 )
@@ -116,7 +116,7 @@ def certificate_bundle_transfer(
     status_code=202,
 )
 def query_certificate_bundles(
-    certificate_bundle_query: GranularCertificateAction,
+    certificate_bundle_query: GranularCertificateQuery,
     read_session: Session = Depends(db.get_read_session),
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""

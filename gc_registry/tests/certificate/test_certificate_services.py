@@ -8,7 +8,6 @@ from sqlmodel import Session
 
 from gc_registry.account.models import Account
 from gc_registry.certificate.models import (
-    GranularCertificateActionBase,
     GranularCertificateBundle,
     IssuanceMetaData,
 )
@@ -18,6 +17,7 @@ from gc_registry.certificate.schemas import (
     GranularCertificateTransfer,
 )
 from gc_registry.certificate.services import (
+    create_issuance_id,
     get_max_certificate_id_by_device_id,
     get_max_certificate_timestamp_by_device_id,
     issue_certificates_by_device_in_date_range,
@@ -244,6 +244,11 @@ class TestCertificateServices:
         Transfer a fixed number of certificates from one account to another.
         """
 
+        assert fake_db_account.id is not None
+        assert fake_db_account_2.id is not None
+        assert fake_db_user.id is not None
+        assert fake_db_gc_bundle.id is not None
+
         certificate_transfer = GranularCertificateTransfer(
             source_id=fake_db_account.id,
             target_id=fake_db_account_2.id,
@@ -252,7 +257,9 @@ class TestCertificateServices:
             certificate_quantity=500,
         )
 
-        assert hasattr(certificate_transfer, "action_type"), f"Action type not set: {certificate_transfer}"
+        assert hasattr(
+            certificate_transfer, "action_type"
+        ), f"Action type not set: {certificate_transfer}"
 
         _ = process_certificate_action(
             certificate_transfer, db_write_session, db_read_session, esdb_client
@@ -265,6 +272,7 @@ class TestCertificateServices:
         )
         certificate_transfered = query_certificates(certificate_query, db_read_session)
 
+        assert certificate_transfered is not None
         assert certificate_transfered[0].bundle_quantity == 500
 
     def test_cancel_by_percentage(
@@ -279,11 +287,16 @@ class TestCertificateServices:
         Cancel 75% of the bundle, and assert that the bundle was correctly
         split and the correct percentage cancelled.
         """
+
+        # check that all the test fixtures have ids
+        assert fake_db_gc_bundle.id is not None
+        assert fake_db_user.id is not None
+
         certificate_action = GranularCertificateCancel(
             source_id=fake_db_gc_bundle.account_id,
             user_id=fake_db_user.id,
             granular_certificate_bundle_ids=[fake_db_gc_bundle.id],
-            certificate_bundle_percentage=.75,
+            certificate_bundle_percentage=0.75,
         )
 
         _ = process_certificate_action(
@@ -291,8 +304,7 @@ class TestCertificateServices:
         )
 
         # Check that 75% of the bundle was cancelled
-        certificate_query = GranularCertificateActionBase(
-            action_type="query",
+        certificate_query = GranularCertificateQuery(
             user_id=fake_db_user.id,
             source_id=fake_db_gc_bundle.account_id,
             certificate_status=CertificateStatus.CANCELLED,
@@ -310,22 +322,15 @@ class TestCertificateServices:
         """Test that the query_certificates function can handle sparse filter input on device ID
         and production starting datetime."""
 
-        sparse_filter_list = [
-            (
-                fake_db_gc_bundle.device_id,
-                fake_db_gc_bundle.production_starting_interval,
-            ),
-            (
-                fake_db_gc_bundle_2.device_id,
-                fake_db_gc_bundle_2.production_starting_interval,
-            ),
+        issuance_ids = [
+            create_issuance_id(fake_db_gc_bundle),
+            create_issuance_id(fake_db_gc_bundle_2),
         ]
 
-        certificate_query = GranularCertificateActionBase(
-            action_type="query",
+        certificate_query = GranularCertificateQuery(
             user_id=1,
             source_id=fake_db_gc_bundle.account_id,
-            sparse_filter=sparse_filter_list,
+            issuance_ids=issuance_ids,
         )
 
         certificates_from_query = query_certificates(certificate_query, db_read_session)

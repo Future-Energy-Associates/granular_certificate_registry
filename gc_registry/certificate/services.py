@@ -1,5 +1,5 @@
 import datetime
-from typing import Any
+from typing import Any, Callable
 
 from esdbclient import EventStoreDBClient
 from sqlalchemy import func
@@ -19,8 +19,12 @@ from gc_registry.certificate.schemas import (
     GranularCertificateBundleCreate,
     GranularCertificateBundleRead,
     GranularCertificateCancel,
+    GranularCertificateClaim,
+    GranularCertificateLock,
     GranularCertificateQuery,
+    GranularCertificateReserve,
     GranularCertificateTransfer,
+    GranularCertificateWithdraw,
     certificate_query_param_map,
 )
 from gc_registry.certificate.validation import validate_granular_certificate_bundle
@@ -33,7 +37,9 @@ from gc_registry.device.services import get_all_devices
 from gc_registry.logging_config import logger
 
 
-def get_certificate_bundles_by_id(gcb_ids: list[int], db_session: Session) -> list[GranularCertificateBundle]:
+def get_certificate_bundles_by_id(
+    gcb_ids: list[int], db_session: Session
+) -> list[GranularCertificateBundle]:
     """Get a list of GC Bundles by their IDs.
 
     Args:
@@ -44,7 +50,9 @@ def get_certificate_bundles_by_id(gcb_ids: list[int], db_session: Session) -> li
         list[GranularCertificateBundle]: The list of GC Bundles
     """
 
-    stmt = select(GranularCertificateBundle).where(GranularCertificateBundle.id.in_(gcb_ids))
+    stmt: SelectOfScalar = select(GranularCertificateBundle).where(
+        GranularCertificateBundle.id.in_(gcb_ids)  # type: ignore
+    )
     gc_bundles = db_session.exec(stmt).all()
 
     return gc_bundles
@@ -372,7 +380,7 @@ def process_certificate_action(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> GranularCertificateAction:
+) -> GranularCertificateAction | None:
     """Process the given certificate action.
 
     Args:
@@ -389,12 +397,14 @@ def process_certificate_action(
     # Action request datetimes are set prior to the operation; action complete datetimes are set
     # using a default factory once the action entity is written to the DB post-completion
 
-    valid_certificate_action = GranularCertificateAction.model_validate(certificate_action.model_dump())
+    valid_certificate_action = GranularCertificateAction.model_validate(
+        certificate_action.model_dump()
+    )
     valid_certificate_action.action_request_datetime = datetime.datetime.now(
         tz=datetime.timezone.utc
     )
 
-    certificate_action_functions = {
+    certificate_action_functions: dict[str, Callable[..., Any]] = {
         CertificateActionType.TRANSFER: transfer_certificates,
         CertificateActionType.CANCEL: cancel_certificates,
         CertificateActionType.CLAIM: claim_certificates,
@@ -404,24 +414,33 @@ def process_certificate_action(
     }
 
     if valid_certificate_action.action_type not in certificate_action_functions.keys():
-        raise ValueError(f"Action type ({valid_certificate_action.action_type}) not in {certificate_action_functions.keys()}")
+        raise ValueError(
+            f"Action type ({valid_certificate_action.action_type}) not in {certificate_action_functions.keys()}"
+        )
 
-    #try:
-    certificate_action_functions[valid_certificate_action.action_type](certificate_action, write_session, read_session, esdb_client)
+    # try:
+    action_function: Callable[..., Any] = certificate_action_functions[
+        valid_certificate_action.action_type
+    ]
+    action_function(certificate_action, write_session, read_session, esdb_client)
     # except Exception as e:
     #     logger.error(f"Error whilst processing certificate action: {str(e)}")
-
 
     db_certificate_actions = GranularCertificateAction.create(
         valid_certificate_action, write_session, read_session, esdb_client
     )
 
-    return db_certificate_actions[0]
+    return db_certificate_actions[0]  # type: ignore
 
 
 def apply_bundle_quantity_or_percentage(
     certificates_from_query: list[GranularCertificateBundle],
-    certificate_bundle_action: GranularCertificateActionBase,
+    certificate_bundle_action: GranularCertificateCancel
+    | GranularCertificateTransfer
+    | GranularCertificateReserve
+    | GranularCertificateClaim
+    | GranularCertificateWithdraw
+    | GranularCertificateLock,
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
@@ -527,7 +546,6 @@ def query_certificates(
 
     session: Session = read_session if write_session is None else write_session  # type: ignore
 
-
     # Query certificates based on the given filter parameters
     stmt = select(GranularCertificateBundle)  # type: ignore
     for query_param, query_value in certificate_query.model_dump().items():
@@ -600,8 +618,8 @@ def transfer_certificates(
     ), f"Target account does not exist: {certificate_bundle_action.target_id}"
 
     # Retrieve certificates to transfer
-    certificates_from_query = query_certificates(
-        certificate_bundle_action, write_session=write_session
+    certificates_from_query = get_certificate_bundles_by_id(
+        certificate_bundle_action.granular_certificate_bundle_ids, write_session
     )
 
     if not certificates_from_query:
@@ -649,7 +667,9 @@ def cancel_certificates(
     """
 
     # Retrieve certificates to cancel
-    certificates_from_query = get_certificate_bundles_by_id(certificate_transfer.granular_certificate_bundle_ids, read_session)
+    certificates_from_query = get_certificate_bundles_by_id(
+        certificate_transfer.granular_certificate_bundle_ids, write_session
+    )
 
     if not certificates_from_query:
         logger.info("No certificates found to cancel with given query parameters.")
@@ -675,7 +695,7 @@ def cancel_certificates(
 
 
 def claim_certificates(
-    certificate_bundle_action: GranularCertificateActionBase,
+    certificate_claim: GranularCertificateClaim,
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
@@ -690,14 +710,9 @@ def claim_certificates(
 
     """
 
-    # Claims need a beneficiary
-    assert (
-        certificate_bundle_action.beneficiary
-    ), "Beneficiary ID is required for GC claims"
-
     # Retrieve certificates to claim
-    certificates_from_query = query_certificates(
-        certificate_bundle_action, write_session=write_session
+    certificates_from_query = get_certificate_bundles_by_id(
+        certificate_claim.granular_certificate_bundle_ids, write_session
     )
 
     if not certificates_from_query:
@@ -707,7 +722,7 @@ def claim_certificates(
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_claim = apply_bundle_quantity_or_percentage(
         certificates_from_query,
-        certificate_bundle_action,
+        certificate_claim,
         write_session,
         read_session,
         esdb_client,
@@ -729,7 +744,7 @@ def claim_certificates(
 
 
 def withdraw_certificates(
-    certificate_bundle_action: GranularCertificateActionBase,
+    certificate_bundle_action: GranularCertificateWithdraw,
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
@@ -747,8 +762,8 @@ def withdraw_certificates(
     # TODO add logic for removing withdrawn GCs from the main table
 
     # Retrieve certificates to withdraw
-    certificates_from_query = query_certificates(
-        certificate_bundle_action, write_session=write_session
+    certificates_from_query = get_certificate_bundles_by_id(
+        certificate_bundle_action.granular_certificate_bundle_ids, write_session
     )
 
     if not certificates_from_query:
@@ -775,7 +790,7 @@ def withdraw_certificates(
 
 
 def lock_certificates(
-    certificate_bundle_action: GranularCertificateActionBase,
+    certificate_bundle_action: GranularCertificateLock,
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
@@ -794,8 +809,8 @@ def lock_certificates(
     """
 
     # Retrieve certificates to lock
-    certificates_from_query = query_certificates(
-        certificate_bundle_action, write_session=write_session
+    certificates_from_query = get_certificate_bundles_by_id(
+        certificate_bundle_action.granular_certificate_bundle_ids, write_session
     )
 
     if not certificates_from_query:
@@ -822,7 +837,7 @@ def lock_certificates(
 
 
 def reserve_certificates(
-    certificate_bundle_action: GranularCertificateActionBase,
+    certificate_reserve: GranularCertificateReserve,
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
@@ -838,8 +853,8 @@ def reserve_certificates(
     """
 
     # Retrieve certificates to reserve
-    certificates_from_query = query_certificates(
-        certificate_bundle_action, write_session=write_session
+    certificates_from_query = get_certificate_bundles_by_id(
+        certificate_reserve.granular_certificate_bundle_ids, write_session
     )
 
     if not certificates_from_query:
@@ -849,7 +864,7 @@ def reserve_certificates(
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_reserve = apply_bundle_quantity_or_percentage(
         certificates_from_query,
-        certificate_bundle_action,
+        certificate_reserve,
         write_session,
         read_session,
         esdb_client,
