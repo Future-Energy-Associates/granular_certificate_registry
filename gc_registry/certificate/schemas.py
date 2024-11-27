@@ -2,7 +2,7 @@ import datetime
 from functools import partial
 
 from pydantic import BaseModel, model_validator
-from sqlalchemy import Column, Float
+from sqlalchemy import JSON, Column, Float
 from sqlmodel import ARRAY, BigInteger, Field
 
 from gc_registry.core.models.base import (
@@ -377,6 +377,7 @@ class GranularCertificateActionBase(BaseModel):
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified."
     )
     granular_certificate_bundle_ids: list[int] = Field(
+        sa_column=Column(JSON),
         description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID.",
     )
     certificate_quantity: int | None = Field(
