@@ -139,7 +139,7 @@ def certificate_bundle_cancellation(
 
     # If no beneficiary is specified, default to the account holder
     if certificate_bundle_action.beneficiary is None:
-        user_name = User.by_id(certificate_bundle_action.user_id).name
+        user_name = User.by_id(certificate_bundle_action.user_id, read_session).name
         certificate_bundle_action.beneficiary = f"{user_name}"
 
     certificate_bundle_action.action_type = CertificateActionType.CANCEL

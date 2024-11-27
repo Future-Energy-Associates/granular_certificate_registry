@@ -3,7 +3,6 @@ import enum
 import uuid
 from enum import Enum
 from functools import partial
-import logging
 
 from pydantic import BaseModel
 from sqlalchemy import JSON, Column
