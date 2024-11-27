@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from gc_registry.account.models import Account
 from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.certificate.services import create_issuance_id
 from gc_registry.user.models import User
 
 
@@ -162,3 +163,75 @@ def test_cancel_certificate(
 
     assert response.json()["detail"][0]["type"] == "greater_than"
     assert "Input should be greater than 0" in response.json()["detail"][0]["msg"]
+
+
+def test_query_certificate_bundles(
+    api_client,
+    fake_db_gc_bundle: GranularCertificateBundle,
+    fake_db_gc_bundle_2: GranularCertificateBundle,
+    fake_db_user: User,
+    fake_db_account: Account,
+    esdb_client: EventStoreDBClient,
+):
+    assert fake_db_gc_bundle.id is not None
+    assert fake_db_user.id is not None
+    assert fake_db_account.id is not None
+
+    # Test case 1: Try to query a certificate with correct parameters
+    test_data_1: dict[str, Any] = {
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+    }
+
+    response = api_client.get("/certificate/query", params=test_data_1)
+
+    assert response.status_code == 202
+    assert "total_certificate_volume" in response.json().keys()
+    assert (
+        response.json()["total_certificate_volume"]
+        == fake_db_gc_bundle.bundle_quantity + fake_db_gc_bundle_2.bundle_quantity
+    )
+
+    # Test case 2: Try to query a certificate with missing source_id
+    test_data_2: dict[str, Any] = {
+        "user_id": fake_db_user.id,
+    }
+
+    response = api_client.get("/certificate/query", params=test_data_2)
+
+    assert response.status_code == 422
+
+    assert response.json()["detail"][0]["type"] == "missing"
+    assert "source_id" in response.json()["detail"][0]["loc"]
+
+    # Test case 3: Query certificates based on issuance_ids
+    test_data_3: dict[str, Any] = {
+        "issuance_ids": [create_issuance_id(fake_db_gc_bundle)],
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+    }
+
+    response = api_client.get("/certificate/query", params=test_data_3)
+
+    assert response.status_code == 202
+    assert "total_certificate_volume" in response.json().keys()
+    assert (
+        response.json()["total_certificate_volume"]
+        == fake_db_gc_bundle.bundle_quantity + fake_db_gc_bundle_2.bundle_quantity
+    )
+
+    # Test case 4: Query certificates with invalid certificate_period_start and certificate_period_end
+    test_data_4: dict[str, Any] = {
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "certificate_period_start": "2024-01-01",
+        "certificate_period_end": "2020-01-01",
+    }
+
+    response = api_client.get("/certificate/query", params=test_data_4)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"]
+        == "certificate_period_end must be greater than certificate_period_start."
+    )

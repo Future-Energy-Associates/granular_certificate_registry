@@ -1,6 +1,7 @@
 import datetime
 from functools import partial
 
+from fastapi import HTTPException
 from pydantic import BaseModel, model_validator
 from sqlalchemy import JSON, Column, Float
 from sqlmodel import ARRAY, BigInteger, Field
@@ -407,7 +408,7 @@ class GranularCertificateQuery(BaseModel):
     user_id: int = Field(
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified."
     )
-    localise_time: bool = Field(
+    localise_time: bool | None = Field(
         default=True,
         description="Indicates whether the request should be localised to the Account's timezone.",
     )
@@ -442,9 +443,27 @@ class GranularCertificateQuery(BaseModel):
         start = values.certificate_period_start
         end = values.certificate_period_end
         if start and end and start >= end:
-            raise ValueError(
-                "certificate_period_end must be greater than certificate_period_start."
+            raise HTTPException(
+                status_code=422,
+                detail="certificate_period_end must be greater than certificate_period_start.",
             )
+        return values
+
+
+class GranularCertificateQueryRead(GranularCertificateQuery):
+    granular_certificate_bundles: list[GranularCertificateBundleBase] = Field(
+        description="The list of GC Bundles that match the query parameters."
+    )
+    total_certificate_volume: int | None = Field(
+        default=None,
+        description="The total volume of certificates that match the query parameters.",
+    )
+
+    @model_validator(mode="after")
+    def calculate_total_certificate_volume(cls, values):
+        bundles = values.granular_certificate_bundles
+        total_volume = sum(bundle.bundle_quantity for bundle in bundles)
+        values.total_certificate_volume = total_volume
         return values
 
 

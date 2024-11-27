@@ -546,7 +546,7 @@ def query_certificates(
     session: Session = read_session if write_session is None else write_session  # type: ignore
 
     # Query certificates based on the given filter parameters
-    stmt = select(GranularCertificateBundle)  # type: ignore
+    stmt: SelectOfScalar = select(GranularCertificateBundle)
     for query_param, query_value in certificate_query.model_dump().items():
         if (query_param in certificate_query_param_map) & (query_value is not None):
             # sparse_filter_list overrides all other search criteria if provided
