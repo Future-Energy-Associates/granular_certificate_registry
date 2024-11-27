@@ -42,9 +42,11 @@ def api_client(
     """API Client for testing routes"""
 
     def get_write_session_override():
+        assert db_write_session.is_active
         return db_write_session
 
     def get_read_session_override():
+        assert db_read_session.is_active
         return db_read_session
 
     def get_db_name_to_client_override():
@@ -112,9 +114,7 @@ def get_esdb_url() -> str | None:
                 )
                 + ":2113?tls=false"
             )
-            print("Connection string: ", connection_string)
-            # return connection_string
-            return "esdb://localhost:2113?tls=false"
+            return connection_string
 
         except Exception as e:
             print(f"Failed to start EventStoreDB container: {str(e)}")
@@ -228,7 +228,6 @@ def add_entity_to_write_and_read(
     read_session.commit()
     read_session.refresh(read_entity)
 
-    print("read_entity: ", read_entity)
     return read_entity
 
 

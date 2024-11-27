@@ -1,12 +1,13 @@
 import datetime
 from functools import partial
+from typing import Annotated
 
-from pydantic import BaseModel
-from sqlalchemy import JSON, Column, Float
+from pydantic import BaseModel, PrivateAttr, model_validator, root_validator
+from sqlalchemy import Column, Float
 from sqlmodel import ARRAY, BigInteger, Field
 
-from gc_registry import utils
 from gc_registry.core.models.base import (
+    CertificateActionType,
     CertificateStatus,
     EnergyCarrierType,
     EnergySourceType,
@@ -26,9 +27,6 @@ mutable_gc_attributes = [
 
 certificate_query_param_map = {
     "source_id": "account_id",
-    "source_certificate_issuance_id": "issuance_id",
-    "source_certificate_bundle_id_range_start": "bundle_id_range_start",
-    "source_certificate_bundle_id_range_end": "bundle_id_range_end",
     "certificate_period_start": None,
     "certificate_period_end": None,
     "device_id": "device_id",
@@ -372,69 +370,31 @@ class GranularCertificateBundleRead(BaseModel):
     is_deleted: bool = Field(default=False)
 
 
-class GranularCertificateActionBase(utils.ActiveRecord):
-    # TODO validate with an enum at the class definition level
-    action_type: str | None = Field(
-        default=None,
-        description="The type of action to be performed on the GC Bundle.",
-    )
+class GranularCertificateActionBase(BaseModel):
     source_id: int = Field(
         description="The Account ID of the Account within which the action shall occur or originate from."
     )
     user_id: int = Field(
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified."
     )
-    target_id: int | None = Field(
-        default=None,
-        description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to.",
+    localise_time: bool = Field(
+        default=True,
+        description="Indicates whether the request should be localised to the Account's timezone.",
     )
-    source_certificate_issuance_id: str | None = Field(
+
+
+class GranularCertificateQuery(GranularCertificateActionBase):
+    issuance_ids: list[str] | None = Field(
         default=None,
         description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID.",
     )
-    source_certificate_bundle_id_range_start: int | None = Field(
+    device_id: int | None = Field(
         default=None,
-        description="If an issuance ID is specified, returns a GC Bundle containing all certificates between and inclusive of the range start and end IDs provided.",
+        description="Filter GC Bundles associated with the specified production device.",
     )
-    source_certificate_bundle_id_range_end: int | None = Field(
+    energy_source: str | None = Field(
         default=None,
-        description="If an issuance ID is specified, returns a GC Bundle containing all certificates between and inclusive of the range start and end IDs provided.",
-    )
-    action_request_datetime: datetime.datetime = Field(
-        default_factory=utc_datetime_now,
-        description="The UTC datetime at which the User submitted the action to the registry.",
-    )
-    action_completed_datetime: datetime.datetime = Field(
-        default_factory=utc_datetime_now,
-        description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
-    )
-    action_request_datetime_local: datetime.datetime | None = Field(
-        description="The local datetime at which the User submitted the action to the registry.",
-        default_factory=datetime.datetime.now,
-    )
-    action_complete_datetime_local: datetime.datetime | None = Field(
-        description="The local datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
-        default_factory=datetime.datetime.now,
-    )
-    initial_action_datetime: datetime.datetime | None = Field(
-        default=None,
-        description="If recurring, the UTC datetime of the first action that is to be completed.",
-    )
-    recurring_action_period_units: str | None = Field(
-        default=None,
-        description="If recurring, the unit of time described by the recurring_action_period_quantity field, for example: 'days', 'weeks', 'months', 'years'.",
-    )
-    recurring_action_period_quantity: int | None = Field(
-        default=None,
-        description="If recurring, the number of units of time (specified by the units field) between each action.",
-    )
-    number_of_recurring_actions: int | None = Field(
-        default=None,
-        description="If recurring, including the first action, the number of recurring actions to perform before halting the recurring action.",
-    )
-    beneficiary: str | None = Field(
-        default=None,
-        description="The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. If not specified, the Account holder is treated as the Beneficiary.",
+        description="Filter GC Bundles based on the fuel type used by the production Device.",
     )
     certificate_period_start: datetime.datetime | None = Field(
         default=None,
@@ -446,6 +406,30 @@ class GranularCertificateActionBase(utils.ActiveRecord):
         description="""The UTC datetime up to which GC Bundles within the specified Account are to be filtered.
         If provided without certificate_period_start, returns all GC Bundles up to the specified datetime.""",
     )
+    certificate_status: CertificateStatus | None = Field(
+        default=None, description="""Filter on the status of the GC Bundles."""
+    )
+
+    @model_validator(mode="after")
+    def validate_date_range(cls, values):
+        start = values.certificate_period_start
+        end = values.certificate_period_end
+        if start and end and start >= end:
+            raise ValueError("certificate_period_end must be greater than certificate_period_start.")
+        return values
+
+
+class GranularCertificateTransfer(GranularCertificateActionBase):
+    action_type: CertificateActionType = Field(
+        default=CertificateActionType.TRANSFER,
+        const=True,
+    )
+    granular_certificate_bundle_ids: list[int] = Field(
+        description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID.",
+    )
+    target_id: int = Field(
+        description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to.",
+    )
     certificate_quantity: int | None = Field(
         default=None,
         description="""Overrides GC Bundle range start and end IDs, if specified.
@@ -454,34 +438,53 @@ class GranularCertificateActionBase(utils.ActiveRecord):
     )
     certificate_bundle_percentage: float | None = Field(
         default=None,
+        gt=0,
+        le=1,
         description="""Overrides GC Bundle range start and end IDs, if specified.
         The percentage from 0 to 100 of the identified GC bundle to action on, splitting from
         the start of the range and rounding down to the nearest Wh.""",
     )
-    device_id: int | None = Field(
+    
+    @model_validator(mode='before')
+    def ensure_action_type_is_not_set(cls, values):
+        if 'action_type' in values:
+            raise ValueError("`action_type` cannot be set explicitly.")
+        return values
+
+
+class GranularCertificateCancel(GranularCertificateActionBase):
+    action_type: CertificateActionType = Field(
+        default=CertificateActionType.CANCEL,
+        const=True,
+    )
+    granular_certificate_bundle_ids: list[int] = Field(
+        description="The specific GC Bundle(s) onto which the action will be performed. Returns all GC Bundles with the specified issuance ID.",
+    )
+    certificate_quantity: int | None = Field(
         default=None,
-        description="Filter GC Bundles associated with the specified production device.",
+        description="""Overrides GC Bundle range start and end IDs, if specified.
+        Returns the specified number of certificates from a given GC bundle to action on,
+        splitting from the start of the range.""",
     )
-    energy_source: str | None = Field(
+    certificate_bundle_percentage: float | None = Field(
         default=None,
-        description="Filter GC Bundles based on the fuel type used by the production Device.",
+        gt=0,
+        le=1,
+        description="""Overrides GC Bundle range start and end IDs, if specified.
+        The percentage from 0 to 100 of the identified GC bundle to action on, splitting from
+        the start of the range and rounding down to the nearest Wh.""",
     )
-    certificate_status: CertificateStatus | None = Field(
-        default=None, description="""Filter on the status of the GC Bundles."""
-    )
-    certificate_status_to_update_to: str | None = Field(
-        default=None, description="Update the status of a GC Bundle."
-    )
-    is_deleted: bool = Field(default=False)
-    sparse_filter_list: list[tuple[str, str]] | None = Field(
+    beneficiary: str | None = Field(
         default=None,
-        description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
-        sa_column=Column(ARRAY(JSON)),
+        description="The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. If not specified, the Account holder is treated as the Beneficiary.",
     )
-    action_response_status: str | None = Field(
-        default=None,
-        description="Specifies whether the requested action has been accepted or rejected by the registry.",
-    )
+    
+    @model_validator(mode='before')
+    def ensure_action_type_is_not_set(cls, values):
+        if 'action_type' in values:
+            raise ValueError("`action_type` cannot be set explicitly.")
+        return values
+
 
 
 class GranularCertificateActionRead(GranularCertificateActionBase):

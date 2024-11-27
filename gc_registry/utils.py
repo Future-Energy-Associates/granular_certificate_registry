@@ -44,7 +44,11 @@ class ActiveRecord(SQLModel):
 
     @classmethod
     def exists(cls, id_: int, session: Session) -> bool:
-        return session.get(cls, id_) is not None
+        obj = session.get(cls, id_)
+        if not obj:
+            return False
+        else:
+            return True
 
     @classmethod
     def create(
@@ -53,6 +57,7 @@ class ActiveRecord(SQLModel):
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
+        debug: bool = False,
     ) -> list[SQLModel] | None:
         if isinstance(source, (SQLModel, BaseModel)):
             obj = [cls.model_validate(source)]
@@ -63,7 +68,8 @@ class ActiveRecord(SQLModel):
         else:
             raise ValueError(f"The input type {type(source)} can not be processed")
 
-        logger.debug(f"Creating {cls.__name__}: {obj[0].model_dump_json()}")
+        if debug:
+            logger.debug(f"Creating {cls.__name__}: {obj[0].model_dump_json()}")
         created_entities = cqrs.write_to_database(
             obj,  # type: ignore
             write_session,
@@ -84,8 +90,10 @@ class ActiveRecord(SQLModel):
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
+        debug: bool = False,
     ) -> SQLModel | None:
-        logger.debug(f"Updating {self.__class__.__name__}: {self.model_dump_json()}")
+        if debug:
+            logger.debug(f"Updating {self.__class__.__name__}: {self.model_dump_json()}")
         updated_entity = cqrs.update_database_entity(
             entity=self,
             update_entity=update_entity,
@@ -101,8 +109,10 @@ class ActiveRecord(SQLModel):
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
+        debug: bool = False,
     ) -> list[SQLModel] | None:
-        logger.debug(f"Deleting {self.__class__.__name__}: {self.model_dump_json()}")
+        if debug:
+            logger.debug(f"Deleting {self.__class__.__name__}: {self.model_dump_json()}")
         deleted_entities = cqrs.delete_database_entities(
             entities=self,
             write_session=write_session,

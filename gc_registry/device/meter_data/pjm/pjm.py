@@ -110,8 +110,3 @@ class PJM(AbstractMeterDataClient):
 
         return mapped_data
 
-
-if __name__ == "__main__":
-    pjm = PJM()
-    r = pjm.get_metering_by_device_in_datetime_range("gen_by_fuel", test=True)
-    print(pjm.map_metering_to_certificates(r.json()))

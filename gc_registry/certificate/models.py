@@ -1,3 +1,6 @@
+import datetime
+from functools import partial
+
 from pydantic import BaseModel
 from sqlmodel import Field
 
@@ -7,7 +10,7 @@ from gc_registry.certificate.schemas import (
     GranularCertificateBundleBase,
     IssuanceMetaDataBase,
 )
-from gc_registry.core.models.base import CertificateStatus
+from gc_registry.core.models.base import CertificateActionType, CertificateStatus
 
 # issuance_id a unique non-sequential ID related to the issuance of the entire bundle,
 # specified as a concatenation of deviceID-EnergyCarrier-ProductionStartDatetime.
@@ -39,13 +42,22 @@ class GranularCertificateBundleUpdate(BaseModel):
 # lists all transfers and cancellations between accounts for audit purposes
 
 # "transfer", "recurring_transfer", "cancel", "claim", "withdraw"
+utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
-
-class GranularCertificateAction(GranularCertificateActionBase, table=True):
+class GranularCertificateAction(utils.ActiveRecord,GranularCertificateActionBase, table=True):
     id: int | None = Field(
         primary_key=True,
         default=None,
         description="A unique ID assigned to this action.",
+    )
+    action_type: CertificateActionType
+    action_request_datetime: datetime.datetime = Field(
+        default_factory=utc_datetime_now,
+        description="The UTC datetime at which the User submitted the action to the registry.",
+    )
+    action_completed_datetime: datetime.datetime = Field(
+        default_factory=utc_datetime_now,
+        description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
     )
 
 

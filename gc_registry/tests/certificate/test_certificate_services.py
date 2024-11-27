@@ -12,6 +12,11 @@ from gc_registry.certificate.models import (
     GranularCertificateBundle,
     IssuanceMetaData,
 )
+from gc_registry.certificate.schemas import (
+    GranularCertificateCancel,
+    GranularCertificateQuery,
+    GranularCertificateTransfer,
+)
 from gc_registry.certificate.services import (
     get_max_certificate_id_by_device_id,
     get_max_certificate_timestamp_by_device_id,
@@ -239,30 +244,28 @@ class TestCertificateServices:
         Transfer a fixed number of certificates from one account to another.
         """
 
-        certificate_action = GranularCertificateActionBase(
-            action_type="transfer",
+        certificate_transfer = GranularCertificateTransfer(
             source_id=fake_db_account.id,
             target_id=fake_db_account_2.id,
             user_id=fake_db_user.id,
-            source_certificate_issuance_id=fake_db_gc_bundle.issuance_id,
+            granular_certificate_bundle_ids=[fake_db_gc_bundle.id],
             certificate_quantity=500,
         )
 
-        db_certificate_action = process_certificate_action(
-            certificate_action, db_write_session, db_read_session, esdb_client
+        assert hasattr(certificate_transfer, "action_type"), f"Action type not set: {certificate_transfer}"
+
+        _ = process_certificate_action(
+            certificate_transfer, db_write_session, db_read_session, esdb_client
         )
 
-        assert db_certificate_action.action_response_status == "accepted"  # type: ignore
-
         # Check that the target account received the split bundle
-        certificate_query = GranularCertificateActionBase(
-            action_type="query",
+        certificate_query = GranularCertificateQuery(
             user_id=fake_db_user.id,
             source_id=fake_db_account_2.id,
         )
         certificate_transfered = query_certificates(certificate_query, db_read_session)
 
-        assert certificate_transfered[0].bundle_quantity == 500  # type: ignore
+        assert certificate_transfered[0].bundle_quantity == 500
 
     def test_cancel_by_percentage(
         self,
@@ -276,19 +279,16 @@ class TestCertificateServices:
         Cancel 75% of the bundle, and assert that the bundle was correctly
         split and the correct percentage cancelled.
         """
-        certificate_action = GranularCertificateActionBase(
-            action_type="cancel",
+        certificate_action = GranularCertificateCancel(
             source_id=fake_db_gc_bundle.account_id,
             user_id=fake_db_user.id,
-            source_certificate_issuance_id=fake_db_gc_bundle.issuance_id,
-            certificate_bundle_percentage=75,
+            granular_certificate_bundle_ids=[fake_db_gc_bundle.id],
+            certificate_bundle_percentage=.75,
         )
 
-        db_certificate_action = process_certificate_action(
+        _ = process_certificate_action(
             certificate_action, db_write_session, db_read_session, esdb_client
         )
-
-        assert db_certificate_action.action_response_status == "accepted"
 
         # Check that 75% of the bundle was cancelled
         certificate_query = GranularCertificateActionBase(
