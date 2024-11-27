@@ -3,6 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from gc_registry.account import models
+from gc_registry.account.validation import (
+    validate_account,
+    validate_account_whitelist_update,
+)
 from gc_registry.core.database import db, events
 
 # Router initialisation
@@ -16,7 +20,7 @@ def create_account(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    # services.validate_account(account_base, read_session)
+    validate_account(account_base, read_session)
     accounts = models.Account.create(
         account_base, write_session, read_session, esdb_client
     )
@@ -82,22 +86,9 @@ def update_whitelist(
                 status_code=404, detail=f"Account ID not found: {account_id}"
             )
 
-        if account_whitelist_update.add_to_whitelist is not None:
-            for account_id_to_add in account_whitelist_update.add_to_whitelist:
-                if not models.Account.exists(account_id_to_add, read_session):
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Account ID not found: {account_id_to_add}",
-                    )
-            modified_whitelist = list(
-                set(account.user_ids + account_whitelist_update.add_to_whitelist)
-            )
-
-        if account_whitelist_update.remove_from_whitelist is not None:
-            modified_whitelist = list(
-                set(account.user_ids)
-                - set(account_whitelist_update.remove_from_whitelist)
-            )
+        modified_whitelist = validate_account_whitelist_update(
+            account, account_whitelist_update, read_session
+        )
 
         account_update = models.AccountUpdate(account_ids=modified_whitelist)
 
