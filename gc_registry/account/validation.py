@@ -26,7 +26,7 @@ def validate_account(account, read_session):
     user_ids_in_db = (
         read_session.query(User.id).filter(User.id.in_(account.user_ids)).all()
     )
-    if len(user_ids_in_db) != len(account.user_ids):
+    if set(user_ids_in_db) != set(account.user_ids):
         raise HTTPException(
             status_code=400,
             detail="One or more users assinged to this account do not exist in the database.",
