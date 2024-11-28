@@ -274,6 +274,29 @@ class TestCertificateServices:
 
         assert certificate_transfered[0].bundle_quantity == 500  # type: ignore
 
+        # De-whitelist the account and verfiy the transfer is rejected
+        fake_db_account_2.update(
+            AccountUpdate(account_whitelist=[]),  # type: ignore
+            db_write_session,
+            db_read_session,
+            esdb_client,
+        )
+
+        certificate_action = GranularCertificateActionBase(
+            action_type="transfer",
+            source_id=fake_db_account.id,
+            target_id=fake_db_account_2.id,
+            user_id=fake_db_user.id,
+            source_certificate_issuance_id=fake_db_gc_bundle.issuance_id,
+            certificate_quantity=500,
+        )
+
+        db_certificate_action = process_certificate_action(
+            certificate_action, db_write_session, db_read_session, esdb_client
+        )
+
+        assert db_certificate_action.action_response_status == "rejected"  # type: ignore
+
     def test_cancel_by_percentage(
         self,
         fake_db_gc_bundle: GranularCertificateBundle,
