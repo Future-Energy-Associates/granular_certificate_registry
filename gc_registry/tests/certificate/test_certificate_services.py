@@ -6,7 +6,7 @@ import pytest
 from esdbclient import EventStoreDBClient
 from sqlmodel import Session
 
-from gc_registry.account.models import Account
+from gc_registry.account.models import Account, AccountUpdate
 from gc_registry.certificate.models import (
     GranularCertificateActionBase,
     GranularCertificateBundle,
@@ -238,6 +238,15 @@ class TestCertificateServices:
         """
         Transfer a fixed number of certificates from one account to another.
         """
+
+        # Whitelist the source account for the target account
+        fake_db_account_2 = db_write_session.merge(fake_db_account_2)
+        fake_db_account_2.update(
+            AccountUpdate(account_whitelist=[fake_db_account.id]),  # type: ignore
+            db_write_session,
+            db_read_session,
+            esdb_client,
+        )
 
         certificate_action = GranularCertificateActionBase(
             action_type="transfer",
