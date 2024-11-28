@@ -8,7 +8,7 @@ class TestAccountRoutes:
         """Test that the whitelist can be updated in the database via their FastAPI routes."""
 
         # Test adding to account
-        updated_whitelist = AccountWhitelist(add_to_whitelist=[fake_db_account_2.id])
+        updated_whitelist = AccountWhitelist(add_to_whitelist=[fake_db_account_2.id])  # type: ignore
 
         _updated_whitelist_response = api_client.patch(
             f"account/update_whitelist/{fake_db_account.id}",
@@ -23,7 +23,7 @@ class TestAccountRoutes:
 
         # Test revoking access from the account
         updated_whitelist = AccountWhitelist(
-            remove_from_whitelist=[fake_db_account_2.id]
+            remove_from_whitelist=[fake_db_account_2.id]  # type: ignore
         )
 
         _updated_whitelist_response = api_client.patch(
@@ -39,7 +39,7 @@ class TestAccountRoutes:
         ), f"Expected '[]' but got {updated_whitelist_from_db.account_whitelist}"
 
         # Test adding an account that does not exist
-        updated_whitelist = AccountWhitelist(add_to_whitelist=[999])
+        updated_whitelist = AccountWhitelist(add_to_whitelist=[999])  # type: ignore
 
         _updated_whitelist_response = api_client.patch(
             f"account/update_whitelist/{fake_db_account.id}",
@@ -52,7 +52,7 @@ class TestAccountRoutes:
         }
 
         # Test adding an account to its own whitelist
-        updated_whitelist = AccountWhitelist(add_to_whitelist=[fake_db_account.id])
+        updated_whitelist = AccountWhitelist(add_to_whitelist=[fake_db_account.id])  # type: ignore
 
         _updated_whitelist_response = api_client.patch(
             f"account/update_whitelist/{fake_db_account.id}",
