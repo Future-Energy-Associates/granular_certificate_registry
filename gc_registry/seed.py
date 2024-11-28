@@ -4,7 +4,7 @@ from typing import Any, Hashable
 import pandas as pd
 
 from gc_registry.account.models import Account
-from gc_registry.certificate.models import IssuanceMetaData
+from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
 from gc_registry.certificate.services import issue_certificates_in_date_range
 from gc_registry.core.database import cqrs, db, events
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
@@ -85,17 +85,15 @@ def seed_data():
         device = Device.create(device_dict, write_session, read_session, esdb_client)[0]
 
         # Use Elexon to get data from the Elexon API
-        data_hh = client.get_metering_by_device_in_datetime_range(
+        data = client.get_metering_by_device_in_datetime_range(
             from_datetime, to_datetime, meter_data_id=bmu_id
         )
-        if len(data_hh) == 0:
+        if len(data) == 0:
             print(f"No data found for {bmu_id}")
             continue
-        data_hh_df = pd.DataFrame(data_hh)
-        data_hourly_dict = client.resample_hh_data_to_hourly(data_hh_df)
 
         certificate_bundles = client.map_metering_to_certificates(
-            data_hourly_dict,
+            data,
             account_id=account.id,
             device=device,
             is_storage=False,
@@ -106,7 +104,13 @@ def seed_data():
             print(f"No certificate bundles found for {bmu_id}")
         else:
             _ = cqrs.write_to_database(
-                certificate_bundles, write_session, read_session, esdb_client
+                [
+                    GranularCertificateBundle.model_validate(cert)
+                    for cert in certificate_bundles
+                ],
+                write_session,
+                read_session,
+                esdb_client,
             )
 
     print("Seeding complete!")

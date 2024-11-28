@@ -23,6 +23,7 @@ from gc_registry.certificate.services import (
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import CertificateActionType
 from gc_registry.core.services import create_bundle_hash
+from gc_registry.user.models import User
 
 # Router initialisation
 router = APIRouter(tags=["Certificates"])
@@ -111,7 +112,7 @@ def certificate_bundle_transfer(
     return db_certificate_action
 
 
-@router.get(
+@router.post(
     "/query",
     response_model=GranularCertificateQueryRead,
     status_code=202,
@@ -143,6 +144,12 @@ def certificate_bundle_cancellation(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Cancel a fixed number of certificates matched to the given filter parameters within the specified Account."""
+
+    # If no beneficiary is specified, default to the account holder
+    if certificate_bundle_action.beneficiary is None:
+        user_name = User.by_id(certificate_bundle_action.user_id, read_session).name
+        certificate_bundle_action.beneficiary = f"{user_name}"
+
     db_certificate_action = process_certificate_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )

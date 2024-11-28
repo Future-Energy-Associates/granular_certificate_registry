@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
@@ -9,7 +10,9 @@ from starlette.middleware.sessions import SessionMiddleware
 from .account.routes import router as account_router
 from .certificate.routes import router as certificate_router
 from .core.database.db import get_db_name_to_client
+from .core.models.base import LoggingLevelRequest
 from .device.routes import router as device_router
+from .logging_config import logger, set_logger_and_children_level
 from .measurement.routes import router as measurements_router
 from .settings import settings
 from .storage.routes import router as storage_router
@@ -117,3 +120,71 @@ async def read_root(request: Request):
     }
 
     return templates.TemplateResponse("index.jinja", params)
+
+
+# Assemble fastapi loggers
+uvicorn_logger = logging.getLogger("uvicorn")
+uvicorn_access_logger = logging.getLogger("uvicorn.access")
+fastapi_logger = logging.getLogger("fastapi")
+
+
+@app.post("/change_log_level", tags=["Core"])
+async def change_log_level_endpoint(request: LoggingLevelRequest):
+    """Change the logging level at runtime for all relevant loggers."""
+    global logger, uvicorn_logger, uvicorn_access_logger, fastapi_logger
+
+    numeric_level = getattr(logging, request.level)
+
+    # List of all loggers to modify
+    loggers_to_update = [
+        logger,  # Application logger
+        uvicorn_logger,  # Main Uvicorn logger
+        uvicorn_access_logger,  # Uvicorn access log
+        fastapi_logger,  # FastAPI logger
+    ]
+
+    for logger_instance in loggers_to_update:
+        set_logger_and_children_level(logger_instance, numeric_level)
+
+    # Debug information to verify changes
+    debug_info = {}
+    for logger_instance in loggers_to_update:
+        # Handle root logger specially
+        current_name = logger_instance.name if logger_instance.name else "root"
+
+        debug_info[current_name] = {
+            "effective_level": logging.getLevelName(
+                logger_instance.getEffectiveLevel()
+            ),
+            "handlers": [
+                {"handler": str(handler), "level": logging.getLevelName(handler.level)}
+                for handler in logger_instance.handlers
+            ],
+        }
+
+        # Add information about child loggers
+        if logger_instance.name:  # Skip for root logger
+            children = [
+                name
+                for name in logging.root.manager.loggerDict
+                if name.startswith(logger_instance.name + ".")
+            ]
+            for child_name in children:
+                child_logger = logging.getLogger(child_name)
+                debug_info[child_name] = {
+                    "effective_level": logging.getLevelName(
+                        child_logger.getEffectiveLevel()
+                    ),
+                    "handlers": [
+                        {
+                            "handler": str(handler),
+                            "level": logging.getLevelName(handler.level),
+                        }
+                        for handler in child_logger.handlers
+                    ],
+                }
+
+    return {
+        "message": f"Log level changed to {request.level}",
+        "logger_status": debug_info,
+    }
