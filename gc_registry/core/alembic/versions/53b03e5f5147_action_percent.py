@@ -36,8 +36,8 @@ def upgrade() -> None:
     op.drop_column('account', 'user_ids')
     op.alter_column('account', 'user_ids_temp', new_column_name='user_ids')
 
-    op.add_column('granularcertificateaction', sa.Column('certificate_bundle_percentage', sa.Float(), nullable=True))
-    op.add_column('granularcertificateaction', sa.Column('sparse_filter_list', sa.ARRAY(sa.JSON()), nullable=True))
+    # op.add_column('granularcertificateaction', sa.Column('certificate_bundle_percentage', sa.Float(), nullable=True))
+    # op.add_column('granularcertificateaction', sa.Column('sparse_filter_list', sa.ARRAY(sa.JSON()), nullable=True))
     op.alter_column('granularcertificatebundle', 'bundle_id_range_start',
                existing_type=sa.BIGINT(),
                nullable=True)
@@ -55,8 +55,8 @@ def downgrade() -> None:
     op.alter_column('granularcertificatebundle', 'bundle_id_range_start',
                existing_type=sa.BIGINT(),
                nullable=False)
-    op.drop_column('granularcertificateaction', 'sparse_filter_list')
-    op.drop_column('granularcertificateaction', 'certificate_bundle_percentage')
+    # op.drop_column('granularcertificateaction', 'sparse_filter_list')
+    # op.drop_column('granularcertificateaction', 'certificate_bundle_percentage')
     
     # Cast integers as strings in two steps
     op.add_column(
