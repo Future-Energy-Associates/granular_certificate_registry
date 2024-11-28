@@ -1,5 +1,6 @@
 from typing import List
 
+from pydantic import BaseModel
 from sqlalchemy import ARRAY, Column, Integer
 from sqlmodel import Field
 
@@ -19,3 +20,14 @@ class AccountBase(utils.ActiveRecord):
         sa_column=Column(ARRAY(Integer())),
     )
     is_deleted: bool = Field(default=False)
+
+
+class AccountUpdate(BaseModel):
+    account_name: str | None = None
+    user_ids: List[int] | None = None
+    account_whitelist: List[int] | None = None
+
+
+class AccountWhitelist(BaseModel):
+    add_to_whitelist: List[int] | None = None
+    remove_from_whitelist: List[int] | None = None

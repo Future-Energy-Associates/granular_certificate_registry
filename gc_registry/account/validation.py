@@ -1,7 +1,8 @@
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from gc_registry.account.models import Account, AccountWhitelist
+from gc_registry.account.models import Account
+from gc_registry.account.schemas import AccountWhitelist
 from gc_registry.user.models import User
 
 

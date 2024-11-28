@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, List
 
-from pydantic import BaseModel
 from sqlmodel import Field, Relationship
 
 from gc_registry.account.schemas import AccountBase
@@ -26,14 +25,3 @@ class Account(AccountBase, table=True):
 
 class AccountRead(AccountBase):
     id: int
-
-
-class AccountUpdate(BaseModel):
-    account_name: str | None = None
-    user_ids: List[int] | None = None
-    account_whitelist: List[int] | None = None
-
-
-class AccountWhitelist(BaseModel):
-    add_to_whitelist: List[int] | None = None
-    remove_from_whitelist: List[int] | None = None

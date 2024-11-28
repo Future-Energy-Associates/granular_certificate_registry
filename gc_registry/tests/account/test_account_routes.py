@@ -1,4 +1,5 @@
-from gc_registry.account.models import Account, AccountWhitelist
+from gc_registry.account.models import Account
+from gc_registry.account.schemas import AccountWhitelist
 
 
 class TestAccountRoutes:

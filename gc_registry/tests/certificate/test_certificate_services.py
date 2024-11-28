@@ -6,7 +6,8 @@ import pytest
 from esdbclient import EventStoreDBClient
 from sqlmodel import Session
 
-from gc_registry.account.models import Account, AccountUpdate
+from gc_registry.account.models import Account
+from gc_registry.account.schemas import AccountUpdate
 from gc_registry.certificate.models import (
     GranularCertificateActionBase,
     GranularCertificateBundle,
