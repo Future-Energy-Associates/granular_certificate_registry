@@ -545,9 +545,6 @@ def query_certificates(
 
     session: Session = read_session if write_session is None else write_session  # type: ignore
 
-    if validate_query(certificate_query) is False:
-        return None
-
     # Query certificates based on the given filter parameters, without returning deleted
     # certificates
     stmt: SelectOfScalar = select(GranularCertificateBundle).where(
@@ -580,7 +577,7 @@ def query_certificates(
                 stmt = stmt.where(
                     getattr(
                         GranularCertificateBundle,
-                        certificate_query_param_map[query_param],
+                        certificate_query_param_map[query_param],  # type: ignore
                     )
                     >= query_value
                 )
@@ -591,7 +588,7 @@ def query_certificates(
                 stmt = stmt.where(
                     getattr(
                         GranularCertificateBundle,
-                        certificate_query_param_map[query_param],
+                        certificate_query_param_map[query_param],  # type: ignore
                     )
                     <= query_value
                 )
@@ -712,7 +709,7 @@ def cancel_certificates(
     for certificate in certificates_to_cancel:
         certificate_update = GranularCertificateBundleUpdate(
             certificate_status=CertificateStatus.CANCELLED,
-            beneficiary=certificate_bundle_action.beneficiary,
+            beneficiary=certificate_transfer.beneficiary,
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 

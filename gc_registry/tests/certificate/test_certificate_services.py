@@ -4,6 +4,7 @@ from typing import Any, Hashable
 import pandas as pd
 import pytest
 from esdbclient import EventStoreDBClient
+from fastapi import HTTPException
 from sqlmodel import Session
 
 from gc_registry.account.models import Account
@@ -259,10 +260,9 @@ class TestCertificateServices:
             esdb_client,
         )
 
-        certificate_action = GranularCertificateActionBase(
-            action_type="transfer",
-            source_id=fake_db_account.id,
-            target_id=fake_db_account_2.id,
+        certificate_transfer = GranularCertificateTransfer(
+            source_id=fake_db_account.id,  # type: ignore
+            target_id=fake_db_account_2.id,  # type: ignore
             user_id=fake_db_user.id,
             granular_certificate_bundle_ids=[fake_db_gc_bundle.id],
             certificate_quantity=500,
@@ -279,7 +279,7 @@ class TestCertificateServices:
         # Check that the target account received the split bundle
         certificate_query = GranularCertificateQuery(
             user_id=fake_db_user.id,
-            source_id=fake_db_account_2.id,
+            source_id=fake_db_account_2.id,  # type: ignore
         )
         certificate_transfered = query_certificates(certificate_query, db_read_session)
 
@@ -294,20 +294,18 @@ class TestCertificateServices:
             esdb_client,
         )
 
-        certificate_action = GranularCertificateActionBase(
-            action_type="transfer",
-            source_id=fake_db_account.id,
-            target_id=fake_db_account_2.id,
+        certificate_transfer = GranularCertificateTransfer(
+            source_id=fake_db_account.id,  # type: ignore
+            target_id=fake_db_account_2.id,  # type: ignore
             user_id=fake_db_user.id,
-            source_certificate_issuance_id=fake_db_gc_bundle.issuance_id,
+            granular_certificate_bundle_ids=[fake_db_gc_bundle.id],
             certificate_quantity=500,
         )
 
-        db_certificate_action = process_certificate_action(
-            certificate_action, db_write_session, db_read_session, esdb_client
-        )
-
-        assert db_certificate_action.action_response_status == "rejected"  # type: ignore
+        with pytest.raises(HTTPException):
+            _db_certificate_action = process_certificate_action(
+                certificate_transfer, db_write_session, db_read_session, esdb_client
+            )
 
     def test_cancel_by_percentage(
         self,

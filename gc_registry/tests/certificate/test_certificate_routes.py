@@ -2,8 +2,10 @@ from typing import Any
 
 from esdbclient import EventStoreDBClient
 from fastapi.testclient import TestClient
+from sqlmodel import Session
 
 from gc_registry.account.models import Account
+from gc_registry.account.schemas import AccountUpdate
 from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.certificate.services import create_issuance_id
 from gc_registry.user.models import User
@@ -15,6 +17,8 @@ def test_transfer_certificate(
     fake_db_user: User,
     fake_db_account: Account,
     fake_db_account_2: Account,
+    db_write_session: Session,
+    db_read_session: Session,
     esdb_client: EventStoreDBClient,
 ):
     # Test case 1: Try to transfer a certificate without target_id
@@ -24,7 +28,7 @@ def test_transfer_certificate(
         "source_id": fake_db_account.id,
     }
 
-    response = api_client.post("/certificate/transfer/", json=test_data_1)
+    response = api_client.post("/certificate/transfer", json=test_data_1)
 
     assert response.status_code == 422
 
@@ -35,12 +39,29 @@ def test_transfer_certificate(
     test_data_1.pop("source_id")
     test_data_1["target_id"] = fake_db_account_2.id
 
-    response = api_client.post("/certificate/transfer/", json=test_data_1)
+    response = api_client.post("/certificate/transfer", json=test_data_1)
 
     assert response.json()["detail"][0]["type"] == "missing"
     assert "source_id" in response.json()["detail"][0]["loc"]
 
     # Test case 3: Transfer a certificate successfully
+
+    # Whitelist the source account for the target account
+    fake_db_account = db_write_session.merge(fake_db_account)
+    fake_db_account.update(
+        AccountUpdate(account_whitelist=[fake_db_account_2.id]),  # type: ignore
+        db_write_session,
+        db_read_session,
+        esdb_client,
+    )
+    fake_db_account_2 = db_write_session.merge(fake_db_account_2)
+    fake_db_account_2.update(
+        AccountUpdate(account_whitelist=[fake_db_account.id]),  # type: ignore
+        db_write_session,
+        db_read_session,
+        esdb_client,
+    )
+
     test_data_2: dict[str, Any] = {
         "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
         "user_id": fake_db_user.id,
@@ -48,7 +69,7 @@ def test_transfer_certificate(
         "target_id": fake_db_account_2.id,
     }
 
-    response = api_client.post("/certificate/transfer/", json=test_data_2)
+    response = api_client.post("/certificate/transfer", json=test_data_2)
 
     assert response.status_code == 202
 
@@ -56,12 +77,12 @@ def test_transfer_certificate(
     test_data_3: dict[str, Any] = {
         "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
         "user_id": fake_db_user.id,
-        "source_id": fake_db_account.id,
+        "source_id": fake_db_account_2.id,
         "target_id": fake_db_account.id,
         "certificate_bundle_percentage": 0.75,
     }
 
-    response = api_client.post("/certificate/transfer/", json=test_data_3)
+    response = api_client.post("/certificate/transfer", json=test_data_3)
 
     assert response.status_code == 202
 
@@ -75,7 +96,7 @@ def test_transfer_certificate(
         "certificate_bundle_percentage": 1.5,
     }
 
-    response = api_client.post("/certificate/transfer/", json=test_data_4)
+    response = api_client.post("/certificate/transfer", json=test_data_4)
 
     assert response.status_code == 422
 
@@ -94,7 +115,7 @@ def test_transfer_certificate(
         "action_type": "cancel",
     }
 
-    response = api_client.post("/certificate/transfer/", json=test_data_5)
+    response = api_client.post("/certificate/transfer", json=test_data_5)
 
     assert response.status_code == 422
 
@@ -183,7 +204,7 @@ def test_query_certificate_bundles(
         "user_id": fake_db_user.id,
     }
 
-    response = api_client.get("/certificate/query", params=test_data_1)
+    response = api_client.post("/certificate/query", params=test_data_1)
 
     assert response.status_code == 202
     assert "total_certificate_volume" in response.json().keys()
@@ -197,7 +218,7 @@ def test_query_certificate_bundles(
         "user_id": fake_db_user.id,
     }
 
-    response = api_client.get("/certificate/query", params=test_data_2)
+    response = api_client.post("/certificate/query", params=test_data_2)
 
     assert response.status_code == 422
 
@@ -211,7 +232,7 @@ def test_query_certificate_bundles(
         "user_id": fake_db_user.id,
     }
 
-    response = api_client.get("/certificate/query", params=test_data_3)
+    response = api_client.post("/certificate/query", params=test_data_3)
 
     assert response.status_code == 202
     assert "total_certificate_volume" in response.json().keys()
@@ -228,7 +249,7 @@ def test_query_certificate_bundles(
         "certificate_period_end": "2020-01-01",
     }
 
-    response = api_client.get("/certificate/query", params=test_data_4)
+    response = api_client.post("/certificate/query", params=test_data_4)
 
     assert response.status_code == 422
     assert (

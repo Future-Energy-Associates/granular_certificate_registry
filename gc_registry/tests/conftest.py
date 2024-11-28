@@ -107,14 +107,7 @@ def get_esdb_url() -> str | None:
             )
             esdb_container.start()
             _delay = wait_for_logs(esdb_container, "Not waiting for conditions")
-            connection_string = (
-                "esdb://"
-                + esdb_container.get_docker_client().gateway_ip(
-                    esdb_container._container.id
-                )
-                + ":2113?tls=false"
-            )
-            return connection_string
+            return "esdb://localhost:2113?tls=false"
 
         except Exception as e:
             print(f"Failed to start EventStoreDB container: {str(e)}")
