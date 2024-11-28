@@ -4,6 +4,7 @@ from sqlmodel import Session, SQLModel
 
 from gc_registry.core.database.events import batch_create_events, create_event
 from gc_registry.core.models.base import EventTypes
+from gc_registry.logging_config import logger
 
 
 def transform_write_entities_to_read(entities: list[SQLModel] | SQLModel):
@@ -33,7 +34,7 @@ def write_to_database(
             write_session.refresh(entity)
 
     except Exception as e:
-        print(
+        logger.error(
             f"Error during commit to write DB during create: {str(e)}, session ID {id(write_session)}"
         )
         write_session.rollback()
@@ -49,7 +50,7 @@ def write_to_database(
         read_session.flush()
 
     except Exception as e:
-        print(f"Error during commit to read DB during create: {str(e)}")
+        logger.error(f"Error during commit to read DB during create: {str(e)}")
         write_session.rollback()
         read_session.rollback()
         return None
@@ -97,7 +98,7 @@ def update_database_entity(
         write_session.refresh(entity)
 
     except Exception as e:
-        print(f"Error during commit to write DB during update: {str(e)}")
+        logger.error(f"Error during commit to write DB during update: {str(e)}")
         write_session.rollback()
         return None
 
@@ -109,7 +110,7 @@ def update_database_entity(
         read_session.flush()
 
     except Exception as e:
-        print(f"Error during commit to read DB during update: {str(e)}")
+        logger.error(f"Error during commit to read DB during update: {str(e)}")
         write_session.rollback()
         read_session.rollback()
         return None

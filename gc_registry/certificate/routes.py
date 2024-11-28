@@ -4,13 +4,16 @@ from sqlmodel import Session
 
 from gc_registry.certificate.models import (
     GranularCertificateAction,
-    GranularCertificateActionBase,
     GranularCertificateBundle,
     IssuanceMetaData,
 )
 from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleBase,
+    GranularCertificateCancel,
+    GranularCertificateQuery,
+    GranularCertificateQueryRead,
+    GranularCertificateTransfer,
     IssuanceMetaDataBase,
 )
 from gc_registry.certificate.services import (
@@ -91,19 +94,19 @@ def create_issuance_metadata(
 
 @router.post(
     "/transfer",
-    response_model=GranularCertificateActionRead,
+    response_model=GranularCertificateAction,
     status_code=202,
 )
 def certificate_bundle_transfer(
-    certificate_bundle_action: GranularCertificateActionBase,
+    certificate_transfer: GranularCertificateTransfer,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
-    certificate_bundle_action.action_type = CertificateActionType.TRANSFER
+
     db_certificate_action = process_certificate_action(
-        certificate_bundle_action, write_session, read_session, esdb_client
+        certificate_transfer, write_session, read_session, esdb_client
     )
 
     return db_certificate_action
@@ -111,17 +114,22 @@ def certificate_bundle_transfer(
 
 @router.post(
     "/query",
-    response_model=list[GranularCertificateBundle],
+    response_model=GranularCertificateQueryRead,
     status_code=202,
 )
 def query_certificate_bundles(
-    certificate_bundle_query: GranularCertificateAction,
+    certificate_bundle_query: GranularCertificateQuery = Depends(),
     read_session: Session = Depends(db.get_read_session),
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""
     certificates_from_query = query_certificates(certificate_bundle_query, read_session)
 
-    return certificates_from_query
+    query_dict = certificate_bundle_query.model_dump()
+    query_dict["granular_certificate_bundles"] = certificates_from_query
+
+    certificate_query = GranularCertificateQueryRead.model_validate(query_dict)
+
+    return certificate_query
 
 
 @router.post(
@@ -130,7 +138,7 @@ def query_certificate_bundles(
     status_code=202,
 )
 def certificate_bundle_cancellation(
-    certificate_bundle_action: GranularCertificateAction,
+    certificate_bundle_action: GranularCertificateCancel,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
@@ -142,7 +150,6 @@ def certificate_bundle_cancellation(
         user_name = User.by_id(certificate_bundle_action.user_id, read_session).name
         certificate_bundle_action.beneficiary = f"{user_name}"
 
-    certificate_bundle_action.action_type = CertificateActionType.CANCEL
     db_certificate_action = process_certificate_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )

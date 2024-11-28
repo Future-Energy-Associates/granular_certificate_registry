@@ -91,7 +91,6 @@ def get_db_name_to_client():
             ("db_write", settings.DATABASE_HOST_WRITE),
         ]
 
-        print("Initialising the database clients....")
         for db_name, db_host in db_mapping:
             db_client = DButils(
                 db_host=db_host,

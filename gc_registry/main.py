@@ -113,7 +113,7 @@ async def read_root(request: Request):
             },
             {
                 "tag": "a",
-                "tag_kwargs": {"href": f"{request.url._url}docs"},
+                "tag_kwargs": {"href": f"{request.url._url}/docs"},
                 "value": "/docs",
             },
         ],
