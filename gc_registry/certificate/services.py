@@ -2,6 +2,7 @@ import datetime
 from typing import Any
 
 from esdbclient import EventStoreDBClient
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlmodel import Session, SQLModel, or_, select
 from sqlmodel.sql.expression import SelectOfScalar
@@ -642,6 +643,17 @@ def transfer_certificates(
     assert Account.exists(
         certificate_bundle_action.target_id, write_session
     ), "Target account does not exist"
+
+    # Assert that the target account has whitelisted the source account
+    account = Account.by_id(certificate_bundle_action.target_id, read_session)
+    account_whitelist = (
+        [] if account.account_whitelist is None else account.account_whitelist
+    )
+    if certificate_bundle_action.source_id not in account_whitelist:
+        msg = f"""Target account ({certificate_bundle_action.target_id})
+                  has not whitelisted the source account ({certificate_bundle_action.source_id})
+                  for transfer."""
+        raise HTTPException(status_code=403, detail=msg)
 
     # Retrieve certificates to transfer
     certificates_from_query = query_certificates(

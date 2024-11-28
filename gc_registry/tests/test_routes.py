@@ -1,6 +1,7 @@
 import datetime
 
-from gc_registry.account.models import Account, AccountBase, AccountUpdate
+from gc_registry.account.models import Account, AccountBase
+from gc_registry.account.schemas import AccountUpdate
 
 
 class TestRoutes:

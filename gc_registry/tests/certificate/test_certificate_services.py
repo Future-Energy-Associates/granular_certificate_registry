@@ -7,6 +7,7 @@ from esdbclient import EventStoreDBClient
 from sqlmodel import Session
 
 from gc_registry.account.models import Account
+from gc_registry.account.schemas import AccountUpdate
 from gc_registry.certificate.models import (
     GranularCertificateActionBase,
     GranularCertificateBundle,
@@ -239,6 +240,15 @@ class TestCertificateServices:
         Transfer a fixed number of certificates from one account to another.
         """
 
+        # Whitelist the source account for the target account
+        fake_db_account_2 = db_write_session.merge(fake_db_account_2)
+        fake_db_account_2.update(
+            AccountUpdate(account_whitelist=[fake_db_account.id]),  # type: ignore
+            db_write_session,
+            db_read_session,
+            esdb_client,
+        )
+
         certificate_action = GranularCertificateActionBase(
             action_type="transfer",
             source_id=fake_db_account.id,
@@ -263,6 +273,29 @@ class TestCertificateServices:
         certificate_transfered = query_certificates(certificate_query, db_read_session)
 
         assert certificate_transfered[0].bundle_quantity == 500  # type: ignore
+
+        # De-whitelist the account and verfiy the transfer is rejected
+        fake_db_account_2.update(
+            AccountUpdate(account_whitelist=[]),  # type: ignore
+            db_write_session,
+            db_read_session,
+            esdb_client,
+        )
+
+        certificate_action = GranularCertificateActionBase(
+            action_type="transfer",
+            source_id=fake_db_account.id,
+            target_id=fake_db_account_2.id,
+            user_id=fake_db_user.id,
+            source_certificate_issuance_id=fake_db_gc_bundle.issuance_id,
+            certificate_quantity=500,
+        )
+
+        db_certificate_action = process_certificate_action(
+            certificate_action, db_write_session, db_read_session, esdb_client
+        )
+
+        assert db_certificate_action.action_response_status == "rejected"  # type: ignore
 
     def test_cancel_by_percentage(
         self,
