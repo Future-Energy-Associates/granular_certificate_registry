@@ -645,9 +645,14 @@ def transfer_certificates(
     ), "Target account does not exist"
 
     # Assert that the target account has whitelisted the source account
-    account = Account.by_id(certificate_bundle_action.source_id, read_session)
-    if certificate_bundle_action.target_id not in account.account_whitelist:
-        msg = "Target account has not whitelisted the source account for transfer."
+    account = Account.by_id(certificate_bundle_action.target_id, read_session)
+    account_whitelist = (
+        [] if account.account_whitelist is None else account.account_whitelist
+    )
+    if certificate_bundle_action.source_id not in account_whitelist:
+        msg = f"""Target account ({certificate_bundle_action.target_id})
+                  has not whitelisted the source account ({certificate_bundle_action.source_id})
+                  for transfer."""
         raise HTTPException(status_code=403, detail=msg)
 
     # Retrieve certificates to transfer

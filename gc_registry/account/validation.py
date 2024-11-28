@@ -57,13 +57,14 @@ def validate_account_whitelist_update(
                     status_code=404,
                     detail=f"Account ID to add not found: {account_id_to_add}",
                 )
+        existing_user_ids = [] if account.user_ids is None else account.user_ids
         modified_whitelist = list(
-            set(account.user_ids + account_whitelist_update.add_to_whitelist)
+            set(existing_user_ids + account_whitelist_update.add_to_whitelist)  # type: ignore
         )
 
     if account_whitelist_update.remove_from_whitelist is not None:
         modified_whitelist = list(
-            set(account.user_ids) - set(account_whitelist_update.remove_from_whitelist)
+            set(existing_user_ids) - set(account_whitelist_update.remove_from_whitelist)  # type: ignore
         )
 
     return modified_whitelist

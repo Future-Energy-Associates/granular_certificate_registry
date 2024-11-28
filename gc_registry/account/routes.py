@@ -51,24 +51,20 @@ def update_account(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    try:
-        account = models.Account.by_id(account_id, write_session)
-        if not account:
-            raise HTTPException(
-                status_code=404, detail=f"Account ID not found: {account_id}"
-            )
-
-        updated_account = account.update(
-            account_update, write_session, read_session, esdb_client
-        )
-        if not updated_account:
-            raise ValueError(f"Account id {account_id} not found")
-        return updated_account.model_dump()
-    except Exception:
+    account = models.Account.by_id(account_id, write_session)
+    if not account:
         raise HTTPException(
-            status_code=404,
-            detail=f"Account id {account_id} not found: updated_account",
+            status_code=404, detail=f"Account ID not found: {account_id}"
         )
+
+    updated_account = account.update(
+        account_update, write_session, read_session, esdb_client
+    )
+    if not updated_account:
+        raise HTTPException(
+            status_code=400, detail=f"Error during account update: {account_id}"
+        )
+    return updated_account.model_dump()
 
 
 @router.patch("/update_whitelist/{account_id}", response_model=models.AccountRead)
@@ -79,32 +75,26 @@ def update_whitelist(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    try:
-        account = models.Account.by_id(account_id, write_session)
-        if not account:
-            raise HTTPException(
-                status_code=404, detail=f"Account ID not found: {account_id}"
-            )
-
-        modified_whitelist = validate_account_whitelist_update(
-            account, account_whitelist_update, read_session
-        )
-
-        account_update = models.AccountUpdate(account_whitelist=modified_whitelist)
-
-        updated_account = account.update(
-            account_update, write_session, read_session, esdb_client
-        )
-        if not updated_account:
-            raise HTTPException(
-                status_code=404, detail=f"Account id {account_id} not found"
-            )
-        return updated_account.model_dump()
-    except Exception:
+    account = models.Account.by_id(account_id, write_session)
+    if not account:
         raise HTTPException(
-            status_code=404,
-            detail=f"Account id {account_id} not found: updated_account",
+            status_code=404, detail=f"Account ID not found: {account_id}"
         )
+
+    modified_whitelist = validate_account_whitelist_update(
+        account, account_whitelist_update, read_session
+    )
+
+    account_update = models.AccountUpdate(account_whitelist=modified_whitelist)
+
+    updated_account = account.update(
+        account_update, write_session, read_session, esdb_client
+    )
+    if not updated_account:
+        raise HTTPException(
+            status_code=400, detail=f"Error during account update: {account_id}"
+        )
+    return updated_account.model_dump()
 
 
 @router.delete(
