@@ -50,6 +50,7 @@ class CertificateStatus(str, Enum):
     WITHDRAWN = "Withdrawn"
     LOCKED = "Locked"
     RESERVED = "Reserved"
+    BUNDLE_SPLIT = "Bundle Split"
 
 
 class CertificateActionType(str, Enum):
@@ -76,3 +77,15 @@ class Event(BaseModel):
     attributes_before: dict | None = Field(sa_column=Column(JSON))
     attributes_after: dict | None = Field(sa_column=Column(JSON))
     timestamp: datetime.datetime = Field(default_factory=utc_datetime_now)  # type: ignore
+
+
+class logging_levels(str, enum.Enum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+class LoggingLevelRequest(BaseModel):
+    level: logging_levels

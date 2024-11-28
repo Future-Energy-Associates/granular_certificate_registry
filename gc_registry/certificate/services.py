@@ -75,7 +75,8 @@ def split_certificate_bundle(
     gc_bundle_child_2.bundle_id_range_start = gc_bundle_child_1.bundle_id_range_end + 1
     gc_bundle_child_2.hash = create_bundle_hash(gc_bundle_child_2, gc_bundle.hash)
 
-    # Mark the parent bundle as deleted
+    # Mark the parent bundle as withdrawn and apply soft delete
+    gc_bundle.certificate_status = CertificateStatus.BUNDLE_SPLIT
     gc_bundle.delete(write_session, read_session, esdb_client)  # type: ignore
 
     # Write the child bundles to the database
@@ -505,8 +506,6 @@ def apply_bundle_quantity_or_percentage(
     # Only check the bundle quantity if the query on bundle quantity parameter is provided,
     # otherwise, split the bundle based on the percentage of the total certificates in the bundle
     for idx, gc_bundle in enumerate(certificates_from_query):
-        gc_bundle = write_session.merge(gc_bundle)
-
         if certificate_bundle_action.certificate_quantity is not None:
             if (
                 gc_bundle.bundle_quantity
@@ -563,8 +562,12 @@ def query_certificates(
     if validate_query(certificate_query) is False:
         return None
 
-    # Query certificates based on the given filter parameters
-    stmt = select(GranularCertificateBundle)  # type: ignore
+    # Query certificates based on the given filter parameters, without returning deleted
+    # certificates
+    stmt = select(GranularCertificateBundle).where(
+        GranularCertificateBundle.account_id == certificate_query.source_id,
+        GranularCertificateBundle.is_deleted == False,  # noqa
+    )  # type: ignore
     for query_param, query_value in certificate_query.model_dump().items():
         if (query_param in certificate_query_param_map) & (query_value is not None):
             # sparse_filter_list overrides all other search criteria if provided
@@ -583,19 +586,25 @@ def query_certificates(
                     or_(*sparse_filter_clauses)
                 )
                 break
-            elif query_param == "certificate_period_start":
+            elif query_param in (
+                "certificate_period_start",
+                "source_certificate_bundle_id_range_start",
+            ):
                 stmt = stmt.where(
                     getattr(
                         GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
+                        certificate_query_param_map[query_param],
                     )
                     >= query_value
                 )
-            elif query_param == "certificate_period_end":
+            elif query_param in (
+                "certificate_period_end",
+                "source_certificate_bundle_id_range_end",
+            ):
                 stmt = stmt.where(
                     getattr(
                         GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
+                        certificate_query_param_map[query_param],
                     )
                     <= query_value
                 )
@@ -704,7 +713,8 @@ def cancel_certificates(
     # Cancel certificates
     for certificate in certificates_to_cancel:
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.CANCELLED
+            certificate_status=CertificateStatus.CANCELLED,
+            beneficiary=certificate_bundle_action.beneficiary,
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 

@@ -25,12 +25,12 @@ mutable_gc_attributes = [
 ]
 
 certificate_query_param_map = {
-    "source_id": "account_id",
     "source_certificate_issuance_id": "issuance_id",
     "source_certificate_bundle_id_range_start": "bundle_id_range_start",
     "source_certificate_bundle_id_range_end": "bundle_id_range_end",
-    "certificate_period_start": None,
-    "certificate_period_end": None,
+    "certificate_period_start": "production_starting_interval",
+    "certificate_period_end": "production_starting_interval",
+    "issuance_id": "issuance_id",
     "device_id": "device_id",
     "energy_source": "energy_source",
     "certificate_status": "certificate_status",
@@ -93,6 +93,11 @@ class GranularCertificateBundleBase(BaseModel):
         description="""The quantity of Granular Certificates within this GC Bundle, according to a
                         standardised energy volume per Granular Certificate, rounded down to the nearest Wh. Equal to
                         (bundle_id_range_end - bundle_id_range_start + 1)."""
+    )
+    beneficiary: str | None = Field(
+        default=None,
+        description="""The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles.
+                        If not specified, the Account holder is treated as the Beneficiary.""",
     )
 
     ### Bundle Characteristics ###
