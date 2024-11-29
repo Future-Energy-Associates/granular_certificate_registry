@@ -13,7 +13,7 @@ from gc_registry.user.models import User
 
 def test_transfer_certificate(
     api_client: TestClient,
-    fake_db_gc_bundle: GranularCertificateBundle,
+    fake_db_granular_certificate_bundle: GranularCertificateBundle,
     fake_db_user: User,
     fake_db_account: Account,
     fake_db_account_2: Account,
@@ -23,7 +23,7 @@ def test_transfer_certificate(
 ):
     # Test case 1: Try to transfer a certificate without target_id
     test_data_1: dict[str, Any] = {
-        "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
+        "granular_certificate_bundle_ids": [fake_db_granular_certificate_bundle.id],
         "user_id": fake_db_user.id,
         "source_id": fake_db_account.id,
     }
@@ -63,7 +63,7 @@ def test_transfer_certificate(
     )
 
     test_data_2: dict[str, Any] = {
-        "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
+        "granular_certificate_bundle_ids": [fake_db_granular_certificate_bundle.id],
         "user_id": fake_db_user.id,
         "source_id": fake_db_account.id,
         "target_id": fake_db_account_2.id,
@@ -75,7 +75,7 @@ def test_transfer_certificate(
 
     # Test case 4: Try to transfer a fraction of a certificate
     test_data_3: dict[str, Any] = {
-        "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
+        "granular_certificate_bundle_ids": [fake_db_granular_certificate_bundle.id],
         "user_id": fake_db_user.id,
         "source_id": fake_db_account_2.id,
         "target_id": fake_db_account.id,
@@ -89,7 +89,7 @@ def test_transfer_certificate(
     # Test case 5: Try to transfer a certificate with invalid percentage
 
     test_data_4: dict[str, Any] = {
-        "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
+        "granular_certificate_bundle_ids": [fake_db_granular_certificate_bundle.id],
         "user_id": fake_db_user.id,
         "source_id": fake_db_account.id,
         "target_id": fake_db_account_2.id,
@@ -107,7 +107,7 @@ def test_transfer_certificate(
 
     # Test case 6: Try to specify the action type
     test_data_5: dict[str, Any] = {
-        "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
+        "granular_certificate_bundle_ids": [fake_db_granular_certificate_bundle.id],
         "user_id": fake_db_user.id,
         "source_id": fake_db_account.id,
         "target_id": fake_db_account.id,
@@ -129,14 +129,14 @@ def test_transfer_certificate(
 
 def test_cancel_certificate(
     api_client,
-    fake_db_gc_bundle: GranularCertificateBundle,
+    fake_db_granular_certificate_bundle: GranularCertificateBundle,
     fake_db_user: User,
     fake_db_account: Account,
     esdb_client: EventStoreDBClient,
 ):
     # Test case 1: Try to cancel a certificate without source_id
     test_data_1: dict[str, Any] = {
-        "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
+        "granular_certificate_bundle_ids": [fake_db_granular_certificate_bundle.id],
         "user_id": fake_db_user.id,
     }
 
@@ -149,7 +149,7 @@ def test_cancel_certificate(
 
     # Test case 2: Cancel a certificate successfully
     test_data_2: dict[str, Any] = {
-        "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
+        "granular_certificate_bundle_ids": [fake_db_granular_certificate_bundle.id],
         "user_id": fake_db_user.id,
         "source_id": fake_db_account.id,
     }
@@ -160,7 +160,7 @@ def test_cancel_certificate(
 
     # Test case 3: Try to cancel a fraction of a certificate
     test_data_3: dict[str, Any] = {
-        "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
+        "granular_certificate_bundle_ids": [fake_db_granular_certificate_bundle.id],
         "user_id": fake_db_user.id,
         "source_id": fake_db_account.id,
         "certificate_bundle_percentage": 0.35,
@@ -172,7 +172,7 @@ def test_cancel_certificate(
 
     # Test case 4: Try to cancel a certificate with invalid percentage
     test_data_4: dict[str, Any] = {
-        "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
+        "granular_certificate_bundle_ids": [fake_db_granular_certificate_bundle.id],
         "user_id": fake_db_user.id,
         "source_id": fake_db_account.id,
         "certificate_bundle_percentage": 0,
@@ -188,13 +188,13 @@ def test_cancel_certificate(
 
 def test_query_certificate_bundles(
     api_client,
-    fake_db_gc_bundle: GranularCertificateBundle,
-    fake_db_gc_bundle_2: GranularCertificateBundle,
+    fake_db_granular_certificate_bundle: GranularCertificateBundle,
+    fake_db_granular_certificate_bundle_2: GranularCertificateBundle,
     fake_db_user: User,
     fake_db_account: Account,
     esdb_client: EventStoreDBClient,
 ):
-    assert fake_db_gc_bundle.id is not None
+    assert fake_db_granular_certificate_bundle.id is not None
     assert fake_db_user.id is not None
     assert fake_db_account.id is not None
 
@@ -210,7 +210,8 @@ def test_query_certificate_bundles(
     assert "total_certificate_volume" in response.json().keys()
     assert (
         response.json()["total_certificate_volume"]
-        == fake_db_gc_bundle.bundle_quantity + fake_db_gc_bundle_2.bundle_quantity
+        == fake_db_granular_certificate_bundle.bundle_quantity
+        + fake_db_granular_certificate_bundle_2.bundle_quantity
     )
 
     # Test case 2: Try to query a certificate with missing source_id
@@ -227,7 +228,7 @@ def test_query_certificate_bundles(
 
     # Test case 3: Query certificates based on issuance_ids
     test_data_3: dict[str, Any] = {
-        "issuance_ids": [create_issuance_id(fake_db_gc_bundle)],
+        "issuance_ids": [create_issuance_id(fake_db_granular_certificate_bundle)],
         "source_id": fake_db_account.id,
         "user_id": fake_db_user.id,
     }
@@ -238,7 +239,8 @@ def test_query_certificate_bundles(
     assert "total_certificate_volume" in response.json().keys()
     assert (
         response.json()["total_certificate_volume"]
-        == fake_db_gc_bundle.bundle_quantity + fake_db_gc_bundle_2.bundle_quantity
+        == fake_db_granular_certificate_bundle.bundle_quantity
+        + fake_db_granular_certificate_bundle_2.bundle_quantity
     )
 
     # Test case 4: Query certificates with invalid certificate_period_start and certificate_period_end

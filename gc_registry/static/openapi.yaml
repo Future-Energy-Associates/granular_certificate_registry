@@ -2590,12 +2590,12 @@ components:
           format: uuid
           title: Device Id
           type: string
-        gc_bundle_id_range_end:
+        granular_certificate_bundle_id_range_end:
           description: The end range ID of the GC Bundle that was cancelled and allocated
             to this SCR.
           title: Gc Bundle Id Range End
           type: integer
-        gc_bundle_id_range_start:
+        granular_certificate_bundle_id_range_start:
           description: The start range ID of the GC Bundle that was cancelled and
             allocated to this SCR.
           title: Gc Bundle Id Range Start
@@ -2630,8 +2630,8 @@ components:
       - charging_energy
       - charging_energy_source
       - gc_issuance_id
-      - gc_bundle_id_range_start
-      - gc_bundle_id_range_end
+      - granular_certificate_bundle_id_range_start
+      - granular_certificate_bundle_id_range_end
       - scr_geographic_matching_method
       - scr_allocation_id
       - id
@@ -2663,12 +2663,12 @@ components:
           format: date-time
           title: Charging Start Datetime
           type: string
-        gc_bundle_id_range_end:
+        granular_certificate_bundle_id_range_end:
           description: The end range ID of the GC Bundle that was cancelled and allocated
             to this SCR.
           title: Gc Bundle Id Range End
           type: integer
-        gc_bundle_id_range_start:
+        granular_certificate_bundle_id_range_start:
           description: The start range ID of the GC Bundle that was cancelled and
             allocated to this SCR.
           title: Gc Bundle Id Range Start
@@ -2697,8 +2697,8 @@ components:
       - charging_energy
       - charging_energy_source
       - gc_issuance_id
-      - gc_bundle_id_range_start
-      - gc_bundle_id_range_end
+      - granular_certificate_bundle_id_range_start
+      - granular_certificate_bundle_id_range_end
       - scr_geographic_matching_method
       title: StorageChargeRecordBase
       type: object

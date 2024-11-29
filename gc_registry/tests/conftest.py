@@ -358,14 +358,14 @@ def fake_db_issuance_metadata(
 
 
 @pytest.fixture()
-def fake_db_gc_bundle(
+def fake_db_granular_certificate_bundle(
     db_write_session: Session,
     db_read_session: Session,
     fake_db_account: Account,
     fake_db_wind_device: Device,
     fake_db_issuance_metadata: IssuanceMetaData,
 ) -> GranularCertificateBundle:
-    gc_bundle_dict = {
+    granular_certificate_bundle_dict = {
         "account_id": fake_db_account.id,
         "certificate_status": CertificateStatus.ACTIVE,
         "metadata_id": fake_db_issuance_metadata.id,
@@ -393,33 +393,37 @@ def fake_db_gc_bundle(
         "hash": "Some Hash",
     }
 
-    gc_bundle_dict["issuance_id"] = (
-        f"{gc_bundle_dict['device_id']}-{gc_bundle_dict['production_starting_interval']}"
+    granular_certificate_bundle_dict["issuance_id"] = (
+        f"{granular_certificate_bundle_dict['device_id']}-{granular_certificate_bundle_dict['production_starting_interval']}"
     )
 
-    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+    granular_certificate_bundle = GranularCertificateBundle.model_validate(
+        granular_certificate_bundle_dict
+    )
 
-    gc_bundle.hash = create_bundle_hash(gc_bundle)
+    granular_certificate_bundle.hash = create_bundle_hash(granular_certificate_bundle)
 
-    gc_bundle_read = add_entity_to_write_and_read(
-        gc_bundle, db_write_session, db_read_session
+    granular_certificate_bundle_read = add_entity_to_write_and_read(
+        granular_certificate_bundle, db_write_session, db_read_session
     )
 
     # we actually want the bundle associated with the write session for these tests
-    gc_bundle_write = db_write_session.merge(gc_bundle_read)
+    granular_certificate_bundle_write = db_write_session.merge(
+        granular_certificate_bundle_read
+    )
 
-    return gc_bundle_write
+    return granular_certificate_bundle_write
 
 
 @pytest.fixture()
-def fake_db_gc_bundle_2(
+def fake_db_granular_certificate_bundle_2(
     db_write_session: Session,
     db_read_session: Session,
     fake_db_account: Account,
     fake_db_solar_device: Device,
     fake_db_issuance_metadata: IssuanceMetaData,
 ) -> GranularCertificateBundle:
-    gc_bundle_dict = {
+    granular_certificate_bundle_dict = {
         "account_id": fake_db_account.id,
         "certificate_status": CertificateStatus.ACTIVE,
         "metadata_id": fake_db_issuance_metadata.id,
@@ -447,19 +451,23 @@ def fake_db_gc_bundle_2(
         "hash": "Some Hash",
     }
 
-    gc_bundle_dict["issuance_id"] = (
-        f"{gc_bundle_dict['device_id']}-{gc_bundle_dict['production_starting_interval']}"
+    granular_certificate_bundle_dict["issuance_id"] = (
+        f"{granular_certificate_bundle_dict['device_id']}-{granular_certificate_bundle_dict['production_starting_interval']}"
     )
 
-    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+    granular_certificate_bundle = GranularCertificateBundle.model_validate(
+        granular_certificate_bundle_dict
+    )
 
-    gc_bundle.hash = create_bundle_hash(gc_bundle)
+    granular_certificate_bundle.hash = create_bundle_hash(granular_certificate_bundle)
 
-    gc_bundle_read = add_entity_to_write_and_read(
-        gc_bundle, db_write_session, db_read_session
+    granular_certificate_bundle_read = add_entity_to_write_and_read(
+        granular_certificate_bundle, db_write_session, db_read_session
     )
 
     # we actually want the bundle associated with the write session for these tests
-    gc_bundle_write = db_write_session.merge(gc_bundle_read)
+    granular_certificate_bundle_write = db_write_session.merge(
+        granular_certificate_bundle_read
+    )
 
-    return gc_bundle_write
+    return granular_certificate_bundle_write

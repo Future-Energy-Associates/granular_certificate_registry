@@ -23,10 +23,10 @@ class StorageChargeRecordBase(utils.ActiveRecord):
     gc_issuance_id: int = Field(
         description="The unique issuance ID of the GC Bundle that was cancelled and allocated to this SCR.",
     )
-    gc_bundle_id_range_start: int = Field(
+    granular_certificate_bundle_id_range_start: int = Field(
         description="The start range ID of the GC Bundle that was cancelled and allocated to this SCR.",
     )
-    gc_bundle_id_range_end: int = Field(
+    granular_certificate_bundle_id_range_end: int = Field(
         description="The end range ID of the GC Bundle that was cancelled and allocated to this SCR.",
     )
     scr_geographic_matching_method: str = Field(
