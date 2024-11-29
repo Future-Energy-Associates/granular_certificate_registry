@@ -25,7 +25,7 @@ from gc_registry.certificate.services import (
     issue_certificates_by_device_in_date_range,
     issue_certificates_in_date_range,
     process_certificate_bundle_action,
-    query_certificates,
+    query_certificate_bundles,
     split_certificate_bundle,
     validate_granular_certificate_bundle,
 )
@@ -294,7 +294,9 @@ class TestCertificateServices:
             user_id=fake_db_user.id,
             source_id=fake_db_account_2.id,  # type: ignore
         )
-        certificate_transfered = query_certificates(certificate_query, db_read_session)
+        certificate_transfered = query_certificate_bundles(
+            certificate_query, db_read_session
+        )
 
         assert certificate_transfered is not None
         assert certificate_transfered[0].bundle_quantity == 500
@@ -354,7 +356,9 @@ class TestCertificateServices:
             source_id=fake_db_granular_certificate_bundle.account_id,
             certificate_status=CertificateStatus.CANCELLED,
         )
-        certificates_cancelled = query_certificates(certificate_query, db_read_session)
+        certificates_cancelled = query_certificate_bundles(
+            certificate_query, db_read_session
+        )
 
         assert certificates_cancelled[0].bundle_quantity == 750  # type: ignore
 
@@ -364,7 +368,7 @@ class TestCertificateServices:
         fake_db_granular_certificate_bundle_2: GranularCertificateBundle,
         db_read_session: Session,
     ):
-        """Test that the query_certificates function can handle sparse filter input on device ID
+        """Test that the query_certificate_bundles function can handle sparse filter input on device ID
         and production starting datetime."""
 
         issuance_ids = [
@@ -378,7 +382,9 @@ class TestCertificateServices:
             issuance_ids=issuance_ids,
         )
 
-        certificates_from_query = query_certificates(certificate_query, db_read_session)
+        certificates_from_query = query_certificate_bundles(
+            certificate_query, db_read_session
+        )
 
         assert certificates_from_query is not None
         assert len(certificates_from_query) == 2
@@ -407,7 +413,9 @@ class TestCertificateServices:
             issuance_ids=["invalid_id"],
         )
 
-        certificates_from_query = query_certificates(certificate_query, db_read_session)
+        certificates_from_query = query_certificate_bundles(
+            certificate_query, db_read_session
+        )
 
     def test_issue_certificates_from_manual_submission(
         self,

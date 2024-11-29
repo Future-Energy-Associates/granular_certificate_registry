@@ -18,7 +18,7 @@ from gc_registry.certificate.schemas import (
 )
 from gc_registry.certificate.services import (
     process_certificate_bundle_action,
-    query_certificates,
+    query_certificate_bundles,
 )
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import CertificateActionType
@@ -122,7 +122,9 @@ def query_certificate_bundles(
     read_session: Session = Depends(db.get_read_session),
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""
-    certificates_from_query = query_certificates(certificate_bundle_query, read_session)
+    certificates_from_query = query_certificate_bundles(
+        certificate_bundle_query, read_session
+    )
 
     query_dict = certificate_bundle_query.model_dump()
     query_dict["granular_certificate_bundles"] = certificates_from_query

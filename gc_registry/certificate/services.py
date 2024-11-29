@@ -528,7 +528,7 @@ def apply_bundle_quantity_or_percentage(
     return certificates_to_transfer
 
 
-def query_certificates(
+def query_certificate_bundles(
     certificate_query: GranularCertificateQuery,
     read_session: Session | None = None,
     write_session: Session | None = None,
