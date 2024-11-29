@@ -392,7 +392,7 @@ def issue_certificates_in_date_range(
     return certificates
 
 
-def process_certificate_action(
+def process_certificate_bundle_action(
     certificate_action: GranularCertificateActionBase,
     write_session: Session,
     read_session: Session,

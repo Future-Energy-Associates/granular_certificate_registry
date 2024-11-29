@@ -24,7 +24,7 @@ from gc_registry.certificate.services import (
     get_max_certificate_timestamp_by_device_id,
     issue_certificates_by_device_in_date_range,
     issue_certificates_in_date_range,
-    process_certificate_action,
+    process_certificate_bundle_action,
     query_certificates,
     split_certificate_bundle,
     validate_granular_certificate_bundle,
@@ -285,7 +285,7 @@ class TestCertificateServices:
             certificate_transfer, "action_type"
         ), f"Action type not set: {certificate_transfer}"
 
-        _ = process_certificate_action(
+        _ = process_certificate_bundle_action(
             certificate_transfer, db_write_session, db_read_session, esdb_client
         )
 
@@ -316,7 +316,7 @@ class TestCertificateServices:
         )
 
         with pytest.raises(HTTPException):
-            _db_certificate_action = process_certificate_action(
+            _db_certificate_action = process_certificate_bundle_action(
                 certificate_transfer, db_write_session, db_read_session, esdb_client
             )
 
@@ -344,7 +344,7 @@ class TestCertificateServices:
             certificate_bundle_percentage=0.75,
         )
 
-        _ = process_certificate_action(
+        _ = process_certificate_bundle_action(
             certificate_action, db_write_session, db_read_session, esdb_client
         )
 

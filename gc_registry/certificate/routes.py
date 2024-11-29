@@ -17,7 +17,7 @@ from gc_registry.certificate.schemas import (
     IssuanceMetaDataBase,
 )
 from gc_registry.certificate.services import (
-    process_certificate_action,
+    process_certificate_bundle_action,
     query_certificates,
 )
 from gc_registry.core.database import db, events
@@ -105,7 +105,7 @@ def certificate_bundle_transfer(
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
 
-    db_certificate_action = process_certificate_action(
+    db_certificate_action = process_certificate_bundle_action(
         certificate_transfer, write_session, read_session, esdb_client
     )
 
@@ -150,7 +150,7 @@ def certificate_bundle_cancellation(
         user_name = User.by_id(certificate_bundle_action.user_id, read_session).name
         certificate_bundle_action.beneficiary = f"{user_name}"
 
-    db_certificate_action = process_certificate_action(
+    db_certificate_action = process_certificate_bundle_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 
@@ -210,7 +210,7 @@ def certificate_bundle_claim(
     if the User is specified as the Beneficiary of those cancelled GCs. For more information on the claim process,
     please see page 15 of the EnergyTag GC Scheme Standard document."""
     certificate_bundle_action.action_type = CertificateActionType.CLAIM
-    db_certificate_action = process_certificate_action(
+    db_certificate_action = process_certificate_bundle_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 
@@ -231,7 +231,7 @@ def certificate_bundle_withdraw(
     """(Issuing Body only) - Withdraw a fixed number of certificates from the specified Account matching the provided search criteria."""
     # TODO add validation that only the IB user can access this endpoint
     certificate_bundle_action.action_type = CertificateActionType.WITHDRAW
-    db_certificate_action = process_certificate_action(
+    db_certificate_action = process_certificate_bundle_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 
@@ -251,7 +251,7 @@ def certificate_bundle_reserve(
 ):
     """Label a fixed number of certificates as Reserved from the specified Account matching the provided search criteria."""
     certificate_bundle_action.action_type = CertificateActionType.RESERVE
-    db_certificate_action = process_certificate_action(
+    db_certificate_action = process_certificate_bundle_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 
