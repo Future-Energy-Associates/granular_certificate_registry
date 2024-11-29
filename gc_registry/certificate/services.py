@@ -26,7 +26,6 @@ from gc_registry.certificate.schemas import (
     GranularCertificateReserve,
     GranularCertificateTransfer,
     GranularCertificateWithdraw,
-    certificate_query_param_map,
 )
 from gc_registry.certificate.validation import validate_granular_certificate_bundle
 from gc_registry.core.database import cqrs
@@ -127,6 +126,8 @@ def issuance_id_to_device_and_interval(
     issuance_id: str,
 ) -> tuple[int, datetime.datetime]:
     parts = issuance_id.split("-")
+    if len(parts) < 4:
+        raise ValueError(f"Invalid issuance ID: {issuance_id}")
     device_id = int(parts[0])
     interval = datetime.datetime.fromisoformat("-".join(parts[1:]))
     return device_id, interval
@@ -558,64 +559,47 @@ def query_certificates(
     # certificates
     stmt: SelectOfScalar = select(GranularCertificateBundle).where(
         GranularCertificateBundle.account_id == certificate_query.source_id,
-        GranularCertificateBundle.is_deleted == False,  # noqa
-    )  # type: ignore
+        ~GranularCertificateBundle.is_deleted,
+    )
 
-    for query_param, query_value in certificate_query.model_dump().items():
-        if (query_param in certificate_query_param_map) & (query_value is not None):
-            # sparse_filter_list overrides all other search criteria if provided
-            if query_param == "issuance_ids":
-                device_interval_pairs = [
-                    issuance_id_to_device_and_interval(issuance_id)
-                    for issuance_id in query_value
-                ]
-                sparse_filter_clauses = [
-                    (
-                        (GranularCertificateBundle.device_id == device_id)
-                        & (
-                            GranularCertificateBundle.production_starting_interval
-                            == production_starting_interval
-                        )
+    exclude = {"user_id", "localise_time", "source_id"}
+    for query_param, query_value in certificate_query.model_dump(
+        exclude=exclude
+    ).items():
+        if query_value is None:
+            continue
+        if query_param == "issuance_ids":
+            device_interval_pairs = [
+                issuance_id_to_device_and_interval(issuance_id)
+                for issuance_id in query_value
+            ]
+            sparse_filter_clauses = [
+                (
+                    (GranularCertificateBundle.device_id == device_id)
+                    & (
+                        GranularCertificateBundle.production_starting_interval
+                        == production_starting_interval
                     )
-                    for (
-                        device_id,
-                        production_starting_interval,
-                    ) in device_interval_pairs
-                ]
-                stmt = select(GranularCertificateBundle).where(
-                    or_(*sparse_filter_clauses)
                 )
-                break
-            elif query_param in (
-                "certificate_period_start",
-                "source_certificate_bundle_id_range_start",
-            ):
-                stmt = stmt.where(
-                    getattr(
-                        GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
-                    )
-                    >= query_value
-                )
-            elif query_param in (
-                "certificate_period_end",
-                "source_certificate_bundle_id_range_end",
-            ):
-                stmt = stmt.where(
-                    getattr(
-                        GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
-                    )
-                    <= query_value
-                )
-            else:
-                stmt = stmt.where(
-                    getattr(
-                        GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
-                    )
-                    == query_value
-                )
+                for (
+                    device_id,
+                    production_starting_interval,
+                ) in device_interval_pairs
+            ]
+            stmt = select(GranularCertificateBundle).where(or_(*sparse_filter_clauses))
+            break
+        elif query_param == "certificate_period_start":
+            stmt = stmt.where(
+                GranularCertificateBundle.production_starting_interval >= query_value
+            )
+        elif query_param == "certificate_period_end":
+            stmt = stmt.where(
+                GranularCertificateBundle.production_ending_interval <= query_value
+            )
+        else:
+            stmt = stmt.where(
+                getattr(GranularCertificateBundle, query_param) == query_value
+            )
 
     gc_bundles = session.exec(stmt).all()
 

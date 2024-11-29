@@ -421,9 +421,19 @@ class TestCertificateServices:
             issuance_ids=["invalid_id"],
         )
 
-        certificates_from_query = query_certificates(certificate_query, db_read_session)
+        with pytest.raises(ValueError) as exc_info:
+            query_certificates(certificate_query, db_read_session)
+        assert "Invalid issuance ID" in str(exc_info.value)
 
-        assert certificates_from_query is None
+        certificate_query = GranularCertificateQuery(
+            user_id=fake_db_user.id,
+            source_id=fake_db_gc_bundle.account_id,
+            issuance_ids=["999-2027-12-01 12:30:00"],
+        )
+
+        certificates = query_certificates(certificate_query, db_read_session)
+
+        assert certificates == []
 
     def test_issue_certificates_from_manual_submission(
         self,
@@ -545,3 +555,11 @@ class TestCertificateServices:
 
         assert issued_certificates is not None
         assert len(issued_certificates) == 5
+
+    def test_valid_issuance_ids(self):
+        query = GranularCertificateQuery(
+            source_id=1,
+            user_id=1,
+            issuance_ids=["id1", "id2"],
+        )
+        assert query.issuance_ids == ["id1", "id2"]
