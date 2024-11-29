@@ -54,13 +54,14 @@ def get_certificate_bundles_by_id(
     stmt: SelectOfScalar = select(GranularCertificateBundle).where(
         GranularCertificateBundle.id.in_(gcb_ids)  # type: ignore
     )
-    gc_bundles = db_session.exec(stmt).all()
+    granular_certificate_bundles = db_session.exec(stmt).all()
 
-    return gc_bundles
+    return granular_certificate_bundles
 
 
 def split_certificate_bundle(
-    gc_bundle: GranularCertificateBundle | GranularCertificateBundleRead,
+    granular_certificate_bundle: GranularCertificateBundle
+    | GranularCertificateBundleRead,
     size_to_split: int,
     write_session: Session,
     read_session: Session,
@@ -76,7 +77,7 @@ def split_certificate_bundle(
     and lineage purposes.
 
     Args:
-        gc_bundle (GranularCertificateBundle): The parent GC Bundle
+        granular_certificate_bundle (GranularCertificateBundle): The parent GC Bundle
         size_to_split (int): The number of certificates to split from
             the parent bundle.
 
@@ -86,37 +87,51 @@ def split_certificate_bundle(
 
     assert size_to_split > 0, "The size to split must be greater than 0"
     assert (
-        size_to_split < gc_bundle.bundle_quantity
+        size_to_split < granular_certificate_bundle.bundle_quantity
     ), "The size to split must be less than the total certificates in the parent bundle"
 
     # Create two child bundles
-    gc_bundle_child_1 = GranularCertificateBundleCreate(**gc_bundle.model_dump())
-    gc_bundle_child_2 = GranularCertificateBundleCreate(**gc_bundle.model_dump())
+    granular_certificate_bundle_child_1 = GranularCertificateBundleCreate(
+        **granular_certificate_bundle.model_dump()
+    )
+    granular_certificate_bundle_child_2 = GranularCertificateBundleCreate(
+        **granular_certificate_bundle.model_dump()
+    )
 
     # Update the child bundles with the new quantities
-    gc_bundle_child_1.bundle_quantity = size_to_split
-    gc_bundle_child_1.bundle_id_range_end = (
-        gc_bundle_child_1.bundle_id_range_start + size_to_split
+    granular_certificate_bundle_child_1.bundle_quantity = size_to_split
+    granular_certificate_bundle_child_1.bundle_id_range_end = (
+        granular_certificate_bundle_child_1.bundle_id_range_start + size_to_split
     )
-    gc_bundle_child_1.hash = create_bundle_hash(gc_bundle_child_1, gc_bundle.hash)
+    granular_certificate_bundle_child_1.hash = create_bundle_hash(
+        granular_certificate_bundle_child_1, granular_certificate_bundle.hash
+    )
 
-    gc_bundle_child_2.bundle_quantity = gc_bundle.bundle_quantity - size_to_split
-    gc_bundle_child_2.bundle_id_range_start = gc_bundle_child_1.bundle_id_range_end + 1
-    gc_bundle_child_2.hash = create_bundle_hash(gc_bundle_child_2, gc_bundle.hash)
+    granular_certificate_bundle_child_2.bundle_quantity = (
+        granular_certificate_bundle.bundle_quantity - size_to_split
+    )
+    granular_certificate_bundle_child_2.bundle_id_range_start = (
+        granular_certificate_bundle_child_1.bundle_id_range_end + 1
+    )
+    granular_certificate_bundle_child_2.hash = create_bundle_hash(
+        granular_certificate_bundle_child_2, granular_certificate_bundle.hash
+    )
 
     # Mark the parent bundle as withdrawn and apply soft delete
-    gc_bundle.certificate_status = CertificateStatus.BUNDLE_SPLIT
-    gc_bundle.delete(write_session, read_session, esdb_client)  # type: ignore
+    granular_certificate_bundle.certificate_status = CertificateStatus.BUNDLE_SPLIT
+    granular_certificate_bundle.delete(write_session, read_session, esdb_client)  # type: ignore
 
     # Write the child bundles to the database
-    db_gc_bundle_child_1 = GranularCertificateBundle.create(
-        gc_bundle_child_1, write_session, read_session, esdb_client
+    db_granular_certificate_bundle_child_1 = GranularCertificateBundle.create(
+        granular_certificate_bundle_child_1, write_session, read_session, esdb_client
     )
-    db_gc_bundle_child_2 = GranularCertificateBundle.create(
-        gc_bundle_child_2, write_session, read_session, esdb_client
+    db_granular_certificate_bundle_child_2 = GranularCertificateBundle.create(
+        granular_certificate_bundle_child_2, write_session, read_session, esdb_client
     )
 
-    return db_gc_bundle_child_1[0], db_gc_bundle_child_2[0]  # type: ignore
+    return db_granular_certificate_bundle_child_1[
+        0
+    ], db_granular_certificate_bundle_child_2[0]  # type: ignore
 
 
 def create_issuance_id(gcb: GranularCertificateBundleBase) -> str:
@@ -491,17 +506,17 @@ def apply_bundle_quantity_or_percentage(
 
     # Only check the bundle quantity if the query on bundle quantity parameter is provided,
     # otherwise, split the bundle based on the percentage of the total certificates in the bundle
-    for idx, gc_bundle in enumerate(certificates_from_query):
+    for idx, granular_certificate_bundle in enumerate(certificates_from_query):
         if certificate_bundle_action.certificate_quantity is not None:
             if (
-                gc_bundle.bundle_quantity
+                granular_certificate_bundle.bundle_quantity
                 <= certificate_bundle_action.certificate_quantity
             ):
-                certificates_to_transfer.append(gc_bundle)
+                certificates_to_transfer.append(granular_certificate_bundle)
                 continue
 
         child_bundle_1, _child_bundle_2 = split_certificate_bundle(
-            gc_bundle,
+            granular_certificate_bundle,
             certificates_to_split[idx],
             write_session,
             read_session,
@@ -601,9 +616,9 @@ def query_certificates(
                     == query_value
                 )
 
-    gc_bundles = session.exec(stmt).all()
+    granular_certificate_bundles = session.exec(stmt).all()
 
-    return gc_bundles
+    return granular_certificate_bundles
 
 
 def transfer_certificates(

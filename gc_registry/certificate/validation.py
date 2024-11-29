@@ -19,24 +19,26 @@ from gc_registry.user.models import User
 
 
 def verifiy_bundle_lineage(
-    gc_bundle_parent: GranularCertificateBundle,
-    gc_bundle_child: GranularCertificateBundle,
+    granular_certificate_bundle_parent: GranularCertificateBundle,
+    granular_certificate_bundle_child: GranularCertificateBundle,
 ):
     """
     Given a parent and child GC Bundle, verify that the child's hash
     can be recreated from the parent's hash and the child's nonce.
 
     Args:
-        gc_bundle_parent (GranularCertificateBundle): The parent GC Bundle
-        gc_bundle_child (GranularCertificateBundle): The child GC Bundle
+        granular_certificate_bundle_parent (GranularCertificateBundle): The parent GC Bundle
+        granular_certificate_bundle_child (GranularCertificateBundle): The child GC Bundle
 
     Returns:
         bool: Whether the child's hash can be recreated from the parent's hash
     """
 
     return (
-        create_bundle_hash(gc_bundle_child, gc_bundle_parent.hash)
-        == gc_bundle_child.hash
+        create_bundle_hash(
+            granular_certificate_bundle_child, granular_certificate_bundle_parent.hash
+        )
+        == granular_certificate_bundle_child.hash
     )
 
 
