@@ -100,8 +100,9 @@ def split_certificate_bundle(
 
     # Update the child bundles with the new quantities
     granular_certificate_bundle_child_1.bundle_quantity = size_to_split
-    granular_certificate_bundle_child_1.bundle_id_range_end = (
-        granular_certificate_bundle_child_1.bundle_id_range_start + size_to_split
+    granular_certificate_bundle_child_1.certificate_bundle_id_range_end = (
+        granular_certificate_bundle_child_1.certificate_bundle_id_range_start
+        + size_to_split
     )
     granular_certificate_bundle_child_1.hash = create_bundle_hash(
         granular_certificate_bundle_child_1, granular_certificate_bundle.hash
@@ -110,8 +111,8 @@ def split_certificate_bundle(
     granular_certificate_bundle_child_2.bundle_quantity = (
         granular_certificate_bundle.bundle_quantity - size_to_split
     )
-    granular_certificate_bundle_child_2.bundle_id_range_start = (
-        granular_certificate_bundle_child_1.bundle_id_range_end + 1
+    granular_certificate_bundle_child_2.certificate_bundle_id_range_start = (
+        granular_certificate_bundle_child_1.certificate_bundle_id_range_end + 1
     )
     granular_certificate_bundle_child_2.hash = create_bundle_hash(
         granular_certificate_bundle_child_2, granular_certificate_bundle.hash
@@ -156,7 +157,7 @@ def get_max_certificate_id_by_device_id(
     """
 
     stmt: SelectOfScalar = select(
-        func.max(GranularCertificateBundle.bundle_id_range_end)
+        func.max(GranularCertificateBundle.certificate_bundle_id_range_end)
     ).where(
         GranularCertificateBundle.device_id == device_id,
         GranularCertificateBundle.certificate_bundle_status
@@ -272,13 +273,13 @@ def issue_certificates_by_device_in_date_range(
         db_read_session, device.id
     )
     if not device_max_certificate_id:
-        bundle_id_range_start = 1
+        certificate_bundle_id_range_start = 1
     else:
-        bundle_id_range_start = device_max_certificate_id + 1
+        certificate_bundle_id_range_start = device_max_certificate_id + 1
 
     certificates = meter_data_client.map_metering_to_certificates(
         generation_data=meter_data,
-        bundle_id_range_start=bundle_id_range_start,
+        certificate_bundle_id_range_start=certificate_bundle_id_range_start,
         account_id=device.account_id,
         device=device,
         is_storage=device.is_storage,
@@ -298,7 +299,7 @@ def issue_certificates_by_device_in_date_range(
         # get max valid certificate max bundle id
         if valid_certificates:
             device_max_certificate_id = max(
-                [v.bundle_id_range_end for v in valid_certificates]
+                [v.certificate_bundle_id_range_end for v in valid_certificates]
             )
 
         if device_max_certificate_id is None:
@@ -317,7 +318,7 @@ def issue_certificates_by_device_in_date_range(
         # Because this function is only applied to one device at a time, we can be
         # certain that the highest bundle id range end is from the most recent bundle
         # in this collection
-        device_max_certificate_id = valid_certificate.bundle_id_range_end
+        device_max_certificate_id = valid_certificate.certificate_bundle_id_range_end
 
     # Batch commit the GC bundles to the database
     created_entities = cqrs.write_to_database(
@@ -591,7 +592,7 @@ def query_certificate_bundles(
                 break
             elif query_param in (
                 "certificate_period_start",
-                "source_certificate_bundle_id_range_start",
+                "source_certificate_certificate_bundle_id_range_start",
             ):
                 stmt = stmt.where(
                     getattr(
@@ -602,7 +603,7 @@ def query_certificate_bundles(
                 )
             elif query_param in (
                 "certificate_period_end",
-                "source_certificate_bundle_id_range_end",
+                "source_certificate_certificate_bundle_id_range_end",
             ):
                 stmt = stmt.where(
                     getattr(

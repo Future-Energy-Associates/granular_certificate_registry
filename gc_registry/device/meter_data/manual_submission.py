@@ -66,7 +66,7 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
         device: Device,
         is_storage: bool,
         issuance_metadata_id: int,
-        bundle_id_range_start: int = 0,
+        certificate_bundle_id_range_start: int = 0,
     ) -> list[dict[str, Any]]:
         """Map meter records to certificate bundles.
 
@@ -76,7 +76,7 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
             device (Device): The device for which the meter records were taken.
             is_storage (bool): Whether the device is a storage device.
             issuance_metadata_id (int): The ID of the issuance metadata associated with these records.
-            bundle_id_range_start (int): The starting ID of the bundle range, if not zero.
+            certificate_bundle_id_range_start (int): The starting ID of the bundle range, if not zero.
 
         Returns:
             list[dict[str, Any]]: A list of dictionaries containing the certificate bundle data.
@@ -85,20 +85,26 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
         mapped_data: list = []
 
         for data in generation_data:
-            # Get existing "bundle_id_range_end" from the last item in mapped_data
+            # Get existing "certificate_bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
-                bundle_id_range_start = mapped_data[-1]["bundle_id_range_end"] + 1
+                certificate_bundle_id_range_start = (
+                    mapped_data[-1]["certificate_bundle_id_range_end"] + 1
+                )
 
-            # E.g., if bundle_wh = 1000, bundle_id_range_start = 0, bundle_id_range_end = 999
-            # TODO this breaks for a bundle of 1 Wh as bundle_id_range_end = bundle_id_range_start
-            bundle_id_range_end = bundle_id_range_start + data.interval_usage - 1
+            # E.g., if bundle_wh = 1000, certificate_bundle_id_range_start = 0, certificate_bundle_id_range_end = 999
+            # TODO this breaks for a bundle of 1 Wh as certificate_bundle_id_range_end = certificate_bundle_id_range_start
+            certificate_bundle_id_range_end = (
+                certificate_bundle_id_range_start + data.interval_usage - 1
+            )
 
             transformed = {
                 "account_id": account_id,
                 "certificate_bundle_status": CertificateStatus.ACTIVE,
-                "bundle_id_range_start": bundle_id_range_start,
-                "bundle_id_range_end": bundle_id_range_end,
-                "bundle_quantity": bundle_id_range_end - bundle_id_range_start + 1,
+                "certificate_bundle_id_range_start": certificate_bundle_id_range_start,
+                "certificate_bundle_id_range_end": certificate_bundle_id_range_end,
+                "bundle_quantity": certificate_bundle_id_range_end
+                - certificate_bundle_id_range_start
+                + 1,
                 "energy_carrier": EnergyCarrierType.electricity,
                 "energy_source": device.energy_source,
                 "face_value": 1,

@@ -288,13 +288,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -361,13 +361,13 @@ components:
           format: uuid
           title: Account Id
           type: string
-        bundle_id_range_end:
+        certificate_bundle_id_range_end:
           description: "The start and end range IDs of GC Bundles may change as they\
             \ are split and transferred between Accounts,\n                      \
             \ or partially cancelled."
           title: Bundle Id Range End
           type: integer
-        bundle_id_range_start:
+        certificate_bundle_id_range_start:
           description: "The individual Granular Certificates within this GC Bundle,\
             \ each representing a \n                        contant volume of energy,\
             \ generated within the production start and end time interval, \n    \
@@ -383,7 +383,7 @@ components:
           description: "The quantity of Granular Certificates within this GC Bundle,\
             \ according to a \n                        standardised energy volume\
             \ per Granular Certificate, rounded down to the nearest Wh. Equal to \n\
-            \                        (bundle_id_range_end - bundle_id_range_start\
+            \                        (certificate_bundle_id_range_end - certificate_bundle_id_range_start\
             \ + 1)."
           title: Bundle Quantity
           type: integer
@@ -593,8 +593,8 @@ components:
       required:
       - certificate_bundle_status
       - id
-      - bundle_id_range_start
-      - bundle_id_range_end
+      - certificate_bundle_id_range_start
+      - certificate_bundle_id_range_end
       - bundle_quantity
       - energy_carrier
       - energy_source
@@ -651,13 +651,13 @@ components:
           format: uuid
           title: Account Id
           type: string
-        bundle_id_range_end:
+        certificate_bundle_id_range_end:
           description: "The start and end range IDs of GC Bundles may change as they\
             \ are split and transferred between Accounts,\n                      \
             \ or partially cancelled."
           title: Bundle Id Range End
           type: integer
-        bundle_id_range_start:
+        certificate_bundle_id_range_start:
           description: "The individual Granular Certificates within this GC Bundle,\
             \ each representing a \n                        contant volume of energy,\
             \ generated within the production start and end time interval, \n    \
@@ -673,7 +673,7 @@ components:
           description: "The quantity of Granular Certificates within this GC Bundle,\
             \ according to a \n                        standardised energy volume\
             \ per Granular Certificate, rounded down to the nearest Wh. Equal to \n\
-            \                        (bundle_id_range_end - bundle_id_range_start\
+            \                        (certificate_bundle_id_range_end - certificate_bundle_id_range_start\
             \ + 1)."
           title: Bundle Quantity
           type: integer
@@ -875,8 +875,8 @@ components:
       required:
       - certificate_bundle_status
       - id
-      - bundle_id_range_start
-      - bundle_id_range_end
+      - certificate_bundle_id_range_start
+      - certificate_bundle_id_range_end
       - bundle_quantity
       - energy_carrier
       - energy_source
@@ -968,13 +968,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -1069,13 +1069,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -1170,13 +1170,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -1276,13 +1276,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -1404,13 +1404,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -1526,13 +1526,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -1629,13 +1629,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -1739,13 +1739,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -1851,13 +1851,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -1952,13 +1952,13 @@ components:
           format: uuid
           title: Source Account Id
           type: string
-        source_certificate_bundle_id_range_end:
+        source_certificate_certificate_bundle_id_range_end:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
           title: Source Certificate Bundle Id Range End
           type: integer
-        source_certificate_bundle_id_range_start:
+        source_certificate_certificate_bundle_id_range_start:
           description: If an issuance ID is specified, returns a GC Bundle containing
             all certificates between and inclusive of the range start and end IDs
             provided.
@@ -2590,12 +2590,12 @@ components:
           format: uuid
           title: Device Id
           type: string
-        granular_certificate_bundle_id_range_end:
+        granular_certificate_certificate_bundle_id_range_end:
           description: The end range ID of the GC Bundle that was cancelled and allocated
             to this SCR.
           title: Gc Bundle Id Range End
           type: integer
-        granular_certificate_bundle_id_range_start:
+        granular_certificate_certificate_bundle_id_range_start:
           description: The start range ID of the GC Bundle that was cancelled and
             allocated to this SCR.
           title: Gc Bundle Id Range Start
@@ -2630,8 +2630,8 @@ components:
       - charging_energy
       - charging_energy_source
       - gc_issuance_id
-      - granular_certificate_bundle_id_range_start
-      - granular_certificate_bundle_id_range_end
+      - granular_certificate_certificate_bundle_id_range_start
+      - granular_certificate_certificate_bundle_id_range_end
       - scr_geographic_matching_method
       - scr_allocation_id
       - id
@@ -2663,12 +2663,12 @@ components:
           format: date-time
           title: Charging Start Datetime
           type: string
-        granular_certificate_bundle_id_range_end:
+        granular_certificate_certificate_bundle_id_range_end:
           description: The end range ID of the GC Bundle that was cancelled and allocated
             to this SCR.
           title: Gc Bundle Id Range End
           type: integer
-        granular_certificate_bundle_id_range_start:
+        granular_certificate_certificate_bundle_id_range_start:
           description: The start range ID of the GC Bundle that was cancelled and
             allocated to this SCR.
           title: Gc Bundle Id Range Start
@@ -2697,8 +2697,8 @@ components:
       - charging_energy
       - charging_energy_source
       - gc_issuance_id
-      - granular_certificate_bundle_id_range_start
-      - granular_certificate_bundle_id_range_end
+      - granular_certificate_certificate_bundle_id_range_start
+      - granular_certificate_certificate_bundle_id_range_end
       - scr_geographic_matching_method
       title: StorageChargeRecordBase
       type: object

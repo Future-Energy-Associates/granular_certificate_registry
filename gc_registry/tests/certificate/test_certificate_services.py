@@ -54,7 +54,7 @@ class TestCertificateServices:
         )
         assert (
             max_certificate_id
-            == fake_db_granular_certificate_bundle.bundle_id_range_end
+            == fake_db_granular_certificate_bundle.certificate_bundle_id_range_end
         )
 
     def test_get_max_certificate_id_by_device_id_no_certificates(
@@ -93,7 +93,7 @@ class TestCertificateServices:
         gcb_dict = fake_db_granular_certificate_bundle.model_dump()
 
         # Test case 1: certificate already exists for the device in the given period
-        # This will fail because the bundle_id_range_start is not equal to the max_certificate_id + 1
+        # This will fail because the certificate_bundle_id_range_start is not equal to the max_certificate_id + 1
         device_max_certificate_id = get_max_certificate_id_by_device_id(
             db_read_session, gcb_dict["device_id"]
         )
@@ -105,17 +105,20 @@ class TestCertificateServices:
                 is_storage_device=False,
                 max_certificate_id=device_max_certificate_id,
             )
-        assert "bundle_id_range_start does not match criteria for equal" in str(
-            exc_info.value
+        assert (
+            "certificate_bundle_id_range_start does not match criteria for equal"
+            in str(exc_info.value)
         )
 
-        # Lets update the bundle_id_range_start to be equal to the max_certificate_id + 1,
-        # the bundle_quantity and bundle_id_range_end to be equal to the difference between the bundle ID range
-        gcb_dict["bundle_id_range_start"] = (
-            fake_db_granular_certificate_bundle.bundle_id_range_end + 1
+        # Lets update the certificate_bundle_id_range_start to be equal to the max_certificate_id + 1,
+        # the bundle_quantity and certificate_bundle_id_range_end to be equal to the difference between the bundle ID range
+        gcb_dict["certificate_bundle_id_range_start"] = (
+            fake_db_granular_certificate_bundle.certificate_bundle_id_range_end + 1
         )
-        gcb_dict["bundle_id_range_end"] = (
-            gcb_dict["bundle_id_range_start"] + gcb_dict["bundle_quantity"] - 1
+        gcb_dict["certificate_bundle_id_range_end"] = (
+            gcb_dict["certificate_bundle_id_range_start"]
+            + gcb_dict["bundle_quantity"]
+            - 1
         )
 
         validate_granular_certificate_bundle(
@@ -129,8 +132,8 @@ class TestCertificateServices:
         # This will fail because the bundle_quantity is greater than the device max watts hours
 
         gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) * 1.5
-        gcb_dict["bundle_id_range_end"] = (
-            gcb_dict["bundle_id_range_start"] + gcb_dict["bundle_quantity"]
+        gcb_dict["certificate_bundle_id_range_end"] = (
+            gcb_dict["certificate_bundle_id_range_start"] + gcb_dict["bundle_quantity"]
         )
 
         with pytest.raises(ValueError) as exc_info:
@@ -145,8 +148,10 @@ class TestCertificateServices:
         )
 
         gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) - 1
-        gcb_dict["bundle_id_range_end"] = (
-            gcb_dict["bundle_id_range_start"] + gcb_dict["bundle_quantity"] - 1
+        gcb_dict["certificate_bundle_id_range_end"] = (
+            gcb_dict["certificate_bundle_id_range_start"]
+            + gcb_dict["bundle_quantity"]
+            - 1
         )
 
         validate_granular_certificate_bundle(
@@ -229,20 +234,21 @@ class TestCertificateServices:
         assert child_bundle_2.bundle_quantity == 750
 
         assert (
-            child_bundle_1.bundle_id_range_start
-            == fake_db_granular_certificate_bundle.bundle_id_range_start
+            child_bundle_1.certificate_bundle_id_range_start
+            == fake_db_granular_certificate_bundle.certificate_bundle_id_range_start
         )
         assert (
-            child_bundle_1.bundle_id_range_end
-            == fake_db_granular_certificate_bundle.bundle_id_range_start + 250
+            child_bundle_1.certificate_bundle_id_range_end
+            == fake_db_granular_certificate_bundle.certificate_bundle_id_range_start
+            + 250
         )
         assert (
-            child_bundle_2.bundle_id_range_start
-            == child_bundle_1.bundle_id_range_end + 1
+            child_bundle_2.certificate_bundle_id_range_start
+            == child_bundle_1.certificate_bundle_id_range_end + 1
         )
         assert (
-            child_bundle_2.bundle_id_range_end
-            == fake_db_granular_certificate_bundle.bundle_id_range_end
+            child_bundle_2.certificate_bundle_id_range_end
+            == fake_db_granular_certificate_bundle.certificate_bundle_id_range_end
         )
 
     def test_transfer_gcs(

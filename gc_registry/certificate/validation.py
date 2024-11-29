@@ -66,12 +66,15 @@ def validate_granular_certificate_bundle(
     # and less than the device max watts hours
     validate(gcb.bundle_quantity, identifier="bundle_quantity").less_than(
         device_max_watts_hours * settings.CAPACITY_MARGIN
-    ).equal(gcb.bundle_id_range_end - gcb.bundle_id_range_start + 1)
+    ).equal(
+        gcb.certificate_bundle_id_range_end - gcb.certificate_bundle_id_range_start + 1
+    )
 
     # Validate the bundle ID range start is greater than the previous max certificate ID
-    validate(gcb.bundle_id_range_start, identifier="bundle_id_range_start").equal(
-        max_certificate_id + 1
-    )
+    validate(
+        gcb.certificate_bundle_id_range_start,
+        identifier="certificate_bundle_id_range_start",
+    ).equal(max_certificate_id + 1)
 
     # At this point if integrating wtih EAC registry or possibility of cross registry transfer
     # add integrations with external sources for further validation e.g. cancellation of underlying EACs

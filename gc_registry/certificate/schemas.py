@@ -21,8 +21,8 @@ mutable_gc_attributes = [
     "sdr_allocation_id",
     "storage_efficiency_factor",
     "is_deleted",
-    "bundle_id_range_start",
-    "bundle_id_range_end",
+    "certificate_bundle_id_range_start",
+    "certificate_bundle_id_range_end",
 ]
 
 certificate_query_param_map = {
@@ -73,7 +73,7 @@ class GranularCertificateBundleBase(BaseModel):
         foreign_key="issuancemetadata.id",
         description="Reference to the associated issuance metadata",
     )
-    bundle_id_range_start: int = Field(
+    certificate_bundle_id_range_start: int = Field(
         sa_column=Column(BigInteger()),
         description="""The individual Granular Certificates within this GC Bundle, each representing a
                         contant volume of energy, generated within the production start and end time interval,
@@ -82,7 +82,7 @@ class GranularCertificateBundleBase(BaseModel):
                         and maximum IDs contained within the Bundle, inclusive of both range end points and all integers
                         within that range.""",
     )
-    bundle_id_range_end: int = Field(
+    certificate_bundle_id_range_end: int = Field(
         sa_column=Column(BigInteger()),
         description="""The start and end range IDs of GC Bundles may change as they are split and transferred between Accounts,
                        or partially cancelled.""",
@@ -90,7 +90,7 @@ class GranularCertificateBundleBase(BaseModel):
     bundle_quantity: int = Field(
         description="""The quantity of Granular Certificates within this GC Bundle, according to a
                         standardised energy volume per Granular Certificate, rounded down to the nearest Wh. Equal to
-                        (bundle_id_range_end - bundle_id_range_start + 1)."""
+                        (certificate_bundle_id_range_end - certificate_bundle_id_range_start + 1)."""
     )
     beneficiary: str | None = Field(
         default=None,
@@ -223,7 +223,7 @@ class GranularCertificateBundleRead(BaseModel):
         foreign_key="account.id",
         description="Each GC Bundle is issued to a single unique production Account that its production Device is individually registered to.",
     )
-    bundle_id_range_start: int = Field(
+    certificate_bundle_id_range_start: int = Field(
         description="""The individual Granular Certificates within this GC Bundle, each representing a
                         contant volume of energy, generated within the production start and end time interval,
                         is issued an ID in a format that can be represented sequentially and in a
@@ -231,14 +231,14 @@ class GranularCertificateBundleRead(BaseModel):
                         and maximum IDs contained within the Bundle, inclusive of both range end points and all integers
                         within that range.""",
     )
-    bundle_id_range_end: int = Field(
+    certificate_bundle_id_range_end: int = Field(
         description="""The start and end range IDs of GC Bundles may change as they are split and transferred between Accounts,
                        or partially cancelled.""",
     )
     bundle_quantity: int = Field(
         description="""The quantity of Granular Certificates within this GC Bundle, according to a
                         standardised energy volume per Granular Certificate, rounded down to the nearest Wh. Equal to
-                        (bundle_id_range_end - bundle_id_range_start + 1)."""
+                        (certificate_bundle_id_range_end - certificate_bundle_id_range_start + 1)."""
     )
 
     ### Bundle Characteristics ###
