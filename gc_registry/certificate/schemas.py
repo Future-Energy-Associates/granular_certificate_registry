@@ -25,15 +25,6 @@ mutable_gc_attributes = [
     "bundle_id_range_end",
 ]
 
-certificate_query_param_map = {
-    "source_id": "account_id",
-    "certificate_period_start": None,
-    "certificate_period_end": None,
-    "device_id": "device_id",
-    "energy_source": "energy_source",
-    "certificate_status": "certificate_status",
-}
-
 
 class GranularCertificateBundleBase(BaseModel):
     """The GC Bundle is the primary unit of issuance and transfer within the EnergyTag standard, and only the Resgistry
@@ -444,14 +435,51 @@ class GranularCertificateQuery(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_date_range(cls, values):
-        start = values.certificate_period_start
-        end = values.certificate_period_end
-        if start and end and start >= end:
+    def validate_issuance_ids(cls, values):
+        if values.issuance_ids and (
+            values.certificate_period_start or values.certificate_period_end
+        ):
             raise HTTPException(
                 status_code=422,
-                detail="certificate_period_end must be greater than certificate_period_start.",
+                detail="Cannot provide issuance_ids with certificate_period_start or certificate_period_end.",
             )
+        return values
+
+    @model_validator(mode="after")
+    def period_start_and_end_validation(cls, values):
+        if not hasattr(values, "certificate_period_start") and not hasattr(
+            values, "certificate_period_end"
+        ):
+            return values
+
+        if values.certificate_period_start and not values.certificate_period_end:
+            now = datetime.datetime.now(datetime.timezone.utc)
+            if values.certificate_period_start < now - datetime.timedelta(days=30):
+                raise HTTPException(
+                    status_code=422,
+                    detail="certificate_period_end must be provided if certificate_period_start is more than 30 days ago.",
+                )
+        if values.certificate_period_end and not values.certificate_period_start:
+            raise HTTPException(
+                status_code=422,
+                detail="certificate_period_start must be provided if certificate_period_end is provided.",
+            )
+
+        if values.certificate_period_start and values.certificate_period_end:
+            if (
+                values.certificate_period_end - values.certificate_period_start
+                > datetime.timedelta(days=30)
+            ):
+                raise HTTPException(
+                    status_code=422,
+                    detail="Difference between certificate_period_start and certificate_period_end must be 30 days or less.",
+                )
+            if values.certificate_period_start >= values.certificate_period_end:
+                raise HTTPException(
+                    status_code=422,
+                    detail="certificate_period_end must be greater than certificate_period_start.",
+                )
+
         return values
 
 

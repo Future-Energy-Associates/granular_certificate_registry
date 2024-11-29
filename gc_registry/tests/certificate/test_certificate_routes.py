@@ -204,7 +204,7 @@ def test_query_certificate_bundles(
         "user_id": fake_db_user.id,
     }
 
-    response = api_client.post("/certificate/query", params=test_data_1)
+    response = api_client.post("/certificate/query", json=test_data_1)
 
     assert response.status_code == 202
     assert "total_certificate_volume" in response.json().keys()
@@ -218,7 +218,7 @@ def test_query_certificate_bundles(
         "user_id": fake_db_user.id,
     }
 
-    response = api_client.post("/certificate/query", params=test_data_2)
+    response = api_client.post("/certificate/query", json=test_data_2)
 
     assert response.status_code == 422
 
@@ -227,15 +227,19 @@ def test_query_certificate_bundles(
 
     # Test case 3: Query certificates based on issuance_ids
     test_data_3: dict[str, Any] = {
-        "issuance_ids": [create_issuance_id(fake_db_gc_bundle)],
+        "issuance_ids": [
+            create_issuance_id(fake_db_gc_bundle),
+            create_issuance_id(fake_db_gc_bundle_2),
+        ],
         "source_id": fake_db_account.id,
         "user_id": fake_db_user.id,
     }
 
-    response = api_client.post("/certificate/query", params=test_data_3)
+    response = api_client.post("/certificate/query", json=test_data_3)
 
     assert response.status_code == 202
     assert "total_certificate_volume" in response.json().keys()
+    print(response.json())
     assert (
         response.json()["total_certificate_volume"]
         == fake_db_gc_bundle.bundle_quantity + fake_db_gc_bundle_2.bundle_quantity
@@ -249,10 +253,44 @@ def test_query_certificate_bundles(
         "certificate_period_end": "2020-01-01",
     }
 
-    response = api_client.post("/certificate/query", params=test_data_4)
+    response = api_client.post("/certificate/query", json=test_data_4)
 
     assert response.status_code == 422
     assert (
         response.json()["detail"]
         == "certificate_period_end must be greater than certificate_period_start."
+    )
+
+    # Test case 5: Query certificates with invalid certificate_period_start and certificate_period_end > 30 days
+    test_data_5: dict[str, Any] = {
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "certificate_period_start": "2024-01-01",
+        "certificate_period_end": "2024-05-01",
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_5)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"]
+        == "Difference between certificate_period_start and certificate_period_end must be 30 days or less."
+    )
+
+    # Test case 6: Query certificates with issuance_ids and certificate_period_start and certificate_period_end
+    test_data_6: dict[str, Any] = {
+        "issuance_ids": [create_issuance_id(fake_db_gc_bundle)],
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "certificate_period_start": "2024-01-01",
+        "certificate_period_end": "2024-01-02",
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_6)
+
+    assert response.status_code == 422
+
+    assert (
+        response.json()["detail"]
+        == "Cannot provide issuance_ids with certificate_period_start or certificate_period_end."
     )
