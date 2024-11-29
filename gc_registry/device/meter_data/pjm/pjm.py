@@ -62,7 +62,7 @@ class PJM(AbstractMeterDataClient):
                 ### Account details ###
                 "account_id": account_id,
                 ### Mutable Attributes ###
-                "certificate_status": "Active",
+                "certificate_bundle_status": "Active",
                 "bundle_id_range_start": bundle_id_range_start,
                 "bundle_id_range_end": bundle_id_range_end,
                 "bundle_quantity": bundle_mwh,

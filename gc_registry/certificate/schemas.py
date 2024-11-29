@@ -16,7 +16,7 @@ from gc_registry.core.models.base import (
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
 mutable_gc_attributes = [
-    "certificate_status",
+    "certificate_bundle_status",
     "account_id",
     "sdr_allocation_id",
     "storage_efficiency_factor",
@@ -31,7 +31,7 @@ certificate_query_param_map = {
     "certificate_period_end": None,
     "device_id": "device_id",
     "energy_source": "energy_source",
-    "certificate_status": "certificate_status",
+    "certificate_bundle_status": "certificate_bundle_status",
 }
 
 
@@ -62,7 +62,7 @@ class GranularCertificateBundleBase(BaseModel):
     )
 
     ### Mutable Attributes ###
-    certificate_status: CertificateStatus = Field(
+    certificate_bundle_status: CertificateStatus = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
     )
     account_id: int = Field(
@@ -216,7 +216,7 @@ class GranularCertificateBundleRead(BaseModel):
     """
 
     ### Mutable Attributes ###
-    certificate_status: CertificateStatus = Field(
+    certificate_bundle_status: CertificateStatus = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
     )
     account_id: int = Field(
@@ -439,7 +439,7 @@ class GranularCertificateQuery(BaseModel):
         description="""The UTC datetime up to which GC Bundles within the specified Account are to be filtered.
         If provided without certificate_period_start, returns all GC Bundles up to the specified datetime.""",
     )
-    certificate_status: CertificateStatus | None = Field(
+    certificate_bundle_status: CertificateStatus | None = Field(
         default=None, description="""Filter on the status of the GC Bundles."""
     )
 

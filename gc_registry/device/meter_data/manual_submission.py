@@ -95,7 +95,7 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
 
             transformed = {
                 "account_id": account_id,
-                "certificate_status": CertificateStatus.ACTIVE,
+                "certificate_bundle_status": CertificateStatus.ACTIVE,
                 "bundle_id_range_start": bundle_id_range_start,
                 "bundle_id_range_end": bundle_id_range_end,
                 "bundle_quantity": bundle_id_range_end - bundle_id_range_start + 1,

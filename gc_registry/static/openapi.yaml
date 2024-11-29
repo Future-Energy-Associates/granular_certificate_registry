@@ -265,7 +265,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
@@ -387,7 +387,7 @@ components:
             \ + 1)."
           title: Bundle Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: 'One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked,
             Reserved.'
           title: Certificate Status
@@ -591,7 +591,7 @@ components:
           title: Support Received
           type: string
       required:
-      - certificate_status
+      - certificate_bundle_status
       - id
       - bundle_id_range_start
       - bundle_id_range_end
@@ -677,7 +677,7 @@ components:
             \ + 1)."
           title: Bundle Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: 'One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked,
             Reserved.'
           title: Certificate Status
@@ -873,7 +873,7 @@ components:
           title: Support Received
           type: string
       required:
-      - certificate_status
+      - certificate_bundle_status
       - id
       - bundle_id_range_start
       - bundle_id_range_end
@@ -945,7 +945,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
@@ -1046,7 +1046,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
@@ -1147,7 +1147,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
@@ -1248,7 +1248,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
@@ -1361,7 +1361,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
@@ -1483,7 +1483,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
@@ -1606,7 +1606,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
@@ -1716,7 +1716,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string
@@ -1828,7 +1828,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Update the status of a GC Bundle.
           title: Certificate Status
           type: string
@@ -1929,7 +1929,7 @@ components:
             \ where necessary."
           title: Certificate Quantity
           type: integer
-        certificate_status:
+        certificate_bundle_status:
           description: Filter on the status of the GC Bundles.
           title: Certificate Status
           type: string

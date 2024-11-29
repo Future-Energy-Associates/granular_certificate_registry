@@ -31,7 +31,7 @@ class GranularCertificateBundle(
 
 class GranularCertificateBundleUpdate(BaseModel):
     account_id: int | None = None
-    certificate_status: CertificateStatus | None = None
+    certificate_bundle_status: CertificateStatus | None = None
     metadata_id: int | None = None
     bundle_id_range_start: int | None = None
     bundle_id_range_end: int | None = None
@@ -63,7 +63,7 @@ class GranularCertificateAction(
         default_factory=utc_datetime_now,
         description="The UTC datetime at which the registry confirmed to the User that their submitted action had either been successfully completed or rejected.",
     )
-    certificate_status: CertificateStatus | None = Field(
+    certificate_bundle_status: CertificateStatus | None = Field(
         default=None, description="""Filter on the status of the GC Bundles."""
     )
 

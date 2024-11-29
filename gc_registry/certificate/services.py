@@ -118,7 +118,9 @@ def split_certificate_bundle(
     )
 
     # Mark the parent bundle as withdrawn and apply soft delete
-    granular_certificate_bundle.certificate_status = CertificateStatus.BUNDLE_SPLIT
+    granular_certificate_bundle.certificate_bundle_status = (
+        CertificateStatus.BUNDLE_SPLIT
+    )
     granular_certificate_bundle.delete(write_session, read_session, esdb_client)  # type: ignore
 
     # Write the child bundles to the database
@@ -157,7 +159,8 @@ def get_max_certificate_id_by_device_id(
         func.max(GranularCertificateBundle.bundle_id_range_end)
     ).where(
         GranularCertificateBundle.device_id == device_id,
-        GranularCertificateBundle.certificate_status != CertificateStatus.WITHDRAWN,
+        GranularCertificateBundle.certificate_bundle_status
+        != CertificateStatus.WITHDRAWN,
     )
 
     max_certificate_id = db_session.exec(stmt).first()
@@ -186,7 +189,8 @@ def get_max_certificate_timestamp_by_device_id(
         func.max(GranularCertificateBundle.production_ending_interval)
     ).where(
         GranularCertificateBundle.device_id == device_id,
-        GranularCertificateBundle.certificate_status != CertificateStatus.WITHDRAWN,
+        GranularCertificateBundle.certificate_bundle_status
+        != CertificateStatus.WITHDRAWN,
     )
 
     max_certificate_timestamp = db_session.exec(stmt).first()
@@ -664,7 +668,7 @@ def transfer_certificates(
 
     for certificate in certificates_from_query:
         assert (
-            certificate.certificate_status == CertificateStatus.ACTIVE
+            certificate.certificate_bundle_status == CertificateStatus.ACTIVE
         ), f"Certificate with ID {certificate.issuance_id} is not active and cannot be transferred"
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
@@ -723,7 +727,7 @@ def cancel_certificates(
     # Cancel certificates
     for certificate in certificates_to_cancel:
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.CANCELLED,
+            certificate_bundle_status=CertificateStatus.CANCELLED,
             beneficiary=certificate_transfer.beneficiary,
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
@@ -768,11 +772,11 @@ def claim_certificates(
     # Assert the certificates are in a cancelled state
     for certificate in certificates_to_claim:
         assert (
-            certificate.certificate_status == CertificateStatus.CANCELLED
+            certificate.certificate_bundle_status == CertificateStatus.CANCELLED
         ), f"Certificate with ID {certificate.issuance_id} is not cancelled and cannot be claimed"
 
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.CLAIMED
+            certificate_bundle_status=CertificateStatus.CLAIMED
         )
 
         certificate.update(certificate_update, write_session, read_session, esdb_client)
@@ -819,7 +823,7 @@ def withdraw_certificates(
     # Withdraw certificates
     for certificate in certificates_to_withdraw:
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.WITHDRAWN
+            certificate_bundle_status=CertificateStatus.WITHDRAWN
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 
@@ -866,7 +870,7 @@ def lock_certificates(
     # Lock certificates
     for certificate in certificates_to_lock:
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.LOCKED
+            certificate_bundle_status=CertificateStatus.LOCKED
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 
@@ -910,7 +914,7 @@ def reserve_certificates(
     # Reserve certificates
     for certificate in certificates_to_reserve:
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.RESERVED
+            certificate_bundle_status=CertificateStatus.RESERVED
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 

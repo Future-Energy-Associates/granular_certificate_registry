@@ -354,7 +354,7 @@ class TestCertificateServices:
         certificate_query = GranularCertificateQuery(
             user_id=fake_db_user.id,
             source_id=fake_db_granular_certificate_bundle.account_id,
-            certificate_status=CertificateStatus.CANCELLED,
+            certificate_bundle_status=CertificateStatus.CANCELLED,
         )
         certificates_cancelled = query_certificate_bundles(
             certificate_query, db_read_session

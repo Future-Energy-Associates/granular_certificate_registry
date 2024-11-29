@@ -367,7 +367,7 @@ def fake_db_granular_certificate_bundle(
 ) -> GranularCertificateBundle:
     granular_certificate_bundle_dict = {
         "account_id": fake_db_account.id,
-        "certificate_status": CertificateStatus.ACTIVE,
+        "certificate_bundle_status": CertificateStatus.ACTIVE,
         "metadata_id": fake_db_issuance_metadata.id,
         "bundle_id_range_start": 0,
         "bundle_id_range_end": 999,
@@ -425,7 +425,7 @@ def fake_db_granular_certificate_bundle_2(
 ) -> GranularCertificateBundle:
     granular_certificate_bundle_dict = {
         "account_id": fake_db_account.id,
-        "certificate_status": CertificateStatus.ACTIVE,
+        "certificate_bundle_status": CertificateStatus.ACTIVE,
         "metadata_id": fake_db_issuance_metadata.id,
         "bundle_id_range_start": 0,
         "bundle_id_range_end": 499,
