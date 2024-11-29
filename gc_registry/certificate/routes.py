@@ -117,7 +117,7 @@ def certificate_bundle_transfer(
     response_model=GranularCertificateQueryRead,
     status_code=202,
 )
-def query_certificate_bundles(
+def query_certificate_bundles_route(
     certificate_bundle_query: GranularCertificateQuery = Depends(),
     read_session: Session = Depends(db.get_read_session),
 ):
