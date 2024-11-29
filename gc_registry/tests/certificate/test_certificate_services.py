@@ -22,6 +22,7 @@ from gc_registry.certificate.services import (
     create_issuance_id,
     get_max_certificate_id_by_device_id,
     get_max_certificate_timestamp_by_device_id,
+    issuance_id_to_device_and_interval,
     issue_certificates_by_device_in_date_range,
     issue_certificates_in_date_range,
     process_certificate_action,
@@ -75,6 +76,33 @@ class TestCertificateServices:
         )
         assert max_certificate_timestamp == fake_db_gc_bundle.production_ending_interval
         assert isinstance(max_certificate_timestamp, datetime.datetime)
+
+    def test_issuance_id_to_device_and_interval(
+        self,
+        fake_db_gc_bundle: GranularCertificateBundle,
+        fake_db_gc_bundle_2: GranularCertificateBundle,
+    ):
+        device_id, production_starting_interval = issuance_id_to_device_and_interval(
+            fake_db_gc_bundle.issuance_id
+        )
+        assert device_id == fake_db_gc_bundle.device_id
+        assert (
+            production_starting_interval
+            == fake_db_gc_bundle.production_starting_interval
+        )
+        assert isinstance(device_id, int)
+        assert isinstance(production_starting_interval, datetime.datetime)
+
+        device_id, production_starting_interval = issuance_id_to_device_and_interval(
+            fake_db_gc_bundle_2.issuance_id
+        )
+        assert device_id == fake_db_gc_bundle_2.device_id
+        assert (
+            production_starting_interval
+            == fake_db_gc_bundle_2.production_starting_interval
+        )
+        assert isinstance(device_id, int)
+        assert isinstance(production_starting_interval, datetime.datetime)
 
     def test_validate_granular_certificate_bundle(
         self,
@@ -347,12 +375,17 @@ class TestCertificateServices:
 
     def test_sparse_filter_query(
         self,
+        fake_db_user: User,
         fake_db_gc_bundle: GranularCertificateBundle,
         fake_db_gc_bundle_2: GranularCertificateBundle,
         db_read_session: Session,
     ):
         """Test that the query_certificates function can handle sparse filter input on device ID
         and production starting datetime."""
+
+        assert fake_db_user.id is not None
+        assert fake_db_gc_bundle.id is not None
+        assert fake_db_gc_bundle_2.id is not None
 
         issuance_ids = [
             create_issuance_id(fake_db_gc_bundle),
@@ -383,12 +416,14 @@ class TestCertificateServices:
         # Test with an issuance ID that doesn't exist
 
         certificate_query = GranularCertificateQuery(
-            user_id=1,
+            user_id=fake_db_user.id,
             source_id=fake_db_gc_bundle.account_id,
             issuance_ids=["invalid_id"],
         )
 
         certificates_from_query = query_certificates(certificate_query, db_read_session)
+
+        assert certificates_from_query is None
 
     def test_issue_certificates_from_manual_submission(
         self,

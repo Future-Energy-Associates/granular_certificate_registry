@@ -123,6 +123,15 @@ def create_issuance_id(gcb: GranularCertificateBundleBase) -> str:
     return f"{gcb.device_id}-{gcb.production_starting_interval}"
 
 
+def issuance_id_to_device_and_interval(
+    issuance_id: str,
+) -> tuple[int, datetime.datetime]:
+    parts = issuance_id.split("-")
+    device_id = int(parts[0])
+    interval = datetime.datetime.fromisoformat("-".join(parts[1:]))
+    return device_id, interval
+
+
 def get_max_certificate_id_by_device_id(
     db_session: Session, device_id: int
 ) -> int | None:
@@ -555,7 +564,11 @@ def query_certificates(
     for query_param, query_value in certificate_query.model_dump().items():
         if (query_param in certificate_query_param_map) & (query_value is not None):
             # sparse_filter_list overrides all other search criteria if provided
-            if query_param == "sparse_filter_list":
+            if query_param == "issuance_ids":
+                device_interval_pairs = [
+                    issuance_id_to_device_and_interval(issuance_id)
+                    for issuance_id in query_value
+                ]
                 sparse_filter_clauses = [
                     (
                         (GranularCertificateBundle.device_id == device_id)
@@ -564,7 +577,10 @@ def query_certificates(
                             == production_starting_interval
                         )
                     )
-                    for (device_id, production_starting_interval) in query_value
+                    for (
+                        device_id,
+                        production_starting_interval,
+                    ) in device_interval_pairs
                 ]
                 stmt = select(GranularCertificateBundle).where(
                     or_(*sparse_filter_clauses)
