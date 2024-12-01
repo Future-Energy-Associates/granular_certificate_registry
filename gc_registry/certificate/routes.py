@@ -123,14 +123,19 @@ def query_certificate_bundles(
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""
 
-    certificates_from_query = query_certificates(certificate_bundle_query, read_session)
+    try:
+        certificates_from_query = query_certificates(
+            certificate_bundle_query, read_session
+        )
 
-    query_dict = certificate_bundle_query.model_dump()
-    query_dict["granular_certificate_bundles"] = certificates_from_query
+        query_dict = certificate_bundle_query.model_dump()
+        query_dict["granular_certificate_bundles"] = certificates_from_query
 
-    certificate_query = GranularCertificateQueryRead.model_validate(query_dict)
+        certificate_query = GranularCertificateQueryRead.model_validate(query_dict)
 
-    return certificate_query
+        return certificate_query
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @router.post(

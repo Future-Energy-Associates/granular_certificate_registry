@@ -128,8 +128,13 @@ def issuance_id_to_device_and_interval(
     parts = issuance_id.split("-")
     if len(parts) < 4:
         raise ValueError(f"Invalid issuance ID: {issuance_id}")
-    device_id = int(parts[0])
-    interval = datetime.datetime.fromisoformat("-".join(parts[1:]))
+
+    try:
+        device_id = int(parts[0])
+        interval = datetime.datetime.fromisoformat("-".join(parts[1:]))
+    except ValueError:
+        raise ValueError(f"Invalid issuance ID: {issuance_id}")
+
     return device_id, interval
 
 

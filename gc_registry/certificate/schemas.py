@@ -453,7 +453,7 @@ class GranularCertificateQuery(BaseModel):
             return values
 
         if values.certificate_period_start and not values.certificate_period_end:
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = datetime.datetime.now()  # :TODO: Use a timezone-aware datetime
             if values.certificate_period_start < now - datetime.timedelta(days=30):
                 raise HTTPException(
                     status_code=422,
