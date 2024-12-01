@@ -127,7 +127,7 @@ def test_transfer_certificate(
     )
 
 
-def test_cancel_certificate(
+def test_cancel_certificate_no_source_id(
     api_client,
     fake_db_gc_bundle: GranularCertificateBundle,
     fake_db_user: User,
@@ -147,6 +147,16 @@ def test_cancel_certificate(
     assert response.json()["detail"][0]["type"] == "missing"
     assert "source_id" in response.json()["detail"][0]["loc"]
 
+
+def test_cancel_certificate_successfully(
+    api_client: TestClient,
+    fake_db_gc_bundle: GranularCertificateBundle,
+    fake_db_user: User,
+    fake_db_account: Account,
+    db_write_session: Session,
+    db_read_session: Session,
+    esdb_client: EventStoreDBClient,
+):
     # Test case 2: Cancel a certificate successfully
     test_data_2: dict[str, Any] = {
         "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
@@ -158,6 +168,16 @@ def test_cancel_certificate(
 
     assert response.status_code == 202
 
+
+def test_cancel_certificate_fraction(
+    api_client: TestClient,
+    fake_db_gc_bundle: GranularCertificateBundle,
+    fake_db_user: User,
+    fake_db_account: Account,
+    db_write_session: Session,
+    db_read_session: Session,
+    esdb_client: EventStoreDBClient,
+):
     # Test case 3: Try to cancel a fraction of a certificate
     test_data_3: dict[str, Any] = {
         "granular_certificate_bundle_ids": [fake_db_gc_bundle.id],
