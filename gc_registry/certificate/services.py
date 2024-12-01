@@ -2,7 +2,6 @@ import datetime
 from typing import Any, Callable
 
 from esdbclient import EventStoreDBClient
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlmodel import Session, SQLModel, or_, select
 from sqlmodel.sql.expression import SelectOfScalar
@@ -39,7 +38,7 @@ from gc_registry.logging_config import logger
 
 
 def get_certificate_bundles_by_id(
-    gcb_ids: list[int], db_session: Session
+    granular_certificate_bundle_ids: list[int], db_session: Session
 ) -> list[GranularCertificateBundle]:
     """Get a list of GC Bundles by their IDs.
 
@@ -52,7 +51,7 @@ def get_certificate_bundles_by_id(
     """
 
     stmt: SelectOfScalar = select(GranularCertificateBundle).where(
-        GranularCertificateBundle.id.in_(gcb_ids)  # type: ignore
+        GranularCertificateBundle.id.in_(granular_certificate_bundle_ids)  # type: ignore
     )
     gc_bundles = db_session.exec(stmt).all()
 
@@ -84,10 +83,12 @@ def split_certificate_bundle(
         tuple[GranularCertificateBundle, GranularCertificateBundle]: The two child GC Bundles
     """
 
-    assert size_to_split > 0, "The size to split must be greater than 0"
-    assert (
-        size_to_split < gc_bundle.bundle_quantity
-    ), "The size to split must be less than the total certificates in the parent bundle"
+    if size_to_split == 0:
+        raise ValueError("The size to split must be greater than 0")
+    if size_to_split >= gc_bundle.bundle_quantity:
+        raise ValueError(
+            "The size to split must be less than the total certificates in the parent bundle"
+        )
 
     # Create two child bundles
     gc_bundle_child_1 = GranularCertificateBundleCreate(**gc_bundle.model_dump())
@@ -622,21 +623,21 @@ def transfer_certificates(
 
     """
 
-    assert certificate_bundle_action.target_id, "Target account ID is required"
-    assert Account.exists(
-        certificate_bundle_action.target_id, write_session
-    ), f"Target account does not exist: {certificate_bundle_action.target_id}"
+    if not certificate_bundle_action.target_id:
+        raise ValueError("Target account ID is required")
+    if not Account.exists(certificate_bundle_action.target_id, write_session):
+        raise ValueError(
+            f"Target account does not exist: {certificate_bundle_action.target_id}"
+        )
 
-    # Assert that the target account has whitelisted the source account
+    # Check that the target account has whitelisted the source account
     account = Account.by_id(certificate_bundle_action.target_id, read_session)
     account_whitelist = (
         [] if account.account_whitelist is None else account.account_whitelist
     )
     if certificate_bundle_action.source_id not in account_whitelist:
-        msg = f"""Target account ({certificate_bundle_action.target_id})
-                  has not whitelisted the source account ({certificate_bundle_action.source_id})
-                  for transfer."""
-        raise HTTPException(status_code=403, detail=msg)
+        msg = f"Target account ({certificate_bundle_action.target_id}) has not whitelisted the source account ({certificate_bundle_action.source_id}) for transfer."
+        raise ValueError(msg)
 
     # Retrieve certificates to transfer
     certificates_from_query = get_certificate_bundles_by_id(
@@ -644,13 +645,17 @@ def transfer_certificates(
     )
 
     if not certificates_from_query:
-        logger.error("No certificates found to transfer with given query parameters.")
-        return None
+        raise ValueError(
+            "No certificates found to transfer with given query parameters."
+        )
 
-    for certificate in certificates_from_query:
-        assert (
-            certificate.certificate_status == CertificateStatus.ACTIVE
-        ), f"Certificate with ID {certificate.issuance_id} is not active and cannot be transferred"
+    if any(
+        c.certificate_status != CertificateStatus.ACTIVE
+        for c in certificates_from_query
+    ):
+        raise ValueError(
+            f"Can only transfer active certificates, found: { {c.certificate_status for c in certificates_from_query} }"
+        )
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_transfer = apply_bundle_quantity_or_percentage(
@@ -666,7 +671,7 @@ def transfer_certificates(
         certificate_update = GranularCertificateBundleUpdate(
             account_id=certificate_bundle_action.target_id
         )
-        certificate.update(certificate_update, write_session, read_session, esdb_client)  # type: ignore
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
 
     return
 
@@ -693,8 +698,13 @@ def cancel_certificates(
     )
 
     if not certificates_from_query:
-        logger.info("No certificates found to cancel with given query parameters.")
-        return
+        raise ValueError("No certificates found to cancel with given query parameters.")
+
+    valid_statuses = [CertificateStatus.ACTIVE, CertificateStatus.RESERVED]
+    if any(c.certificate_status not in valid_statuses for c in certificates_from_query):
+        raise ValueError(
+            f"Certificates must be in ACTIVE or RESERVED status to cancel, found: { {c.certificate_status for c in certificates_from_query} }"
+        )
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_cancel = apply_bundle_quantity_or_percentage(
@@ -738,8 +748,15 @@ def claim_certificates(
     )
 
     if not certificates_from_query:
-        logger.info("No certificates found to claim with given query parameters.")
-        return
+        raise ValueError("No certificates found to claim with given query parameters.")
+
+    if any(
+        c.certificate_status != CertificateStatus.CANCELLED
+        for c in certificates_from_query
+    ):
+        raise ValueError(
+            f"Can only claim cancelled certificates, found: { {c.certificate_status for c in certificates_from_query} }"
+        )
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_claim = apply_bundle_quantity_or_percentage(
@@ -750,12 +767,7 @@ def claim_certificates(
         esdb_client,
     )
 
-    # Assert the certificates are in a cancelled state
     for certificate in certificates_to_claim:
-        assert (
-            certificate.certificate_status == CertificateStatus.CANCELLED
-        ), f"Certificate with ID {certificate.issuance_id} is not cancelled and cannot be claimed"
-
         certificate_update = GranularCertificateBundleUpdate(
             certificate_status=CertificateStatus.CLAIMED
         )
@@ -789,8 +801,9 @@ def withdraw_certificates(
     )
 
     if not certificates_from_query:
-        logger.info("No certificates found to withdraw with given query parameters.")
-        return
+        raise ValueError(
+            "No certificates found to withdraw with given query parameters."
+        )
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_withdraw = apply_bundle_quantity_or_percentage(
@@ -836,8 +849,7 @@ def lock_certificates(
     )
 
     if not certificates_from_query:
-        logger.info("No certificates found to lock with given query parameters.")
-        return
+        raise ValueError("No certificates found to lock with given query parameters.")
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_lock = apply_bundle_quantity_or_percentage(
@@ -880,8 +892,9 @@ def reserve_certificates(
     )
 
     if not certificates_from_query:
-        logger.info("No certificates found to reserve with given query parameters.")
-        return
+        raise ValueError(
+            "No certificates found to reserve with given query parameters."
+        )
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_reserve = apply_bundle_quantity_or_percentage(
