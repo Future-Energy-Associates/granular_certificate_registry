@@ -4,7 +4,6 @@ from typing import Any, Hashable
 import pandas as pd
 import pytest
 from esdbclient import EventStoreDBClient
-from fastapi import HTTPException
 from sqlmodel import Session
 
 from gc_registry.account.models import Account
@@ -20,6 +19,7 @@ from gc_registry.certificate.schemas import (
 )
 from gc_registry.certificate.services import (
     create_issuance_id,
+    get_certificate_bundles_by_id,
     get_max_certificate_id_by_device_id,
     get_max_certificate_timestamp_by_device_id,
     issue_certificates_by_device_in_date_range,
@@ -27,8 +27,8 @@ from gc_registry.certificate.services import (
     process_certificate_action,
     query_certificates,
     split_certificate_bundle,
-    validate_granular_certificate_bundle,
 )
+from gc_registry.certificate.validation import validate_granular_certificate_bundle
 from gc_registry.core.models.base import CertificateStatus
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.meter_data.manual_submission import ManualSubmissionMeterClient
@@ -254,15 +254,17 @@ class TestCertificateServices:
         # Whitelist the source account for the target account
         fake_db_account_2 = db_write_session.merge(fake_db_account_2)
         fake_db_account_2.update(
-            AccountUpdate(account_whitelist=[fake_db_account.id]),  # type: ignore
+            AccountUpdate(account_whitelist=[fake_db_account.id]),
             db_write_session,
             db_read_session,
             esdb_client,
         )
 
+        assert fake_db_account_2.id is not None
+
         certificate_transfer = GranularCertificateTransfer(
-            source_id=fake_db_account.id,  # type: ignore
-            target_id=fake_db_account_2.id,  # type: ignore
+            source_id=fake_db_account.id,
+            target_id=fake_db_account_2.id,
             user_id=fake_db_user.id,
             granular_certificate_bundle_ids=[fake_db_gc_bundle.id],
             certificate_quantity=500,
@@ -279,7 +281,7 @@ class TestCertificateServices:
         # Check that the target account received the split bundle
         certificate_query = GranularCertificateQuery(
             user_id=fake_db_user.id,
-            source_id=fake_db_account_2.id,  # type: ignore
+            source_id=fake_db_account_2.id,
         )
         certificate_transfered = query_certificates(certificate_query, db_read_session)
 
@@ -288,21 +290,86 @@ class TestCertificateServices:
 
         # De-whitelist the account and verfiy the transfer is rejected
         fake_db_account_2.update(
-            AccountUpdate(account_whitelist=[]),  # type: ignore
+            AccountUpdate(account_whitelist=[]),
             db_write_session,
             db_read_session,
             esdb_client,
         )
 
+        assert fake_db_account_2.id is not None
+
         certificate_transfer = GranularCertificateTransfer(
-            source_id=fake_db_account.id,  # type: ignore
-            target_id=fake_db_account_2.id,  # type: ignore
+            source_id=fake_db_account.id,
+            target_id=fake_db_account_2.id,
             user_id=fake_db_user.id,
             granular_certificate_bundle_ids=[fake_db_gc_bundle.id],
             certificate_quantity=500,
         )
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(ValueError) as exc_info:
+            _db_certificate_action = process_certificate_action(
+                certificate_transfer, db_write_session, db_read_session, esdb_client
+            )
+        print(exc_info.value)
+        assert "has not whitelisted the source account" in str(exc_info.value)
+
+    def test_transfer_cancelled_certificate_bundle(
+        self,
+        fake_db_account: Account,
+        fake_db_account_2: Account,
+        fake_db_user: User,
+        fake_db_gc_bundle: GranularCertificateBundle,
+        db_write_session: Session,
+        db_read_session: Session,
+        esdb_client: EventStoreDBClient,
+    ):
+        """
+        Try to transfer a cancelled certificate bundle
+        """
+
+        assert fake_db_account.id is not None
+        assert fake_db_account_2.id is not None
+        assert fake_db_user.id is not None
+        assert fake_db_gc_bundle.id is not None
+
+        certificate_cancel = GranularCertificateCancel(
+            source_id=fake_db_account.id,
+            user_id=fake_db_user.id,
+            granular_certificate_bundle_ids=[fake_db_gc_bundle.id],
+        )
+
+        _ = process_certificate_action(
+            certificate_cancel, db_write_session, db_read_session, esdb_client
+        )
+
+        # get the cancelled certificate and check that it is cancelled
+        certificates_from_query = get_certificate_bundles_by_id(
+            [fake_db_gc_bundle.id], db_write_session
+        )
+
+        assert (
+            certificates_from_query[0].certificate_status == CertificateStatus.CANCELLED
+        )
+
+        # Whitelist the source account for the target account
+        fake_db_account_2 = db_write_session.merge(fake_db_account_2)
+        fake_db_account_2.update(
+            AccountUpdate(account_whitelist=[fake_db_account.id]),
+            db_write_session,
+            db_read_session,
+            esdb_client,
+        )
+
+        assert fake_db_account_2.id is not None
+
+        certificate_transfer = GranularCertificateTransfer(
+            source_id=fake_db_account.id,
+            target_id=fake_db_account_2.id,
+            user_id=fake_db_user.id,
+            granular_certificate_bundle_ids=[fake_db_gc_bundle.id],
+        )
+
+        with pytest.raises(ValueError):
             _db_certificate_action = process_certificate_action(
                 certificate_transfer, db_write_session, db_read_session, esdb_client
             )
@@ -343,7 +410,8 @@ class TestCertificateServices:
         )
         certificates_cancelled = query_certificates(certificate_query, db_read_session)
 
-        assert certificates_cancelled[0].bundle_quantity == 750  # type: ignore
+        assert certificates_cancelled is not None
+        assert certificates_cancelled[0].bundle_quantity == 750
 
     def test_sparse_filter_query(
         self,
