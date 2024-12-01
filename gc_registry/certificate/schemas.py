@@ -416,7 +416,7 @@ class GranularCertificateQuery(BaseModel):
         default=None,
         description="Filter GC Bundles associated with the specified production device.",
     )
-    energy_source: str | None = Field(
+    energy_source: EnergySourceType | None = Field(
         default=None,
         description="Filter GC Bundles based on the fuel type used by the production Device.",
     )

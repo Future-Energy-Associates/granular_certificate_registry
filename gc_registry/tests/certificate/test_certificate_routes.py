@@ -353,3 +353,21 @@ def test_query_certificate_bundles(
         response.json()["detail"]
         == "certificate_period_start must be provided if certificate_period_end is provided."
     )
+
+    # Test case 11: Try to query certificates with invalid energy_source
+    test_data_11: dict[str, Any] = {
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "energy_source": "windy",
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_11)
+
+    assert response.status_code == 422
+
+    print(response.json())
+    assert response.json()["detail"][0]["type"] == "enum"
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Input should be 'solar_pv', 'wind', 'hydro', 'biomass', 'nuclear', 'electrolysis', 'geothermal', 'battery_storage', 'chp' or 'other'"
+    )
