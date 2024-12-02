@@ -493,15 +493,15 @@ def apply_bundle_quantity_or_percentage(
     ):
         return certificate_bundles_from_query
 
-    certificates_to_transfer = []
+    certificates_bundles_to_transfer = []
 
     if certificate_bundle_action.certificate_quantity is not None:
-        certificates_to_split = [
+        certificates_bundles_to_split = [
             certificate_bundle_action.certificate_quantity
             for i in range(len(certificate_bundles_from_query))
         ]
     elif certificate_bundle_action.certificate_bundle_percentage is not None:
-        certificates_to_split = [
+        certificates_bundles_to_split = [
             int(
                 certificate_bundle_action.certificate_bundle_percentage
                 * certificate_from_query.bundle_quantity
@@ -517,20 +517,20 @@ def apply_bundle_quantity_or_percentage(
                 granular_certificate_bundle.bundle_quantity
                 <= certificate_bundle_action.certificate_quantity
             ):
-                certificates_to_transfer.append(granular_certificate_bundle)
+                certificates_bundles_to_transfer.append(granular_certificate_bundle)
                 continue
 
         child_bundle_1, _child_bundle_2 = split_certificate_bundle(
             granular_certificate_bundle,
-            certificates_to_split[idx],
+            certificates_bundles_to_split[idx],
             write_session,
             read_session,
             esdb_client,
         )
         if child_bundle_1:
-            certificates_to_transfer.append(child_bundle_1)
+            certificates_bundles_to_transfer.append(child_bundle_1)
 
-    return certificates_to_transfer
+    return certificates_bundles_to_transfer
 
 
 def query_certificate_bundles(
@@ -673,7 +673,7 @@ def transfer_certificates(
         ), f"Certificate with ID {certificate.issuance_id} is not active and cannot be transferred"
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_transfer = apply_bundle_quantity_or_percentage(
+    certificates_bundles_to_transfer = apply_bundle_quantity_or_percentage(
         certificate_bundles_from_query,
         certificate_bundle_action,
         write_session,
@@ -682,7 +682,7 @@ def transfer_certificates(
     )
 
     # Transfer certificates by updating account ID of target bundle
-    for certificate in certificates_to_transfer:
+    for certificate in certificates_bundles_to_transfer:
         certificate_update = GranularCertificateBundleUpdate(
             account_id=certificate_bundle_action.target_id
         )
@@ -717,7 +717,7 @@ def cancel_certificates(
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_cancel = apply_bundle_quantity_or_percentage(
+    certificates_bundles_to_cancel = apply_bundle_quantity_or_percentage(
         certificate_bundles_from_query,
         certificate_transfer,
         write_session,
@@ -726,7 +726,7 @@ def cancel_certificates(
     )
 
     # Cancel certificates
-    for certificate in certificates_to_cancel:
+    for certificate in certificates_bundles_to_cancel:
         certificate_update = GranularCertificateBundleUpdate(
             certificate_bundle_status=CertificateStatus.CANCELLED,
             beneficiary=certificate_transfer.beneficiary,
@@ -762,7 +762,7 @@ def claim_certificates(
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_claim = apply_bundle_quantity_or_percentage(
+    certificates_bundles_to_claim = apply_bundle_quantity_or_percentage(
         certificate_bundles_from_query,
         certificate_claim,
         write_session,
@@ -771,7 +771,7 @@ def claim_certificates(
     )
 
     # Assert the certificates are in a cancelled state
-    for certificate in certificates_to_claim:
+    for certificate in certificates_bundles_to_claim:
         assert (
             certificate.certificate_bundle_status == CertificateStatus.CANCELLED
         ), f"Certificate with ID {certificate.issuance_id} is not cancelled and cannot be claimed"
@@ -813,7 +813,7 @@ def withdraw_certificates(
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_withdraw = apply_bundle_quantity_or_percentage(
+    certificates_bundles_to_withdraw = apply_bundle_quantity_or_percentage(
         certificate_bundles_from_query,
         certificate_bundle_action,
         write_session,
@@ -822,7 +822,7 @@ def withdraw_certificates(
     )
 
     # Withdraw certificates
-    for certificate in certificates_to_withdraw:
+    for certificate in certificates_bundles_to_withdraw:
         certificate_update = GranularCertificateBundleUpdate(
             certificate_bundle_status=CertificateStatus.WITHDRAWN
         )
@@ -860,7 +860,7 @@ def lock_certificates(
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_lock = apply_bundle_quantity_or_percentage(
+    certificates_bundles_to_lock = apply_bundle_quantity_or_percentage(
         certificate_bundles_from_query,
         certificate_bundle_action,
         write_session,
@@ -869,7 +869,7 @@ def lock_certificates(
     )
 
     # Lock certificates
-    for certificate in certificates_to_lock:
+    for certificate in certificates_bundles_to_lock:
         certificate_update = GranularCertificateBundleUpdate(
             certificate_bundle_status=CertificateStatus.LOCKED
         )
@@ -904,7 +904,7 @@ def reserve_certificates(
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_reserve = apply_bundle_quantity_or_percentage(
+    certificates_bundles_to_reserve = apply_bundle_quantity_or_percentage(
         certificate_bundles_from_query,
         certificate_reserve,
         write_session,
@@ -913,7 +913,7 @@ def reserve_certificates(
     )
 
     # Reserve certificates
-    for certificate in certificates_to_reserve:
+    for certificate in certificates_bundles_to_reserve:
         certificate_update = GranularCertificateBundleUpdate(
             certificate_bundle_status=CertificateStatus.RESERVED
         )
