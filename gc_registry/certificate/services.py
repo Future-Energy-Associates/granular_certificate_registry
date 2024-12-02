@@ -2,7 +2,6 @@ import datetime
 from typing import Any, Callable
 
 from esdbclient import EventStoreDBClient
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlmodel import Session, SQLModel, or_, select
 from sqlmodel.sql.expression import SelectOfScalar
@@ -26,7 +25,6 @@ from gc_registry.certificate.schemas import (
     GranularCertificateReserve,
     GranularCertificateTransfer,
     GranularCertificateWithdraw,
-    certificate_query_param_map,
 )
 from gc_registry.certificate.validation import validate_granular_certificate_bundle
 from gc_registry.core.database import cqrs
@@ -39,7 +37,7 @@ from gc_registry.logging_config import logger
 
 
 def get_certificate_bundles_by_id(
-    gcb_ids: list[int], db_session: Session
+    granular_certificate_bundle_ids: list[int], db_session: Session
 ) -> list[GranularCertificateBundle]:
     """Get a list of GC Bundles by their IDs.
 
@@ -52,7 +50,7 @@ def get_certificate_bundles_by_id(
     """
 
     stmt: SelectOfScalar = select(GranularCertificateBundle).where(
-        GranularCertificateBundle.id.in_(gcb_ids)  # type: ignore
+        GranularCertificateBundle.id.in_(granular_certificate_bundle_ids)  # type: ignore
     )
     granular_certificate_bundles = db_session.exec(stmt).all()
 
@@ -85,10 +83,14 @@ def split_certificate_bundle(
         tuple[GranularCertificateBundle, GranularCertificateBundle]: The two child GC Bundles
     """
 
-    assert size_to_split > 0, "The size to split must be greater than 0"
-    assert (
-        size_to_split < granular_certificate_bundle.bundle_quantity
-    ), "The size to split must be less than the total certificates in the parent bundle"
+    if size_to_split == 0:
+        err_msg = "The size to split must be greater than 0"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+    if size_to_split >= gc_bundle.bundle_quantity:
+        err_msg = "The size to split must be less than the total certificates in the parent bundle"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Create two child bundles
     granular_certificate_bundle_child_1 = GranularCertificateBundleCreate(
@@ -139,6 +141,22 @@ def split_certificate_bundle(
 
 def create_issuance_id(gcb: GranularCertificateBundleBase) -> str:
     return f"{gcb.device_id}-{gcb.production_starting_interval}"
+
+
+def issuance_id_to_device_and_interval(
+    issuance_id: str,
+) -> tuple[int, datetime.datetime]:
+    parts = issuance_id.split("-")
+    if len(parts) < 4:
+        raise ValueError(f"Invalid issuance ID: {issuance_id}")
+
+    try:
+        device_id = int(parts[0])
+        interval = datetime.datetime.fromisoformat("-".join(parts[1:]))
+    except ValueError:
+        raise ValueError(f"Invalid issuance ID: {issuance_id}")
+
+    return device_id, interval
 
 
 def get_max_certificate_id_by_device_id(
@@ -287,7 +305,8 @@ def issue_certificates_by_device_in_date_range(
     )
 
     if not certificates:
-        logger.error(f"No meter data retrieved for device: {device.meter_data_id}")
+        err_msg = f"No meter data retrieved for device: {device.meter_data_id}"
+        logger.error(err_msg)
         return None
 
     if not device_max_certificate_id:
@@ -303,7 +322,9 @@ def issue_certificates_by_device_in_date_range(
             )
 
         if device_max_certificate_id is None:
-            raise ValueError("Max certificate ID is None")
+            err_msg = "Max certificate ID is None"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
 
         valid_certificate = validate_granular_certificate_bundle(
             read_session,
@@ -436,9 +457,9 @@ def process_certificate_bundle_action(
     }
 
     if valid_certificate_action.action_type not in certificate_action_functions.keys():
-        raise ValueError(
-            f"Action type ({valid_certificate_action.action_type}) not in {certificate_action_functions.keys()}"
-        )
+        err_msg = f"Action type ({valid_certificate_action.action_type}) not in {certificate_action_functions.keys()}"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # try:
     action_function: Callable[..., Any] = certificate_action_functions[
@@ -569,57 +590,47 @@ def query_certificate_bundles(
     # certificates
     stmt: SelectOfScalar = select(GranularCertificateBundle).where(
         GranularCertificateBundle.account_id == certificate_query.source_id,
-        GranularCertificateBundle.is_deleted == False,  # noqa
-    )  # type: ignore
+        ~GranularCertificateBundle.is_deleted,
+    )
 
-    for query_param, query_value in certificate_query.model_dump().items():
-        if (query_param in certificate_query_param_map) & (query_value is not None):
-            # sparse_filter_list overrides all other search criteria if provided
-            if query_param == "sparse_filter_list":
-                sparse_filter_clauses = [
-                    (
-                        (GranularCertificateBundle.device_id == device_id)
-                        & (
-                            GranularCertificateBundle.production_starting_interval
-                            == production_starting_interval
-                        )
+    exclude = {"user_id", "localise_time", "source_id"}
+    for query_param, query_value in certificate_query.model_dump(
+        exclude=exclude
+    ).items():
+        if query_value is None:
+            continue
+        if query_param == "issuance_ids":
+            device_interval_pairs = [
+                issuance_id_to_device_and_interval(issuance_id)
+                for issuance_id in query_value
+            ]
+            sparse_filter_clauses = [
+                (
+                    (GranularCertificateBundle.device_id == device_id)
+                    & (
+                        GranularCertificateBundle.production_starting_interval
+                        == production_starting_interval
                     )
-                    for (device_id, production_starting_interval) in query_value
-                ]
-                stmt = select(GranularCertificateBundle).where(
-                    or_(*sparse_filter_clauses)
                 )
-                break
-            elif query_param in (
-                "certificate_period_start",
-                "source_certificate_certificate_bundle_id_range_start",
-            ):
-                stmt = stmt.where(
-                    getattr(
-                        GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
-                    )
-                    >= query_value
-                )
-            elif query_param in (
-                "certificate_period_end",
-                "source_certificate_certificate_bundle_id_range_end",
-            ):
-                stmt = stmt.where(
-                    getattr(
-                        GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
-                    )
-                    <= query_value
-                )
-            else:
-                stmt = stmt.where(
-                    getattr(
-                        GranularCertificateBundle,
-                        certificate_query_param_map[query_param],  # type: ignore
-                    )
-                    == query_value
-                )
+                for (
+                    device_id,
+                    production_starting_interval,
+                ) in device_interval_pairs
+            ]
+            stmt = select(GranularCertificateBundle).where(or_(*sparse_filter_clauses))
+            break
+        elif query_param == "certificate_period_start":
+            stmt = stmt.where(
+                GranularCertificateBundle.production_starting_interval >= query_value
+            )
+        elif query_param == "certificate_period_end":
+            stmt = stmt.where(
+                GranularCertificateBundle.production_ending_interval <= query_value
+            )
+        else:
+            stmt = stmt.where(
+                getattr(GranularCertificateBundle, query_param) == query_value
+            )
 
     granular_certificate_bundles = session.exec(stmt).all()
 
@@ -642,21 +653,22 @@ def transfer_certificates(
 
     """
 
-    assert certificate_bundle_action.target_id, "Target account ID is required"
-    assert Account.exists(
-        certificate_bundle_action.target_id, write_session
-    ), f"Target account does not exist: {certificate_bundle_action.target_id}"
+    if not Account.exists(certificate_bundle_action.target_id, write_session):
+        err_msg = (
+            f"Target account does not exist: {certificate_bundle_action.target_id}"
+        )
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
-    # Assert that the target account has whitelisted the source account
+    # Check that the target account has whitelisted the source account
     account = Account.by_id(certificate_bundle_action.target_id, read_session)
     account_whitelist = (
         [] if account.account_whitelist is None else account.account_whitelist
     )
     if certificate_bundle_action.source_id not in account_whitelist:
-        msg = f"""Target account ({certificate_bundle_action.target_id})
-                  has not whitelisted the source account ({certificate_bundle_action.source_id})
-                  for transfer."""
-        raise HTTPException(status_code=403, detail=msg)
+        err_msg = f"Target account ({certificate_bundle_action.target_id}) has not whitelisted the source account ({certificate_bundle_action.source_id}) for transfer."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Retrieve certificates to transfer
     certificate_bundles_from_query = get_certificate_bundles_by_id(
@@ -664,13 +676,17 @@ def transfer_certificates(
     )
 
     if not certificate_bundles_from_query:
-        logger.error("No certificates found to transfer with given query parameters.")
-        return None
+        err_msg = "No certificates found to transfer with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
-    for certificate in certificate_bundles_from_query:
-        assert (
-            certificate.certificate_bundle_status == CertificateStatus.ACTIVE
-        ), f"Certificate with ID {certificate.issuance_id} is not active and cannot be transferred"
+    if any(
+        c.certificate_status != CertificateStatus.ACTIVE
+        for c in certificate_bundles_from_query
+    ):
+        err_msg = f"Can only transfer active certificates, found: { {c.certificate_status for c in certificate_bundles_from_query} }"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_bundles_to_transfer = apply_bundle_quantity_or_percentage(
@@ -686,7 +702,7 @@ def transfer_certificates(
         certificate_update = GranularCertificateBundleUpdate(
             account_id=certificate_bundle_action.target_id
         )
-        certificate.update(certificate_update, write_session, read_session, esdb_client)  # type: ignore
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
 
     return
 
@@ -713,8 +729,15 @@ def cancel_certificates(
     )
 
     if not certificate_bundles_from_query:
-        logger.info("No certificates found to cancel with given query parameters.")
-        return
+        err_msg = "No certificates found to cancel with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+
+    valid_statuses = [CertificateStatus.ACTIVE, CertificateStatus.RESERVED]
+    if any(c.certificate_status not in valid_statuses for c in certificate_bundles_from_query):
+        err_msg = f"Certificates must be in ACTIVE or RESERVED status to cancel, found: { {c.certificate_status for c in certificate_bundles_from_query} }"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_bundles_to_cancel = apply_bundle_quantity_or_percentage(
@@ -758,8 +781,17 @@ def claim_certificates(
     )
 
     if not certificate_bundles_from_query:
-        logger.info("No certificates found to claim with given query parameters.")
-        return
+        err_msg = "No certificates found to claim with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+
+    if any(
+        c.certificate_status != CertificateStatus.CANCELLED
+        for c in certificate_bundles_from_query
+    ):
+        err_msg = f"Can only claim cancelled certificates, found: { {c.certificate_status for c in certificate_bundles_from_query} }"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_bundles_to_claim = apply_bundle_quantity_or_percentage(
@@ -809,8 +841,9 @@ def withdraw_certificates(
     )
 
     if not certificate_bundles_from_query:
-        logger.info("No certificates found to withdraw with given query parameters.")
-        return
+        err_msg = "No certificates found to withdraw with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_bundles_to_withdraw = apply_bundle_quantity_or_percentage(
@@ -856,8 +889,9 @@ def lock_certificates(
     )
 
     if not certificate_bundles_from_query:
-        logger.info("No certificates found to lock with given query parameters.")
-        return
+        err_msg = "No certificates found to lock with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_bundles_to_lock = apply_bundle_quantity_or_percentage(
@@ -900,8 +934,9 @@ def reserve_certificates(
     )
 
     if not certificate_bundles_from_query:
-        logger.info("No certificates found to reserve with given query parameters.")
-        return
+        err_msg = "No certificates found to reserve with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_bundles_to_reserve = apply_bundle_quantity_or_percentage(
