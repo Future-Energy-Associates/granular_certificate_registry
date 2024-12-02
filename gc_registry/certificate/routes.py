@@ -19,8 +19,8 @@ from gc_registry.certificate.schemas import (
 )
 from gc_registry.certificate.services import (
     create_issuance_id,
-    process_certificate_action,
-    query_certificates,
+    process_certificate_bundle_action,
+    query_certificate_bundles,
 )
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import CertificateActionType
@@ -107,7 +107,7 @@ def certificate_bundle_transfer(
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
 
     try:
-        db_certificate_action = process_certificate_action(
+        db_certificate_action = process_certificate_bundle_action(
             certificate_transfer, write_session, read_session, esdb_client
         )
 
@@ -121,25 +121,25 @@ def certificate_bundle_transfer(
     response_model=GranularCertificateQueryRead,
     status_code=202,
 )
-def query_certificate_bundles(
+def query_certificate_bundles_route(
     certificate_bundle_query: GranularCertificateQuery,
     read_session: Session = Depends(db.get_read_session),
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""
 
     try:
-        certificates_from_query = query_certificates(
+        certificate_bundles_from_query = query_certificate_bundles(
             certificate_bundle_query, read_session
         )
 
-        if not certificates_from_query:
+        if not certificate_bundles_from_query:
             raise HTTPException(status_code=422, detail="No certificates found")
 
         query_dict = certificate_bundle_query.model_dump()
 
         granular_certificate_bundles_read = [
             GranularCertificateBundleRead.model_validate(certificate.model_dump())
-            for certificate in certificates_from_query
+            for certificate in certificate_bundles_from_query
         ]
 
         query_dict["granular_certificate_bundles"] = granular_certificate_bundles_read
@@ -170,7 +170,7 @@ def certificate_bundle_cancellation(
             user_name = User.by_id(certificate_cancel.user_id, read_session).name
             certificate_cancel.beneficiary = f"{user_name}"
 
-        db_certificate_action = process_certificate_action(
+        db_certificate_action = process_certificate_bundle_action(
             certificate_cancel, write_session, read_session, esdb_client
         )
 
@@ -241,7 +241,7 @@ def certificate_bundle_claim(
 
     try:
         certificate_bundle_action.action_type = CertificateActionType.CLAIM
-        db_certificate_action = process_certificate_action(
+        db_certificate_action = process_certificate_bundle_action(
             certificate_bundle_action, write_session, read_session, esdb_client
         )
 
@@ -264,7 +264,7 @@ def certificate_bundle_withdraw(
     """(Issuing Body only) - Withdraw a fixed number of certificates from the specified Account matching the provided search criteria."""
     # TODO add validation that only the IB user can access this endpoint
     certificate_bundle_action.action_type = CertificateActionType.WITHDRAW
-    db_certificate_action = process_certificate_action(
+    db_certificate_action = process_certificate_bundle_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 
@@ -284,7 +284,7 @@ def certificate_bundle_reserve(
 ):
     """Label a fixed number of certificates as Reserved from the specified Account matching the provided search criteria."""
     certificate_bundle_action.action_type = CertificateActionType.RESERVE
-    db_certificate_action = process_certificate_action(
+    db_certificate_action = process_certificate_bundle_action(
         certificate_bundle_action, write_session, read_session, esdb_client
     )
 

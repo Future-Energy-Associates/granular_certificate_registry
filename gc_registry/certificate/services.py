@@ -42,7 +42,7 @@ def get_certificate_bundles_by_id(
     """Get a list of GC Bundles by their IDs.
 
     Args:
-        gcb_ids (list[int]): The list of GC Bundle IDs
+        granular_certificate_bundle_ids (list[int]): The list of GC Bundle IDs
         db_session (Session): The database session
 
     Returns:
@@ -52,13 +52,14 @@ def get_certificate_bundles_by_id(
     stmt: SelectOfScalar = select(GranularCertificateBundle).where(
         GranularCertificateBundle.id.in_(granular_certificate_bundle_ids)  # type: ignore
     )
-    gc_bundles = db_session.exec(stmt).all()
+    granular_certificate_bundles = db_session.exec(stmt).all()
 
-    return gc_bundles
+    return granular_certificate_bundles
 
 
 def split_certificate_bundle(
-    gc_bundle: GranularCertificateBundle | GranularCertificateBundleRead,
+    granular_certificate_bundle: GranularCertificateBundle
+    | GranularCertificateBundleRead,
     size_to_split: int,
     write_session: Session,
     read_session: Session,
@@ -74,7 +75,7 @@ def split_certificate_bundle(
     and lineage purposes.
 
     Args:
-        gc_bundle (GranularCertificateBundle): The parent GC Bundle
+        granular_certificate_bundle (GranularCertificateBundle): The parent GC Bundle
         size_to_split (int): The number of certificates to split from
             the parent bundle.
 
@@ -86,43 +87,62 @@ def split_certificate_bundle(
         err_msg = "The size to split must be greater than 0"
         logger.error(err_msg)
         raise ValueError(err_msg)
-    if size_to_split >= gc_bundle.bundle_quantity:
+    if size_to_split >= granular_certificate_bundle.bundle_quantity:
         err_msg = "The size to split must be less than the total certificates in the parent bundle"
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     # Create two child bundles
-    gc_bundle_child_1 = GranularCertificateBundleCreate(**gc_bundle.model_dump())
-    gc_bundle_child_2 = GranularCertificateBundleCreate(**gc_bundle.model_dump())
+    granular_certificate_bundle_child_1 = GranularCertificateBundleCreate(
+        **granular_certificate_bundle.model_dump()
+    )
+    granular_certificate_bundle_child_2 = GranularCertificateBundleCreate(
+        **granular_certificate_bundle.model_dump()
+    )
 
     # Update the child bundles with the new quantities
-    gc_bundle_child_1.bundle_quantity = size_to_split
-    gc_bundle_child_1.bundle_id_range_end = (
-        gc_bundle_child_1.bundle_id_range_start + size_to_split
+    granular_certificate_bundle_child_1.bundle_quantity = size_to_split
+    granular_certificate_bundle_child_1.certificate_bundle_id_range_end = (
+        granular_certificate_bundle_child_1.certificate_bundle_id_range_start
+        + size_to_split
     )
-    gc_bundle_child_1.hash = create_bundle_hash(gc_bundle_child_1, gc_bundle.hash)
+    granular_certificate_bundle_child_1.hash = create_bundle_hash(
+        granular_certificate_bundle_child_1, granular_certificate_bundle.hash
+    )
 
-    gc_bundle_child_2.bundle_quantity = gc_bundle.bundle_quantity - size_to_split
-    gc_bundle_child_2.bundle_id_range_start = gc_bundle_child_1.bundle_id_range_end + 1
-    gc_bundle_child_2.hash = create_bundle_hash(gc_bundle_child_2, gc_bundle.hash)
+    granular_certificate_bundle_child_2.bundle_quantity = (
+        granular_certificate_bundle.bundle_quantity - size_to_split
+    )
+    granular_certificate_bundle_child_2.certificate_bundle_id_range_start = (
+        granular_certificate_bundle_child_1.certificate_bundle_id_range_end + 1
+    )
+    granular_certificate_bundle_child_2.hash = create_bundle_hash(
+        granular_certificate_bundle_child_2, granular_certificate_bundle.hash
+    )
 
     # Mark the parent bundle as withdrawn and apply soft delete
-    gc_bundle.certificate_status = CertificateStatus.BUNDLE_SPLIT
-    gc_bundle.delete(write_session, read_session, esdb_client)  # type: ignore
+    granular_certificate_bundle.certificate_bundle_status = (
+        CertificateStatus.BUNDLE_SPLIT
+    )
+    granular_certificate_bundle.delete(write_session, read_session, esdb_client)  # type: ignore
 
     # Write the child bundles to the database
-    db_gc_bundle_child_1 = GranularCertificateBundle.create(
-        gc_bundle_child_1, write_session, read_session, esdb_client
+    db_granular_certificate_bundle_child_1 = GranularCertificateBundle.create(
+        granular_certificate_bundle_child_1, write_session, read_session, esdb_client
     )
-    db_gc_bundle_child_2 = GranularCertificateBundle.create(
-        gc_bundle_child_2, write_session, read_session, esdb_client
+    db_granular_certificate_bundle_child_2 = GranularCertificateBundle.create(
+        granular_certificate_bundle_child_2, write_session, read_session, esdb_client
     )
 
-    return db_gc_bundle_child_1[0], db_gc_bundle_child_2[0]  # type: ignore
+    return db_granular_certificate_bundle_child_1[
+        0
+    ], db_granular_certificate_bundle_child_2[0]  # type: ignore
 
 
-def create_issuance_id(gcb: GranularCertificateBundleBase) -> str:
-    return f"{gcb.device_id}-{gcb.production_starting_interval}"
+def create_issuance_id(
+    granular_certificate_bundle: GranularCertificateBundleBase,
+) -> str:
+    return f"{granular_certificate_bundle.device_id}-{granular_certificate_bundle.production_starting_interval}"
 
 
 def issuance_id_to_device_and_interval(
@@ -157,10 +177,11 @@ def get_max_certificate_id_by_device_id(
     """
 
     stmt: SelectOfScalar = select(
-        func.max(GranularCertificateBundle.bundle_id_range_end)
+        func.max(GranularCertificateBundle.certificate_bundle_id_range_end)
     ).where(
         GranularCertificateBundle.device_id == device_id,
-        GranularCertificateBundle.certificate_status != CertificateStatus.WITHDRAWN,
+        GranularCertificateBundle.certificate_bundle_status
+        != CertificateStatus.WITHDRAWN,
     )
 
     max_certificate_id = db_session.exec(stmt).first()
@@ -189,7 +210,8 @@ def get_max_certificate_timestamp_by_device_id(
         func.max(GranularCertificateBundle.production_ending_interval)
     ).where(
         GranularCertificateBundle.device_id == device_id,
-        GranularCertificateBundle.certificate_status != CertificateStatus.WITHDRAWN,
+        GranularCertificateBundle.certificate_bundle_status
+        != CertificateStatus.WITHDRAWN,
     )
 
     max_certificate_timestamp = db_session.exec(stmt).first()
@@ -204,8 +226,8 @@ def issue_certificates_by_device_in_date_range(
     device: Device,
     from_datetime: datetime.datetime,
     to_datetime: datetime.datetime,
-    db_write_session: Session,
-    db_read_session: Session,
+    write_session: Session,
+    read_session: Session,
     esdb_client: EventStoreDBClient,
     issuance_metadata_id: int,
     meter_data_client: AbstractMeterDataClient,
@@ -220,8 +242,8 @@ def issue_certificates_by_device_in_date_range(
         device (Device): The device
         from_datetime (datetime.datetime): The start of the period
         to_datetime (datetime.datetime): The end of the period
-        db_write_session (Session): The database write session
-        db_read_session (Session): The database read session
+        write_session (Session): The database write session
+        read_session (Session): The database read session
         esdb_client (EventStoreDBClient): The EventStoreDB client
         issuance_metadata_id (int): The issuance metadata ID
         meter_data_client (MeterDataClient, optional): The meter data client.
@@ -236,7 +258,7 @@ def issue_certificates_by_device_in_date_range(
 
     # get max timestamp already issued for the device
     max_issued_timestamp = get_max_certificate_timestamp_by_device_id(
-        db_read_session, device.id
+        read_session, device.id
     )
 
     # check if the device has already been issued certificates for the given period
@@ -255,7 +277,7 @@ def issue_certificates_by_device_in_date_range(
     # can we guarantee this at the meter client level?
     if meter_data_client.NAME == "ManualSubmissionMeterClient":
         meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
-            from_datetime, to_datetime, device.id, db_read_session
+            from_datetime, to_datetime, device.id, read_session
         )
     else:
         meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
@@ -268,16 +290,16 @@ def issue_certificates_by_device_in_date_range(
 
     # Map the meter data to certificates
     device_max_certificate_id = get_max_certificate_id_by_device_id(
-        db_read_session, device.id
+        read_session, device.id
     )
     if not device_max_certificate_id:
-        bundle_id_range_start = 1
+        certificate_bundle_id_range_start = 1
     else:
-        bundle_id_range_start = device_max_certificate_id + 1
+        certificate_bundle_id_range_start = device_max_certificate_id + 1
 
     certificates = meter_data_client.map_metering_to_certificates(
         generation_data=meter_data,
-        bundle_id_range_start=bundle_id_range_start,
+        certificate_bundle_id_range_start=certificate_bundle_id_range_start,
         account_id=device.account_id,
         device=device,
         is_storage=device.is_storage,
@@ -298,7 +320,7 @@ def issue_certificates_by_device_in_date_range(
         # get max valid certificate max bundle id
         if valid_certificates:
             device_max_certificate_id = max(
-                [v.bundle_id_range_end for v in valid_certificates]
+                [v.certificate_bundle_id_range_end for v in valid_certificates]
             )
 
         if device_max_certificate_id is None:
@@ -307,7 +329,7 @@ def issue_certificates_by_device_in_date_range(
             raise ValueError(err_msg)
 
         valid_certificate = validate_granular_certificate_bundle(
-            db_read_session,
+            read_session,
             certificate,
             is_storage_device=device.is_storage,
             max_certificate_id=device_max_certificate_id,
@@ -319,13 +341,13 @@ def issue_certificates_by_device_in_date_range(
         # Because this function is only applied to one device at a time, we can be
         # certain that the highest bundle id range end is from the most recent bundle
         # in this collection
-        device_max_certificate_id = valid_certificate.bundle_id_range_end
+        device_max_certificate_id = valid_certificate.certificate_bundle_id_range_end
 
     # Batch commit the GC bundles to the database
     created_entities = cqrs.write_to_database(
         valid_certificates,  # type: ignore
-        db_write_session,
-        db_read_session,
+        write_session,
+        read_session,
         esdb_client,
     )
 
@@ -335,8 +357,8 @@ def issue_certificates_by_device_in_date_range(
 def issue_certificates_in_date_range(
     from_datetime: datetime.datetime,
     to_datetime: datetime.datetime,
-    db_write_session: Session,
-    db_read_session: Session,
+    write_session: Session,
+    read_session: Session,
     esdb_client: EventStoreDBClient,
     issuance_metadata_id: int,
     meter_data_client: AbstractMeterDataClient,
@@ -351,8 +373,8 @@ def issue_certificates_in_date_range(
     Args:
         from_datetime (datetime.datetime): The start of the period
         to_datetime (datetime.datetime): The end of the period
-        db_write_session (Session): The database write session
-        db_read_session (Session): The database read session
+        write_session (Session): The database write session
+        read_session (Session): The database read session
         issuance_metadata_id (int): The issuance metadata ID
         meter_data_client (MeterDataClient, optional): The meter data client. Defaults to Depends(ElexonClient).
 
@@ -362,14 +384,14 @@ def issue_certificates_in_date_range(
     """
 
     # Get the devices in the registry
-    devices = get_all_devices(db_read_session)
+    devices = get_all_devices(read_session)
 
     if not devices:
         logger.error("No devices found in the registry")
         return None
 
     # Issue certificates for each device
-    certificates: list[Any] = []
+    certificate_bundles: list[Any] = []
     for device in devices:
         logger.info(f"Issuing certificates for device: {device.id}")
 
@@ -386,19 +408,19 @@ def issue_certificates_in_date_range(
             device,
             from_datetime,
             to_datetime,
-            db_write_session,
-            db_read_session,
+            write_session,
+            read_session,
             esdb_client,
             issuance_metadata_id,
             meter_data_client,
         )
         if created_entities:
-            certificates.extend(created_entities)
+            certificate_bundles.extend(created_entities)
 
-    return certificates
+    return certificate_bundles
 
 
-def process_certificate_action(
+def process_certificate_bundle_action(
     certificate_action: GranularCertificateActionBase,
     write_session: Session,
     read_session: Session,
@@ -457,7 +479,7 @@ def process_certificate_action(
 
 
 def apply_bundle_quantity_or_percentage(
-    certificates_from_query: list[GranularCertificateBundle],
+    certificate_bundles_from_query: list[GranularCertificateBundle],
     certificate_bundle_action: GranularCertificateCancel
     | GranularCertificateTransfer
     | GranularCertificateReserve
@@ -475,7 +497,7 @@ def apply_bundle_quantity_or_percentage(
     it will return the GC Bundle unsplit.
 
     Args:
-        certificates_from_query (list[GranularCertificateBundle]): The certificates from the query
+        certificate_bundles_from_query (list[GranularCertificateBundle]): The certificates from the query
         certificate_bundle_action (GranularCertificateAction): The certificate action
         write_session (Session): The database write session
         read_session (Session): The database read session
@@ -492,49 +514,49 @@ def apply_bundle_quantity_or_percentage(
     if (certificate_bundle_action.certificate_quantity is None) & (
         certificate_bundle_action.certificate_bundle_percentage is None
     ):
-        return certificates_from_query
+        return certificate_bundles_from_query
 
-    certificates_to_transfer = []
+    certificates_bundles_to_transfer = []
 
     if certificate_bundle_action.certificate_quantity is not None:
-        certificates_to_split = [
+        certificates_bundles_to_split = [
             certificate_bundle_action.certificate_quantity
-            for i in range(len(certificates_from_query))
+            for i in range(len(certificate_bundles_from_query))
         ]
     elif certificate_bundle_action.certificate_bundle_percentage is not None:
-        certificates_to_split = [
+        certificates_bundles_to_split = [
             int(
                 certificate_bundle_action.certificate_bundle_percentage
                 * certificate_from_query.bundle_quantity
             )
-            for certificate_from_query in certificates_from_query
+            for certificate_from_query in certificate_bundles_from_query
         ]
 
     # Only check the bundle quantity if the query on bundle quantity parameter is provided,
     # otherwise, split the bundle based on the percentage of the total certificates in the bundle
-    for idx, gc_bundle in enumerate(certificates_from_query):
+    for idx, granular_certificate_bundle in enumerate(certificate_bundles_from_query):
         if certificate_bundle_action.certificate_quantity is not None:
             if (
-                gc_bundle.bundle_quantity
+                granular_certificate_bundle.bundle_quantity
                 <= certificate_bundle_action.certificate_quantity
             ):
-                certificates_to_transfer.append(gc_bundle)
+                certificates_bundles_to_transfer.append(granular_certificate_bundle)
                 continue
 
         child_bundle_1, _child_bundle_2 = split_certificate_bundle(
-            gc_bundle,
-            certificates_to_split[idx],
+            granular_certificate_bundle,
+            certificates_bundles_to_split[idx],
             write_session,
             read_session,
             esdb_client,
         )
         if child_bundle_1:
-            certificates_to_transfer.append(child_bundle_1)
+            certificates_bundles_to_transfer.append(child_bundle_1)
 
-    return certificates_to_transfer
+    return certificates_bundles_to_transfer
 
 
-def query_certificates(
+def query_certificate_bundles(
     certificate_query: GranularCertificateQuery,
     read_session: Session | None = None,
     write_session: Session | None = None,
@@ -550,8 +572,8 @@ def query_certificates(
 
     Args:
         certificate_query (GranularCertificateAction): The certificate action
-        db_read_engine (Session): The database read session
-        db_write_engine (Session | None): The database write session
+        read_session (Session): The database read session
+        write_session (Session | None): The database write session
 
     Returns:
         list[GranularCertificateBundle]: The list of certificates
@@ -612,9 +634,9 @@ def query_certificates(
                 getattr(GranularCertificateBundle, query_param) == query_value
             )
 
-    gc_bundles = session.exec(stmt).all()
+    granular_certificate_bundles = session.exec(stmt).all()
 
-    return gc_bundles
+    return granular_certificate_bundles
 
 
 def transfer_certificates(
@@ -651,26 +673,26 @@ def transfer_certificates(
         raise ValueError(err_msg)
 
     # Retrieve certificates to transfer
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_bundle_action.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         err_msg = "No certificates found to transfer with given query parameters."
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     if any(
-        c.certificate_status != CertificateStatus.ACTIVE
-        for c in certificates_from_query
+        c.certificate_bundle_status != CertificateStatus.ACTIVE
+        for c in certificate_bundles_from_query
     ):
-        err_msg = f"Can only transfer active certificates, found: { {c.certificate_status for c in certificates_from_query} }"
+        err_msg = f"Can only transfer active certificates, found: { {c.certificate_bundle_status for c in certificate_bundles_from_query} }"
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_transfer = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+    certificates_bundles_to_transfer = apply_bundle_quantity_or_percentage(
+        certificate_bundles_from_query,
         certificate_bundle_action,
         write_session,
         read_session,
@@ -678,7 +700,7 @@ def transfer_certificates(
     )
 
     # Transfer certificates by updating account ID of target bundle
-    for certificate in certificates_to_transfer:
+    for certificate in certificates_bundles_to_transfer:
         certificate_update = GranularCertificateBundleUpdate(
             account_id=certificate_bundle_action.target_id
         )
@@ -704,24 +726,27 @@ def cancel_certificates(
     """
 
     # Retrieve certificates to cancel
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_transfer.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         err_msg = "No certificates found to cancel with given query parameters."
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     valid_statuses = [CertificateStatus.ACTIVE, CertificateStatus.RESERVED]
-    if any(c.certificate_status not in valid_statuses for c in certificates_from_query):
-        err_msg = f"Certificates must be in ACTIVE or RESERVED status to cancel, found: { {c.certificate_status for c in certificates_from_query} }"
+    if any(
+        c.certificate_bundle_status not in valid_statuses
+        for c in certificate_bundles_from_query
+    ):
+        err_msg = f"Certificates must be in ACTIVE or RESERVED status to cancel, found: { {c.certificate_bundle_status for c in certificate_bundles_from_query} }"
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_cancel = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+    certificates_bundles_to_cancel = apply_bundle_quantity_or_percentage(
+        certificate_bundles_from_query,
         certificate_transfer,
         write_session,
         read_session,
@@ -729,9 +754,9 @@ def cancel_certificates(
     )
 
     # Cancel certificates
-    for certificate in certificates_to_cancel:
+    for certificate in certificates_bundles_to_cancel:
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.CANCELLED,
+            certificate_bundle_status=CertificateStatus.CANCELLED,
             beneficiary=certificate_transfer.beneficiary,
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
@@ -756,35 +781,40 @@ def claim_certificates(
     """
 
     # Retrieve certificates to claim
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_claim.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         err_msg = "No certificates found to claim with given query parameters."
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     if any(
-        c.certificate_status != CertificateStatus.CANCELLED
-        for c in certificates_from_query
+        c.certificate_bundle_status != CertificateStatus.CANCELLED
+        for c in certificate_bundles_from_query
     ):
-        err_msg = f"Can only claim cancelled certificates, found: { {c.certificate_status for c in certificates_from_query} }"
+        err_msg = f"Can only claim cancelled certificates, found: { {c.certificate_bundle_status for c in certificate_bundles_from_query} }"
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_claim = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+    certificates_bundles_to_claim = apply_bundle_quantity_or_percentage(
+        certificate_bundles_from_query,
         certificate_claim,
         write_session,
         read_session,
         esdb_client,
     )
 
-    for certificate in certificates_to_claim:
+    # Assert the certificates are in a cancelled state
+    for certificate in certificates_bundles_to_claim:
+        assert (
+            certificate.certificate_bundle_status == CertificateStatus.CANCELLED
+        ), f"Certificate with ID {certificate.issuance_id} is not cancelled and cannot be claimed"
+
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.CLAIMED
+            certificate_bundle_status=CertificateStatus.CLAIMED
         )
 
         certificate.update(certificate_update, write_session, read_session, esdb_client)
@@ -811,18 +841,18 @@ def withdraw_certificates(
     # TODO add logic for removing withdrawn GCs from the main table
 
     # Retrieve certificates to withdraw
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_bundle_action.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         err_msg = "No certificates found to withdraw with given query parameters."
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_withdraw = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+    certificates_bundles_to_withdraw = apply_bundle_quantity_or_percentage(
+        certificate_bundles_from_query,
         certificate_bundle_action,
         write_session,
         read_session,
@@ -830,9 +860,9 @@ def withdraw_certificates(
     )
 
     # Withdraw certificates
-    for certificate in certificates_to_withdraw:
+    for certificate in certificates_bundles_to_withdraw:
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.WITHDRAWN
+            certificate_bundle_status=CertificateStatus.WITHDRAWN
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 
@@ -859,18 +889,18 @@ def lock_certificates(
     """
 
     # Retrieve certificates to lock
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_bundle_action.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         err_msg = "No certificates found to lock with given query parameters."
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_lock = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+    certificates_bundles_to_lock = apply_bundle_quantity_or_percentage(
+        certificate_bundles_from_query,
         certificate_bundle_action,
         write_session,
         read_session,
@@ -878,9 +908,9 @@ def lock_certificates(
     )
 
     # Lock certificates
-    for certificate in certificates_to_lock:
+    for certificate in certificates_bundles_to_lock:
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.LOCKED
+            certificate_bundle_status=CertificateStatus.LOCKED
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 
@@ -904,18 +934,18 @@ def reserve_certificates(
     """
 
     # Retrieve certificates to reserve
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_reserve.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         err_msg = "No certificates found to reserve with given query parameters."
         logger.error(err_msg)
         raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
-    certificates_to_reserve = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+    certificates_bundles_to_reserve = apply_bundle_quantity_or_percentage(
+        certificate_bundles_from_query,
         certificate_reserve,
         write_session,
         read_session,
@@ -923,9 +953,9 @@ def reserve_certificates(
     )
 
     # Reserve certificates
-    for certificate in certificates_to_reserve:
+    for certificate in certificates_bundles_to_reserve:
         certificate_update = GranularCertificateBundleUpdate(
-            certificate_status=CertificateStatus.RESERVED
+            certificate_bundle_status=CertificateStatus.RESERVED
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 

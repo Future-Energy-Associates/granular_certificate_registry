@@ -19,38 +19,42 @@ from gc_registry.user.models import User
 
 
 def verifiy_bundle_lineage(
-    gc_bundle_parent: GranularCertificateBundle,
-    gc_bundle_child: GranularCertificateBundle,
+    granular_certificate_bundle_parent: GranularCertificateBundle,
+    granular_certificate_bundle_child: GranularCertificateBundle,
 ):
     """
     Given a parent and child GC Bundle, verify that the child's hash
     can be recreated from the parent's hash and the child's nonce.
 
     Args:
-        gc_bundle_parent (GranularCertificateBundle): The parent GC Bundle
-        gc_bundle_child (GranularCertificateBundle): The child GC Bundle
+        granular_certificate_bundle_parent (GranularCertificateBundle): The parent GC Bundle
+        granular_certificate_bundle_child (GranularCertificateBundle): The child GC Bundle
 
     Returns:
         bool: Whether the child's hash can be recreated from the parent's hash
     """
 
     return (
-        create_bundle_hash(gc_bundle_child, gc_bundle_parent.hash)
-        == gc_bundle_child.hash
+        create_bundle_hash(
+            granular_certificate_bundle_child, granular_certificate_bundle_parent.hash
+        )
+        == granular_certificate_bundle_child.hash
     )
 
 
 def validate_granular_certificate_bundle(
     db_session: Session,
-    raw_gcb: dict[str, Any],
+    raw_granular_certificate_bundle: dict[str, Any],
     is_storage_device: bool,
     max_certificate_id: int,
     hours: float = settings.CERTIFICATE_GRANULARITY_HOURS,
 ) -> GranularCertificateBundle:
-    gcb = GranularCertificateBundleCreate.model_validate(raw_gcb)
+    granular_certificate_bundle = GranularCertificateBundleCreate.model_validate(
+        raw_granular_certificate_bundle
+    )
 
     W_IN_MW = 1e6
-    device_id = gcb.device_id
+    device_id = granular_certificate_bundle.device_id
 
     device_w = get_device_capacity_by_id(db_session, device_id)
 
@@ -62,14 +66,19 @@ def validate_granular_certificate_bundle(
 
     # Validate the bundle quantity is equal to the difference between the bundle ID range
     # and less than the device max watts hours
-    validate(gcb.bundle_quantity, identifier="bundle_quantity").less_than(
-        device_max_watts_hours * settings.CAPACITY_MARGIN
-    ).equal(gcb.bundle_id_range_end - gcb.bundle_id_range_start + 1)
+    validate(
+        granular_certificate_bundle.bundle_quantity, identifier="bundle_quantity"
+    ).less_than(device_max_watts_hours * settings.CAPACITY_MARGIN).equal(
+        granular_certificate_bundle.certificate_bundle_id_range_end
+        - granular_certificate_bundle.certificate_bundle_id_range_start
+        + 1
+    )
 
     # Validate the bundle ID range start is greater than the previous max certificate ID
-    validate(gcb.bundle_id_range_start, identifier="bundle_id_range_start").equal(
-        max_certificate_id + 1
-    )
+    validate(
+        granular_certificate_bundle.certificate_bundle_id_range_start,
+        identifier="certificate_bundle_id_range_start",
+    ).equal(max_certificate_id + 1)
 
     # At this point if integrating wtih EAC registry or possibility of cross registry transfer
     # add integrations with external sources for further validation e.g. cancellation of underlying EACs
@@ -78,7 +87,9 @@ def validate_granular_certificate_bundle(
         # TODO: add additional storage validation
         pass
 
-    return GranularCertificateBundle.model_validate(gcb.model_dump())
+    return GranularCertificateBundle.model_validate(
+        granular_certificate_bundle.model_dump()
+    )
 
 
 def validate_user_access(

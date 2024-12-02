@@ -50,21 +50,25 @@ class PJM(AbstractMeterDataClient):
         for data in generation_data:
             bundle_mwh = data["mw"] * 1000
 
-            # get existing "bundle_id_range_end" from the last item in mapped_data
+            # get existing "certificate_bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
-                bundle_id_range_start = mapped_data[-1].bundle_id_range_end + 1
+                certificate_bundle_id_range_start = (
+                    mapped_data[-1].certificate_bundle_id_range_end + 1
+                )
             else:
-                bundle_id_range_start = 0
+                certificate_bundle_id_range_start = 0
 
-            bundle_id_range_end = bundle_id_range_start + bundle_mwh
+            certificate_bundle_id_range_end = (
+                certificate_bundle_id_range_start + bundle_mwh
+            )
 
             transformed = {
                 ### Account details ###
                 "account_id": account_id,
                 ### Mutable Attributes ###
-                "certificate_status": "Active",
-                "bundle_id_range_start": bundle_id_range_start,
-                "bundle_id_range_end": bundle_id_range_end,
+                "certificate_bundle_status": "Active",
+                "certificate_bundle_id_range_start": certificate_bundle_id_range_start,
+                "certificate_bundle_id_range_end": certificate_bundle_id_range_end,
                 "bundle_quantity": bundle_mwh,
                 ### Bundle Characteristics ###
                 "energy_carrier": "Electricity",

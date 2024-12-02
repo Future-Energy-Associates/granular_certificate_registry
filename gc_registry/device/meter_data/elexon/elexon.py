@@ -178,7 +178,7 @@ class ElexonClient:
         device: Device,
         is_storage: bool,
         issuance_metadata_id: int,
-        bundle_id_range_start: int = 0,
+        certificate_bundle_id_range_start: int = 0,
     ) -> list[dict[str, Any]]:
         WH_IN_MWH = 1e6
 
@@ -189,18 +189,22 @@ class ElexonClient:
             if bundle_wh <= 0:
                 continue
 
-            # Get existing "bundle_id_range_end" from the last item in mapped_data
+            # Get existing "certificate_bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
-                bundle_id_range_start = mapped_data[-1]["bundle_id_range_end"] + 1
+                certificate_bundle_id_range_start = (
+                    mapped_data[-1]["certificate_bundle_id_range_end"] + 1
+                )
 
-            # E.g., if bundle_wh = 1000, bundle_id_range_start = 0, bundle_id_range_end = 999
-            bundle_id_range_end = bundle_id_range_start + bundle_wh - 1
+            # E.g., if bundle_wh = 1000, certificate_bundle_id_range_start = 0, certificate_bundle_id_range_end = 999
+            certificate_bundle_id_range_end = (
+                certificate_bundle_id_range_start + bundle_wh - 1
+            )
 
             transformed = {
                 "account_id": account_id,
-                "certificate_status": CertificateStatus.ACTIVE,
-                "bundle_id_range_start": bundle_id_range_start,
-                "bundle_id_range_end": bundle_id_range_end,
+                "certificate_bundle_status": CertificateStatus.ACTIVE,
+                "certificate_bundle_id_range_start": certificate_bundle_id_range_start,
+                "certificate_bundle_id_range_end": certificate_bundle_id_range_end,
                 "bundle_quantity": bundle_wh,
                 "energy_carrier": EnergyCarrierType.electricity,
                 "energy_source": device.energy_source,

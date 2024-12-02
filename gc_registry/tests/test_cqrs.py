@@ -16,8 +16,8 @@ from gc_registry.user.models import User
 class TestCQRS:
     def test_create_entity(
         self,
-        db_write_session: Session,
-        db_read_session: Session,
+        write_session: Session,
+        read_session: Session,
         fake_db_wind_device: Device,
         fake_db_account: Account,
         fake_db_user: User,
@@ -56,8 +56,8 @@ class TestCQRS:
         # Write entities to database
         created_entities = write_to_database(
             entities=[wind_device, user],
-            write_session=db_write_session,
-            read_session=db_read_session,
+            write_session=write_session,
+            read_session=read_session,
             esdb_client=esdb_client,
         )
 
@@ -83,14 +83,14 @@ class TestCQRS:
 
         # Check that the read database contains the same as the write database
         assert fake_db_wind_device.id is not None
-        wind_device = db_read_session.exec(
+        wind_device = read_session.exec(
             select(Device).filter(Device.id == fake_db_wind_device.id)  # type: ignore
         ).first()
         if wind_device is not None:
             assert wind_device == fake_db_wind_device
 
         assert fake_db_user.id is not None
-        user = db_read_session.exec(
+        user = read_session.exec(
             select(User).filter(User.id == fake_db_user.id)  # type: ignore
         ).first()
         if user is not None:
@@ -98,15 +98,15 @@ class TestCQRS:
 
     def test_update_entity(
         self,
-        db_write_session: Session,
-        db_read_session: Session,
+        write_session: Session,
+        read_session: Session,
         fake_db_wind_device: Device,
         fake_db_account: Account,
         esdb_client: EventStoreDBClient,
     ):
         # Get the existing device from the database
         assert fake_db_wind_device.id is not None
-        existing_entity = Device.by_id(fake_db_wind_device.id, db_write_session)
+        existing_entity = Device.by_id(fake_db_wind_device.id, write_session)
 
         # Update the device with new parameters
         device_update = DeviceUpdate(device_name="new_fake_wind_device")
@@ -115,8 +115,8 @@ class TestCQRS:
         update_database_entity(
             entity=existing_entity,
             update_entity=device_update,
-            write_session=db_write_session,
-            read_session=db_read_session,
+            write_session=write_session,
+            read_session=read_session,
             esdb_client=esdb_client,
         )
 
@@ -129,7 +129,7 @@ class TestCQRS:
         assert event_data["attributes_after"]["device_name"] == "new_fake_wind_device"
 
         # Check that the read database contains the updated device
-        wind_device = db_read_session.exec(
+        wind_device = read_session.exec(
             select(Device).filter(Device.id == fake_db_wind_device.id)
         ).first()
         if wind_device is not None:
@@ -137,21 +137,21 @@ class TestCQRS:
 
     def test_delete_entity(
         self,
-        db_write_session: Session,
-        db_read_session: Session,
+        write_session: Session,
+        read_session: Session,
         fake_db_wind_device: Device,
         fake_db_account: Account,
         esdb_client: EventStoreDBClient,
     ):
         # Get the existing device from the database
         assert fake_db_wind_device.id is not None
-        existing_entity = Device.by_id(fake_db_wind_device.id, db_write_session)
+        existing_entity = Device.by_id(fake_db_wind_device.id, write_session)
 
         # Delete the device
         delete_database_entities(
             entities=existing_entity,
-            write_session=db_write_session,
-            read_session=db_read_session,
+            write_session=write_session,
+            read_session=read_session,
             esdb_client=esdb_client,
         )
 
@@ -161,7 +161,7 @@ class TestCQRS:
         assert events[-1].type == "DELETE"
 
         # Check that the read database contains the updated device
-        wind_device = db_read_session.exec(
+        wind_device = read_session.exec(
             select(Device).filter(Device.id == fake_db_wind_device.id)
         ).first()
 

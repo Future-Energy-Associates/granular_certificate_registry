@@ -37,22 +37,22 @@ load_dotenv()
 
 @pytest.fixture()
 def api_client(
-    db_write_session: Session, db_read_session: Session, esdb_client: EventStoreDBClient
+    write_session: Session, read_session: Session, esdb_client: EventStoreDBClient
 ) -> Generator[TestClient, None, None]:
     """API Client for testing routes"""
 
     def get_write_session_override():
-        assert db_write_session.is_active
-        return db_write_session
+        assert write_session.is_active
+        return write_session
 
     def get_read_session_override():
-        assert db_read_session.is_active
-        return db_read_session
+        assert read_session.is_active
+        return read_session
 
     def get_db_name_to_client_override():
         return {
-            "write": db_write_session,
-            "read": db_read_session,
+            "write": write_session,
+            "read": read_session,
         }
 
     def get_esdb_client_override():
@@ -115,7 +115,7 @@ def get_esdb_url() -> str | None:
 
 
 @pytest.fixture(scope="session")
-def db_write_engine() -> Generator[Engine, None, None]:
+def write_engine() -> Generator[Engine, None, None]:
     """
     Creates ephemeral Postgres DB, creates base tables and exposes a scoped SQLModel Session
     """
@@ -132,7 +132,7 @@ def db_write_engine() -> Generator[Engine, None, None]:
 
 
 @pytest.fixture(scope="session")
-def db_read_engine() -> Generator[Engine, None, None]:
+def read_engine() -> Generator[Engine, None, None]:
     """
     Creates ephemeral Postgres DB, creates base tables and exposes a scoped SQLModel Session
     """
@@ -149,13 +149,13 @@ def db_read_engine() -> Generator[Engine, None, None]:
 
 
 @pytest.fixture(scope="function")
-def db_write_session(db_write_engine: Engine) -> Generator[Session, None, None]:
+def write_session(write_engine: Engine) -> Generator[Session, None, None]:
     """
     Returns a DB session wrapped in a transaction that rolls back all changes after each test
     See: https://docs.sqlalchemy.org/en/20/orm/session_transaction.html#joining-a-session-into-an-external-transaction-such-as-for-test-suites
     """
 
-    connection = db_write_engine.connect()
+    connection = write_engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection)
 
@@ -167,13 +167,13 @@ def db_write_session(db_write_engine: Engine) -> Generator[Session, None, None]:
 
 
 @pytest.fixture(scope="function")
-def db_read_session(db_read_engine: Engine) -> Generator[Session, None, None]:
+def read_session(read_engine: Engine) -> Generator[Session, None, None]:
     """
     Returns a DB session wrapped in a transaction that rolls back all changes after each test
     See: https://docs.sqlalchemy.org/en/20/orm/session_transaction.html#joining-a-session-into-an-external-transaction-such-as-for-test-suites
     """
 
-    connection = db_read_engine.connect()
+    connection = read_engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection)
 
@@ -225,7 +225,7 @@ def add_entity_to_write_and_read(
 
 
 @pytest.fixture()
-def fake_db_user(db_write_session: Session, db_read_session: Session) -> User:
+def fake_db_user(write_session: Session, read_session: Session) -> User:
     user_dict = {
         "name": "fake_user",
         "primary_contact": "jake_fake@fakecorp.com",
@@ -234,15 +234,13 @@ def fake_db_user(db_write_session: Session, db_read_session: Session) -> User:
 
     user_write = User.model_validate(user_dict)
 
-    user_read = add_entity_to_write_and_read(
-        user_write, db_write_session, db_read_session
-    )
+    user_read = add_entity_to_write_and_read(user_write, write_session, read_session)
 
     return user_read
 
 
 @pytest.fixture()
-def fake_db_account(db_write_session: Session, db_read_session: Session) -> Account:
+def fake_db_account(write_session: Session, read_session: Session) -> Account:
     account_dict = {
         "account_name": "fake_account",
         "user_ids": [],
@@ -251,14 +249,14 @@ def fake_db_account(db_write_session: Session, db_read_session: Session) -> Acco
     account_write = Account.model_validate(account_dict)
 
     account_read = add_entity_to_write_and_read(
-        account_write, db_write_session, db_read_session
+        account_write, write_session, read_session
     )
 
     return account_read
 
 
 @pytest.fixture()
-def fake_db_account_2(db_write_session: Session, db_read_session: Session) -> Account:
+def fake_db_account_2(write_session: Session, read_session: Session) -> Account:
     account_dict = {
         "account_name": "fake_account_2",
         "user_ids": [],
@@ -267,7 +265,7 @@ def fake_db_account_2(db_write_session: Session, db_read_session: Session) -> Ac
     account_write = Account.model_validate(account_dict)
 
     account_read = add_entity_to_write_and_read(
-        account_write, db_write_session, db_read_session
+        account_write, write_session, read_session
     )
 
     return account_read
@@ -275,7 +273,7 @@ def fake_db_account_2(db_write_session: Session, db_read_session: Session) -> Ac
 
 @pytest.fixture()
 def fake_db_wind_device(
-    db_write_session: Session, db_read_session: Session, fake_db_account: Account
+    write_session: Session, read_session: Session, fake_db_account: Account
 ) -> Device:
     device_dict = {
         "device_name": "fake_wind_device",
@@ -296,16 +294,14 @@ def fake_db_wind_device(
 
     wind_device = Device.model_validate(device_dict)
 
-    device_read = add_entity_to_write_and_read(
-        wind_device, db_write_session, db_read_session
-    )
+    device_read = add_entity_to_write_and_read(wind_device, write_session, read_session)
 
     return device_read
 
 
 @pytest.fixture()
 def fake_db_solar_device(
-    db_write_session: Session, db_read_session: Session, fake_db_account: Account
+    write_session: Session, read_session: Session, fake_db_account: Account
 ) -> Device:
     device_dict = {
         "device_name": "fake_solar_device",
@@ -327,7 +323,7 @@ def fake_db_solar_device(
     solar_device = Device.model_validate(device_dict)
 
     device_read = add_entity_to_write_and_read(
-        solar_device, db_write_session, db_read_session
+        solar_device, write_session, read_session
     )
 
     return device_read
@@ -335,7 +331,7 @@ def fake_db_solar_device(
 
 @pytest.fixture()
 def fake_db_issuance_metadata(
-    db_write_session: Session, db_read_session: Session
+    write_session: Session, read_session: Session
 ) -> IssuanceMetaData:
     fake_db_issuance_metadata = {
         "country_of_issuance": "USA",
@@ -351,26 +347,26 @@ def fake_db_issuance_metadata(
 
     issuance_metadata = IssuanceMetaData.model_validate(fake_db_issuance_metadata)
     issuance_metadata_read = add_entity_to_write_and_read(
-        issuance_metadata, db_write_session, db_read_session
+        issuance_metadata, write_session, read_session
     )
 
     return issuance_metadata_read
 
 
 @pytest.fixture()
-def fake_db_gc_bundle(
-    db_write_session: Session,
-    db_read_session: Session,
+def fake_db_granular_certificate_bundle(
+    write_session: Session,
+    read_session: Session,
     fake_db_account: Account,
     fake_db_wind_device: Device,
     fake_db_issuance_metadata: IssuanceMetaData,
 ) -> GranularCertificateBundle:
-    gc_bundle_dict = {
+    granular_certificate_bundle_dict = {
         "account_id": fake_db_account.id,
-        "certificate_status": CertificateStatus.ACTIVE,
+        "certificate_bundle_status": CertificateStatus.ACTIVE,
         "metadata_id": fake_db_issuance_metadata.id,
-        "bundle_id_range_start": 0,
-        "bundle_id_range_end": 999,
+        "certificate_bundle_id_range_start": 0,
+        "certificate_bundle_id_range_end": 999,
         "bundle_quantity": 1000,
         "energy_carrier": EnergyCarrierType.electricity,
         "energy_source": EnergySourceType.wind,
@@ -393,38 +389,42 @@ def fake_db_gc_bundle(
         "hash": "Some Hash",
     }
 
-    gc_bundle_dict["issuance_id"] = (
-        f"{gc_bundle_dict['device_id']}-{gc_bundle_dict['production_starting_interval']}"
+    granular_certificate_bundle_dict["issuance_id"] = (
+        f"{granular_certificate_bundle_dict['device_id']}-{granular_certificate_bundle_dict['production_starting_interval']}"
     )
 
-    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+    granular_certificate_bundle = GranularCertificateBundle.model_validate(
+        granular_certificate_bundle_dict
+    )
 
-    gc_bundle.hash = create_bundle_hash(gc_bundle)
+    granular_certificate_bundle.hash = create_bundle_hash(granular_certificate_bundle)
 
-    gc_bundle_read = add_entity_to_write_and_read(
-        gc_bundle, db_write_session, db_read_session
+    granular_certificate_bundle_read = add_entity_to_write_and_read(
+        granular_certificate_bundle, write_session, read_session
     )
 
     # we actually want the bundle associated with the write session for these tests
-    gc_bundle_write = db_write_session.merge(gc_bundle_read)
+    granular_certificate_bundle_write = write_session.merge(
+        granular_certificate_bundle_read
+    )
 
-    return gc_bundle_write
+    return granular_certificate_bundle_write
 
 
 @pytest.fixture()
-def fake_db_gc_bundle_2(
-    db_write_session: Session,
-    db_read_session: Session,
+def fake_db_granular_certificate_bundle_2(
+    write_session: Session,
+    read_session: Session,
     fake_db_account: Account,
     fake_db_solar_device: Device,
     fake_db_issuance_metadata: IssuanceMetaData,
 ) -> GranularCertificateBundle:
-    gc_bundle_dict = {
+    granular_certificate_bundle_dict = {
         "account_id": fake_db_account.id,
-        "certificate_status": CertificateStatus.ACTIVE,
+        "certificate_bundle_status": CertificateStatus.ACTIVE,
         "metadata_id": fake_db_issuance_metadata.id,
-        "bundle_id_range_start": 0,
-        "bundle_id_range_end": 499,
+        "certificate_bundle_id_range_start": 0,
+        "certificate_bundle_id_range_end": 499,
         "bundle_quantity": 500,
         "energy_carrier": EnergyCarrierType.electricity,
         "energy_source": EnergySourceType.solar_pv,
@@ -447,19 +447,23 @@ def fake_db_gc_bundle_2(
         "hash": "Some Hash",
     }
 
-    gc_bundle_dict["issuance_id"] = (
-        f"{gc_bundle_dict['device_id']}-{gc_bundle_dict['production_starting_interval']}"
+    granular_certificate_bundle_dict["issuance_id"] = (
+        f"{granular_certificate_bundle_dict['device_id']}-{granular_certificate_bundle_dict['production_starting_interval']}"
     )
 
-    gc_bundle = GranularCertificateBundle.model_validate(gc_bundle_dict)
+    granular_certificate_bundle = GranularCertificateBundle.model_validate(
+        granular_certificate_bundle_dict
+    )
 
-    gc_bundle.hash = create_bundle_hash(gc_bundle)
+    granular_certificate_bundle.hash = create_bundle_hash(granular_certificate_bundle)
 
-    gc_bundle_read = add_entity_to_write_and_read(
-        gc_bundle, db_write_session, db_read_session
+    granular_certificate_bundle_read = add_entity_to_write_and_read(
+        granular_certificate_bundle, write_session, read_session
     )
 
     # we actually want the bundle associated with the write session for these tests
-    gc_bundle_write = db_write_session.merge(gc_bundle_read)
+    granular_certificate_bundle_write = write_session.merge(
+        granular_certificate_bundle_read
+    )
 
-    return gc_bundle_write
+    return granular_certificate_bundle_write
