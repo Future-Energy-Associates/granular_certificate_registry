@@ -111,11 +111,6 @@ class StorageActionBase(utils.ActiveRecord):
         description="Filter records based on the fuel type used by the production Device.",
     )
     is_deleted: bool = Field(default=False)
-    # TODO this also breaks pydantic validation, need to revisit
-    # sparse_filter_list: dict[int, datetime.datetime] | None = Field(
-    #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
-    #     sa_column=Column(ARRAY(String())),
-    # )
 
 
 class StorageActionResponse(StorageActionBase):
