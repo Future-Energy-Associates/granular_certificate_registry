@@ -290,7 +290,7 @@ def issue_certificates_by_device_in_date_range(
             err_msg = "Max certificate ID is None"
             logger.error(err_msg)
             raise ValueError(err_msg)
-        
+
         valid_certificate = validate_granular_certificate_bundle(
             db_read_session,
             certificate,
@@ -629,7 +629,9 @@ def transfer_certificates(
     """
 
     if not Account.exists(certificate_bundle_action.target_id, write_session):
-        err_msg = f"Target account does not exist: {certificate_bundle_action.target_id}"
+        err_msg = (
+            f"Target account does not exist: {certificate_bundle_action.target_id}"
+        )
         logger.error(err_msg)
         raise ValueError(err_msg)
 
@@ -705,7 +707,7 @@ def cancel_certificates(
         err_msg = "No certificates found to cancel with given query parameters."
         logger.error(err_msg)
         raise ValueError(err_msg)
-    
+
     valid_statuses = [CertificateStatus.ACTIVE, CertificateStatus.RESERVED]
     if any(c.certificate_status not in valid_statuses for c in certificates_from_query):
         err_msg = f"Certificates must be in ACTIVE or RESERVED status to cancel, found: { {c.certificate_status for c in certificates_from_query} }"
