@@ -192,7 +192,13 @@ class IssuanceMetaDataBase(BaseModel):
     )
 
 
-class GranularCertificateBundleRead(BaseModel):
+class GranularCertificateBundleRead(GranularCertificateBundleBase):
+    id: int = Field(
+        description="A unique ID assigned to this GC Bundle.",
+    )
+
+
+class GranularCertificateBundleReadFull(BaseModel):
     """The GC Bundle is the primary unit of issuance and transfer within the EnergyTag standard, and only the Resgistry
     Administrator role can create, update, or withdraw GC Bundles.
 
@@ -484,7 +490,7 @@ class GranularCertificateQuery(BaseModel):
 
 
 class GranularCertificateQueryRead(GranularCertificateQuery):
-    granular_certificate_bundles: list[GranularCertificateBundleBase] = Field(
+    granular_certificate_bundles: list[GranularCertificateBundleRead] = Field(
         description="The list of GC Bundles that match the query parameters."
     )
     total_certificate_volume: int | None = Field(

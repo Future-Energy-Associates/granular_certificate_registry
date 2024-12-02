@@ -10,6 +10,7 @@ from gc_registry.certificate.models import (
 from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleBase,
+    GranularCertificateBundleRead,
     GranularCertificateCancel,
     GranularCertificateQuery,
     GranularCertificateQueryRead,
@@ -128,8 +129,17 @@ def query_certificate_bundles(
             certificate_bundle_query, read_session
         )
 
+        if not certificates_from_query:
+            raise HTTPException(status_code=422, detail="No certificates found")
+
         query_dict = certificate_bundle_query.model_dump()
-        query_dict["granular_certificate_bundles"] = certificates_from_query
+
+        granular_certificate_bundles_read = [
+            GranularCertificateBundleRead.model_validate(certificate.model_dump())
+            for certificate in certificates_from_query
+        ]
+
+        query_dict["granular_certificate_bundles"] = granular_certificate_bundles_read
 
         certificate_query = GranularCertificateQueryRead.model_validate(query_dict)
 
