@@ -130,8 +130,6 @@ def test_cancel_certificate_no_source_id(
     api_client,
     fake_db_granular_certificate_bundle: GranularCertificateBundle,
     fake_db_user: User,
-    fake_db_account: Account,
-    esdb_client: EventStoreDBClient,
 ):
     # Test case 1: Try to cancel a certificate without source_id
     test_data_1: dict[str, Any] = {
@@ -149,12 +147,9 @@ def test_cancel_certificate_no_source_id(
 
 def test_cancel_certificate_successfully(
     api_client: TestClient,
-    fake_db_gc_bundle: GranularCertificateBundle,
+    fake_db_granular_certificate_bundle: GranularCertificateBundle,
     fake_db_user: User,
     fake_db_account: Account,
-    db_write_session: Session,
-    db_read_session: Session,
-    esdb_client: EventStoreDBClient,
 ):
     # Test case 2: Cancel a certificate successfully
     test_data_2: dict[str, Any] = {
@@ -170,12 +165,9 @@ def test_cancel_certificate_successfully(
 
 def test_cancel_certificate_fraction(
     api_client: TestClient,
-    fake_db_gc_bundle: GranularCertificateBundle,
+    fake_db_granular_certificate_bundle: GranularCertificateBundle,
     fake_db_user: User,
     fake_db_account: Account,
-    db_write_session: Session,
-    db_read_session: Session,
-    esdb_client: EventStoreDBClient,
 ):
     # Test case 3: Try to cancel a fraction of a certificate
     test_data_3: dict[str, Any] = {
@@ -211,7 +203,6 @@ def test_query_certificate_bundles(
     fake_db_granular_certificate_bundle_2: GranularCertificateBundle,
     fake_db_user: User,
     fake_db_account: Account,
-    esdb_client: EventStoreDBClient,
 ):
     assert fake_db_granular_certificate_bundle.id is not None
     assert fake_db_user.id is not None
@@ -316,7 +307,7 @@ def test_query_certificate_bundles(
 
     # Test case 7: Query certificates with issuance_ids and certificate_period_start and certificate_period_end
     test_data_7: dict[str, Any] = {
-        "issuance_ids": [create_issuance_id(fake_db_gc_bundle)],
+        "issuance_ids": [create_issuance_id(fake_db_granular_certificate_bundle)],
         "source_id": fake_db_account.id,
         "user_id": fake_db_user.id,
         "certificate_period_start": "2024-01-01",

@@ -85,27 +85,27 @@ class TestCertificateServices:
 
     def test_issuance_id_to_device_and_interval(
         self,
-        fake_db_gc_bundle: GranularCertificateBundle,
-        fake_db_gc_bundle_2: GranularCertificateBundle,
+        fake_db_granular_certificate_bundle: GranularCertificateBundle,
+        fake_db_granular_certificate_bundle_2: GranularCertificateBundle,
     ):
         device_id, production_starting_interval = issuance_id_to_device_and_interval(
-            fake_db_gc_bundle.issuance_id
+            fake_db_granular_certificate_bundle.issuance_id
         )
-        assert device_id == fake_db_gc_bundle.device_id
+        assert device_id == fake_db_granular_certificate_bundle.device_id
         assert (
             production_starting_interval
-            == fake_db_gc_bundle.production_starting_interval
+            == fake_db_granular_certificate_bundle.production_starting_interval
         )
         assert isinstance(device_id, int)
         assert isinstance(production_starting_interval, datetime.datetime)
 
         device_id, production_starting_interval = issuance_id_to_device_and_interval(
-            fake_db_gc_bundle_2.issuance_id
+            fake_db_granular_certificate_bundle_2.issuance_id
         )
-        assert device_id == fake_db_gc_bundle_2.device_id
+        assert device_id == fake_db_granular_certificate_bundle_2.device_id
         assert (
             production_starting_interval
-            == fake_db_gc_bundle_2.production_starting_interval
+            == fake_db_granular_certificate_bundle_2.production_starting_interval
         )
         assert isinstance(device_id, int)
         assert isinstance(production_starting_interval, datetime.datetime)
@@ -118,18 +118,20 @@ class TestCertificateServices:
     ):
         hours = settings.CERTIFICATE_GRANULARITY_HOURS
 
-        gcb_dict = fake_db_granular_certificate_bundle.model_dump()
+        granular_certificate_bundle_dict = (
+            fake_db_granular_certificate_bundle.model_dump()
+        )
 
         # Test case 1: certificate already exists for the device in the given period
         # This will fail because the certificate_bundle_id_range_start is not equal to the max_certificate_id + 1
         device_max_certificate_id = get_max_certificate_id_by_device_id(
-            read_session, gcb_dict["device_id"]
+            read_session, granular_certificate_bundle_dict["device_id"]
         )
 
         with pytest.raises(ValueError) as exc_info:
             validate_granular_certificate_bundle(
                 read_session,
-                gcb_dict,
+                granular_certificate_bundle_dict,
                 is_storage_device=False,
                 max_certificate_id=device_max_certificate_id,
             )
@@ -140,18 +142,18 @@ class TestCertificateServices:
 
         # Lets update the certificate_bundle_id_range_start to be equal to the max_certificate_id + 1,
         # the bundle_quantity and certificate_bundle_id_range_end to be equal to the difference between the bundle ID range
-        gcb_dict["certificate_bundle_id_range_start"] = (
+        granular_certificate_bundle_dict["certificate_bundle_id_range_start"] = (
             fake_db_granular_certificate_bundle.certificate_bundle_id_range_end + 1
         )
-        gcb_dict["certificate_bundle_id_range_end"] = (
-            gcb_dict["certificate_bundle_id_range_start"]
-            + gcb_dict["bundle_quantity"]
+        granular_certificate_bundle_dict["certificate_bundle_id_range_end"] = (
+            granular_certificate_bundle_dict["certificate_bundle_id_range_start"]
+            + granular_certificate_bundle_dict["bundle_quantity"]
             - 1
         )
 
         validate_granular_certificate_bundle(
             read_session,
-            gcb_dict,
+            granular_certificate_bundle_dict,
             is_storage_device=False,
             max_certificate_id=device_max_certificate_id,
         )
@@ -159,15 +161,18 @@ class TestCertificateServices:
         # Test case 2: certificate quantity is greater than the device max watts hours
         # This will fail because the bundle_quantity is greater than the device max watts hours
 
-        gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) * 1.5
-        gcb_dict["certificate_bundle_id_range_end"] = (
-            gcb_dict["certificate_bundle_id_range_start"] + gcb_dict["bundle_quantity"]
+        granular_certificate_bundle_dict["bundle_quantity"] = (
+            fake_db_wind_device.capacity * hours
+        ) * 1.5
+        granular_certificate_bundle_dict["certificate_bundle_id_range_end"] = (
+            granular_certificate_bundle_dict["certificate_bundle_id_range_start"]
+            + granular_certificate_bundle_dict["bundle_quantity"]
         )
 
         with pytest.raises(ValueError) as exc_info:
             validate_granular_certificate_bundle(
                 read_session,
-                gcb_dict,
+                granular_certificate_bundle_dict,
                 is_storage_device=False,
                 max_certificate_id=device_max_certificate_id,
             )
@@ -175,16 +180,18 @@ class TestCertificateServices:
             exc_info.value
         )
 
-        gcb_dict["bundle_quantity"] = (fake_db_wind_device.capacity * hours) - 1
-        gcb_dict["certificate_bundle_id_range_end"] = (
-            gcb_dict["certificate_bundle_id_range_start"]
-            + gcb_dict["bundle_quantity"]
+        granular_certificate_bundle_dict["bundle_quantity"] = (
+            fake_db_wind_device.capacity * hours
+        ) - 1
+        granular_certificate_bundle_dict["certificate_bundle_id_range_end"] = (
+            granular_certificate_bundle_dict["certificate_bundle_id_range_start"]
+            + granular_certificate_bundle_dict["bundle_quantity"]
             - 1
         )
 
         validate_granular_certificate_bundle(
             read_session,
-            gcb_dict,
+            granular_certificate_bundle_dict,
             is_storage_device=False,
             max_certificate_id=device_max_certificate_id,
         )
@@ -395,7 +402,8 @@ class TestCertificateServices:
         )
 
         assert (
-            certificates_from_query[0].certificate_status == CertificateStatus.CANCELLED
+            certificates_from_query[0].certificate_bundle_status
+            == CertificateStatus.CANCELLED
         )
 
         # Whitelist the source account for the target account
@@ -473,8 +481,8 @@ class TestCertificateServices:
         and production starting datetime."""
 
         assert fake_db_user.id is not None
-        assert fake_db_gc_bundle.id is not None
-        assert fake_db_gc_bundle_2.id is not None
+        assert fake_db_granular_certificate_bundle.id is not None
+        assert fake_db_granular_certificate_bundle_2.id is not None
 
         issuance_ids = [
             create_issuance_id(fake_db_granular_certificate_bundle),

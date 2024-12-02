@@ -18,10 +18,9 @@ from gc_registry.certificate.schemas import (
     IssuanceMetaDataBase,
 )
 from gc_registry.certificate.services import (
+    create_issuance_id,
     process_certificate_bundle_action,
     query_certificate_bundles,
-    create_issuance_id,
-    query_certificates,
 )
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import CertificateActionType
@@ -112,7 +111,6 @@ def certificate_bundle_transfer(
             certificate_transfer, write_session, read_session, esdb_client
         )
 
-
         return db_certificate_action
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -123,7 +121,6 @@ def certificate_bundle_transfer(
     response_model=GranularCertificateQueryRead,
     status_code=202,
 )
-
 def query_certificate_bundles_route(
     certificate_bundle_query: GranularCertificateQuery,
     read_session: Session = Depends(db.get_read_session),

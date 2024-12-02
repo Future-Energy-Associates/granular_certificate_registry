@@ -42,7 +42,7 @@ def get_certificate_bundles_by_id(
     """Get a list of GC Bundles by their IDs.
 
     Args:
-        gcb_ids (list[int]): The list of GC Bundle IDs
+        granular_certificate_bundle_ids (list[int]): The list of GC Bundle IDs
         db_session (Session): The database session
 
     Returns:
@@ -87,7 +87,7 @@ def split_certificate_bundle(
         err_msg = "The size to split must be greater than 0"
         logger.error(err_msg)
         raise ValueError(err_msg)
-    if size_to_split >= gc_bundle.bundle_quantity:
+    if size_to_split >= granular_certificate_bundle.bundle_quantity:
         err_msg = "The size to split must be less than the total certificates in the parent bundle"
         logger.error(err_msg)
         raise ValueError(err_msg)
@@ -139,8 +139,10 @@ def split_certificate_bundle(
     ], db_granular_certificate_bundle_child_2[0]  # type: ignore
 
 
-def create_issuance_id(gcb: GranularCertificateBundleBase) -> str:
-    return f"{gcb.device_id}-{gcb.production_starting_interval}"
+def create_issuance_id(
+    granular_certificate_bundle: GranularCertificateBundleBase,
+) -> str:
+    return f"{granular_certificate_bundle.device_id}-{granular_certificate_bundle.production_starting_interval}"
 
 
 def issuance_id_to_device_and_interval(
@@ -681,10 +683,10 @@ def transfer_certificates(
         raise ValueError(err_msg)
 
     if any(
-        c.certificate_status != CertificateStatus.ACTIVE
+        c.certificate_bundle_status != CertificateStatus.ACTIVE
         for c in certificate_bundles_from_query
     ):
-        err_msg = f"Can only transfer active certificates, found: { {c.certificate_status for c in certificate_bundles_from_query} }"
+        err_msg = f"Can only transfer active certificates, found: { {c.certificate_bundle_status for c in certificate_bundles_from_query} }"
         logger.error(err_msg)
         raise ValueError(err_msg)
 
@@ -734,8 +736,11 @@ def cancel_certificates(
         raise ValueError(err_msg)
 
     valid_statuses = [CertificateStatus.ACTIVE, CertificateStatus.RESERVED]
-    if any(c.certificate_status not in valid_statuses for c in certificate_bundles_from_query):
-        err_msg = f"Certificates must be in ACTIVE or RESERVED status to cancel, found: { {c.certificate_status for c in certificate_bundles_from_query} }"
+    if any(
+        c.certificate_bundle_status not in valid_statuses
+        for c in certificate_bundles_from_query
+    ):
+        err_msg = f"Certificates must be in ACTIVE or RESERVED status to cancel, found: { {c.certificate_bundle_status for c in certificate_bundles_from_query} }"
         logger.error(err_msg)
         raise ValueError(err_msg)
 
@@ -786,10 +791,10 @@ def claim_certificates(
         raise ValueError(err_msg)
 
     if any(
-        c.certificate_status != CertificateStatus.CANCELLED
+        c.certificate_bundle_status != CertificateStatus.CANCELLED
         for c in certificate_bundles_from_query
     ):
-        err_msg = f"Can only claim cancelled certificates, found: { {c.certificate_status for c in certificate_bundles_from_query} }"
+        err_msg = f"Can only claim cancelled certificates, found: { {c.certificate_bundle_status for c in certificate_bundles_from_query} }"
         logger.error(err_msg)
         raise ValueError(err_msg)
 
