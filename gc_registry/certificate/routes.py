@@ -10,6 +10,7 @@ from gc_registry.certificate.models import (
 from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleBase,
+    GranularCertificateBundleRead,
     GranularCertificateCancel,
     GranularCertificateQuery,
     GranularCertificateQueryRead,
@@ -121,7 +122,7 @@ def certificate_bundle_transfer(
     status_code=202,
 )
 def query_certificate_bundles(
-    certificate_bundle_query: GranularCertificateQuery = Depends(),
+    certificate_bundle_query: GranularCertificateQuery,
     read_session: Session = Depends(db.get_read_session),
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""
@@ -131,14 +132,23 @@ def query_certificate_bundles(
             certificate_bundle_query, read_session
         )
 
+        if not certificates_from_query:
+            raise HTTPException(status_code=422, detail="No certificates found")
+
         query_dict = certificate_bundle_query.model_dump()
-        query_dict["granular_certificate_bundles"] = certificates_from_query
+
+        granular_certificate_bundles_read = [
+            GranularCertificateBundleRead.model_validate(certificate.model_dump())
+            for certificate in certificates_from_query
+        ]
+
+        query_dict["granular_certificate_bundles"] = granular_certificate_bundles_read
 
         certificate_query = GranularCertificateQueryRead.model_validate(query_dict)
 
         return certificate_query
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @router.post(

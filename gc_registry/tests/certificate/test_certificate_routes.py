@@ -120,7 +120,6 @@ def test_transfer_certificate(
     assert response.status_code == 422
 
     assert response.json()["detail"][0]["type"] == "value_error"
-    print(response.json())
     assert (
         "Value error, `action_type` cannot be set explicitly."
         in response.json()["detail"][0]["msg"]
@@ -224,7 +223,7 @@ def test_query_certificate_bundles(
         "user_id": fake_db_user.id,
     }
 
-    response = api_client.post("/certificate/query", params=test_data_1)
+    response = api_client.post("/certificate/query", json=test_data_1)
 
     assert response.status_code == 202
     assert "total_certificate_volume" in response.json().keys()
@@ -238,7 +237,7 @@ def test_query_certificate_bundles(
         "user_id": fake_db_user.id,
     }
 
-    response = api_client.post("/certificate/query", params=test_data_2)
+    response = api_client.post("/certificate/query", json=test_data_2)
 
     assert response.status_code == 422
 
@@ -247,12 +246,15 @@ def test_query_certificate_bundles(
 
     # Test case 3: Query certificates based on issuance_ids
     test_data_3: dict[str, Any] = {
-        "issuance_ids": [create_issuance_id(fake_db_gc_bundle)],
+        "issuance_ids": [
+            create_issuance_id(fake_db_gc_bundle),
+            create_issuance_id(fake_db_gc_bundle_2),
+        ],
         "source_id": fake_db_account.id,
         "user_id": fake_db_user.id,
     }
 
-    response = api_client.post("/certificate/query", params=test_data_3)
+    response = api_client.post("/certificate/query", json=test_data_3)
 
     assert response.status_code == 202
     assert "total_certificate_volume" in response.json().keys()
@@ -260,19 +262,135 @@ def test_query_certificate_bundles(
         response.json()["total_certificate_volume"]
         == fake_db_gc_bundle.bundle_quantity + fake_db_gc_bundle_2.bundle_quantity
     )
+    assert (
+        "id" in response.json()["granular_certificate_bundles"][0].keys()
+    ), "ID not in returned data"
 
-    # Test case 4: Query certificates with invalid certificate_period_start and certificate_period_end
+    # Test case 4: Query certificates with invalid issuance_ids
+
     test_data_4: dict[str, Any] = {
+        "issuance_ids": ["123-12-03-01 12:12:12"],
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_4)
+
+    assert response.status_code == 422
+
+    assert "Invalid issuance ID:" in response.json()["detail"]
+
+    # Test case 5: Query certificates with invalid certificate_period_start and certificate_period_end
+    test_data_5: dict[str, Any] = {
         "source_id": fake_db_account.id,
         "user_id": fake_db_user.id,
         "certificate_period_start": "2024-01-01",
         "certificate_period_end": "2020-01-01",
     }
 
-    response = api_client.post("/certificate/query", params=test_data_4)
+    response = api_client.post("/certificate/query", json=test_data_5)
 
     assert response.status_code == 422
     assert (
         response.json()["detail"]
         == "certificate_period_end must be greater than certificate_period_start."
+    )
+
+    # Test case 6: Query certificates with invalid certificate_period_start and certificate_period_end > 30 days
+    test_data_6: dict[str, Any] = {
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "certificate_period_start": "2024-01-01",
+        "certificate_period_end": "2024-05-01",
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_6)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"]
+        == "Difference between certificate_period_start and certificate_period_end must be 30 days or less."
+    )
+
+    # Test case 7: Query certificates with issuance_ids and certificate_period_start and certificate_period_end
+    test_data_7: dict[str, Any] = {
+        "issuance_ids": [create_issuance_id(fake_db_gc_bundle)],
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "certificate_period_start": "2024-01-01",
+        "certificate_period_end": "2024-01-02",
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_7)
+
+    assert response.status_code == 422
+
+    assert (
+        response.json()["detail"]
+        == "Cannot provide issuance_ids with certificate_period_start or certificate_period_end."
+    )
+
+    # Test case 8: Query certificates with invalid certificate_period_start and certificate_period_end
+    test_data_8: dict[str, Any] = {
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "certificate_period_start": "a date string",
+        "certificate_period_end": "another date string",
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_8)
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["type"] == "datetime_from_date_parsing"
+    assert (
+        "Input should be a valid datetime or date"
+        in response.json()["detail"][0]["msg"]
+    )
+
+    # Test case 9: Try giving period start more than 30 days in the past with no end date
+    test_data_9: dict[str, Any] = {
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "certificate_period_start": "2023-01-01",
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_9)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"]
+        == "certificate_period_end must be provided if certificate_period_start is more than 30 days ago."
+    )
+
+    # Test case 10: Try with period end, but no start date
+    test_data_10: dict[str, Any] = {
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "certificate_period_end": "2023-01-01",
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_10)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"]
+        == "certificate_period_start must be provided if certificate_period_end is provided."
+    )
+
+    # Test case 11: Try to query certificates with invalid energy_source
+    test_data_11: dict[str, Any] = {
+        "source_id": fake_db_account.id,
+        "user_id": fake_db_user.id,
+        "energy_source": "windy",
+    }
+
+    response = api_client.post("/certificate/query", json=test_data_11)
+
+    assert response.status_code == 422
+
+    print(response.json())
+    assert response.json()["detail"][0]["type"] == "enum"
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Input should be 'solar_pv', 'wind', 'hydro', 'biomass', 'nuclear', 'electrolysis', 'geothermal', 'battery_storage', 'chp' or 'other'"
     )
