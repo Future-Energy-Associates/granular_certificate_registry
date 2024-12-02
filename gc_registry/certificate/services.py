@@ -206,8 +206,8 @@ def issue_certificates_by_device_in_date_range(
     device: Device,
     from_datetime: datetime.datetime,
     to_datetime: datetime.datetime,
-    db_write_session: Session,
-    db_read_session: Session,
+    write_session: Session,
+    read_session: Session,
     esdb_client: EventStoreDBClient,
     issuance_metadata_id: int,
     meter_data_client: AbstractMeterDataClient,
@@ -222,8 +222,8 @@ def issue_certificates_by_device_in_date_range(
         device (Device): The device
         from_datetime (datetime.datetime): The start of the period
         to_datetime (datetime.datetime): The end of the period
-        db_write_session (Session): The database write session
-        db_read_session (Session): The database read session
+        write_session (Session): The database write session
+        read_session (Session): The database read session
         esdb_client (EventStoreDBClient): The EventStoreDB client
         issuance_metadata_id (int): The issuance metadata ID
         meter_data_client (MeterDataClient, optional): The meter data client.
@@ -238,7 +238,7 @@ def issue_certificates_by_device_in_date_range(
 
     # get max timestamp already issued for the device
     max_issued_timestamp = get_max_certificate_timestamp_by_device_id(
-        db_read_session, device.id
+        read_session, device.id
     )
 
     # check if the device has already been issued certificates for the given period
@@ -257,7 +257,7 @@ def issue_certificates_by_device_in_date_range(
     # can we guarantee this at the meter client level?
     if meter_data_client.NAME == "ManualSubmissionMeterClient":
         meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
-            from_datetime, to_datetime, device.id, db_read_session
+            from_datetime, to_datetime, device.id, read_session
         )
     else:
         meter_data = meter_data_client.get_metering_by_device_in_datetime_range(
@@ -270,7 +270,7 @@ def issue_certificates_by_device_in_date_range(
 
     # Map the meter data to certificates
     device_max_certificate_id = get_max_certificate_id_by_device_id(
-        db_read_session, device.id
+        read_session, device.id
     )
     if not device_max_certificate_id:
         certificate_bundle_id_range_start = 1
@@ -306,7 +306,7 @@ def issue_certificates_by_device_in_date_range(
             raise ValueError("Max certificate ID is None")
 
         valid_certificate = validate_granular_certificate_bundle(
-            db_read_session,
+            read_session,
             certificate,
             is_storage_device=device.is_storage,
             max_certificate_id=device_max_certificate_id,
@@ -323,8 +323,8 @@ def issue_certificates_by_device_in_date_range(
     # Batch commit the GC bundles to the database
     created_entities = cqrs.write_to_database(
         valid_certificates,  # type: ignore
-        db_write_session,
-        db_read_session,
+        write_session,
+        read_session,
         esdb_client,
     )
 
@@ -334,8 +334,8 @@ def issue_certificates_by_device_in_date_range(
 def issue_certificates_in_date_range(
     from_datetime: datetime.datetime,
     to_datetime: datetime.datetime,
-    db_write_session: Session,
-    db_read_session: Session,
+    write_session: Session,
+    read_session: Session,
     esdb_client: EventStoreDBClient,
     issuance_metadata_id: int,
     meter_data_client: AbstractMeterDataClient,
@@ -350,8 +350,8 @@ def issue_certificates_in_date_range(
     Args:
         from_datetime (datetime.datetime): The start of the period
         to_datetime (datetime.datetime): The end of the period
-        db_write_session (Session): The database write session
-        db_read_session (Session): The database read session
+        write_session (Session): The database write session
+        read_session (Session): The database read session
         issuance_metadata_id (int): The issuance metadata ID
         meter_data_client (MeterDataClient, optional): The meter data client. Defaults to Depends(ElexonClient).
 
@@ -361,7 +361,7 @@ def issue_certificates_in_date_range(
     """
 
     # Get the devices in the registry
-    devices = get_all_devices(db_read_session)
+    devices = get_all_devices(read_session)
 
     if not devices:
         logger.error("No devices found in the registry")
@@ -385,8 +385,8 @@ def issue_certificates_in_date_range(
             device,
             from_datetime,
             to_datetime,
-            db_write_session,
-            db_read_session,
+            write_session,
+            read_session,
             esdb_client,
             issuance_metadata_id,
             meter_data_client,
@@ -549,8 +549,8 @@ def query_certificate_bundles(
 
     Args:
         certificate_query (GranularCertificateAction): The certificate action
-        db_read_engine (Session): The database read session
-        db_write_engine (Session | None): The database write session
+        read_session (Session): The database read session
+        write_session (Session | None): The database write session
 
     Returns:
         list[GranularCertificateBundle]: The list of certificates

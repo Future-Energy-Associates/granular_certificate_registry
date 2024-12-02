@@ -17,8 +17,8 @@ def test_transfer_certificate(
     fake_db_user: User,
     fake_db_account: Account,
     fake_db_account_2: Account,
-    db_write_session: Session,
-    db_read_session: Session,
+    write_session: Session,
+    read_session: Session,
     esdb_client: EventStoreDBClient,
 ):
     # Test case 1: Try to transfer a certificate without target_id
@@ -47,18 +47,18 @@ def test_transfer_certificate(
     # Test case 3: Transfer a certificate successfully
 
     # Whitelist the source account for the target account
-    fake_db_account = db_write_session.merge(fake_db_account)
+    fake_db_account = write_session.merge(fake_db_account)
     fake_db_account.update(
         AccountUpdate(account_whitelist=[fake_db_account_2.id]),  # type: ignore
-        db_write_session,
-        db_read_session,
+        write_session,
+        read_session,
         esdb_client,
     )
-    fake_db_account_2 = db_write_session.merge(fake_db_account_2)
+    fake_db_account_2 = write_session.merge(fake_db_account_2)
     fake_db_account_2.update(
         AccountUpdate(account_whitelist=[fake_db_account.id]),  # type: ignore
-        db_write_session,
-        db_read_session,
+        write_session,
+        read_session,
         esdb_client,
     )
 

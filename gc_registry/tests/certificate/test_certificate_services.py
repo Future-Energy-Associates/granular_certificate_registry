@@ -45,12 +45,12 @@ from gc_registry.user.models import User
 class TestCertificateServices:
     def test_get_max_certificate_id_by_device_id(
         self,
-        db_read_session,
+        read_session,
         fake_db_wind_device,
         fake_db_granular_certificate_bundle,
     ):
         max_certificate_id = get_max_certificate_id_by_device_id(
-            db_read_session, fake_db_wind_device.id
+            read_session, fake_db_wind_device.id
         )
         assert (
             max_certificate_id
@@ -59,22 +59,22 @@ class TestCertificateServices:
 
     def test_get_max_certificate_id_by_device_id_no_certificates(
         self,
-        db_read_session,
+        read_session,
         fake_db_wind_device,
     ):
         max_certificate_id = get_max_certificate_id_by_device_id(
-            db_read_session, fake_db_wind_device.id
+            read_session, fake_db_wind_device.id
         )
         assert max_certificate_id is None
 
     def test_get_max_certificate_timestamp_by_device_id(
         self,
-        db_read_session,
+        read_session,
         fake_db_wind_device,
         fake_db_granular_certificate_bundle,
     ):
         max_certificate_timestamp = get_max_certificate_timestamp_by_device_id(
-            db_read_session, fake_db_wind_device.id
+            read_session, fake_db_wind_device.id
         )
         assert (
             max_certificate_timestamp
@@ -84,7 +84,7 @@ class TestCertificateServices:
 
     def test_validate_granular_certificate_bundle(
         self,
-        db_read_session,
+        read_session,
         fake_db_wind_device,
         fake_db_granular_certificate_bundle,
     ):
@@ -95,12 +95,12 @@ class TestCertificateServices:
         # Test case 1: certificate already exists for the device in the given period
         # This will fail because the certificate_bundle_id_range_start is not equal to the max_certificate_id + 1
         device_max_certificate_id = get_max_certificate_id_by_device_id(
-            db_read_session, gcb_dict["device_id"]
+            read_session, gcb_dict["device_id"]
         )
 
         with pytest.raises(ValueError) as exc_info:
             validate_granular_certificate_bundle(
-                db_read_session,
+                read_session,
                 gcb_dict,
                 is_storage_device=False,
                 max_certificate_id=device_max_certificate_id,
@@ -122,7 +122,7 @@ class TestCertificateServices:
         )
 
         validate_granular_certificate_bundle(
-            db_read_session,
+            read_session,
             gcb_dict,
             is_storage_device=False,
             max_certificate_id=device_max_certificate_id,
@@ -138,7 +138,7 @@ class TestCertificateServices:
 
         with pytest.raises(ValueError) as exc_info:
             validate_granular_certificate_bundle(
-                db_read_session,
+                read_session,
                 gcb_dict,
                 is_storage_device=False,
                 max_certificate_id=device_max_certificate_id,
@@ -155,7 +155,7 @@ class TestCertificateServices:
         )
 
         validate_granular_certificate_bundle(
-            db_read_session,
+            read_session,
             gcb_dict,
             is_storage_device=False,
             max_certificate_id=device_max_certificate_id,
@@ -163,8 +163,8 @@ class TestCertificateServices:
 
     def test_issue_certificates_in_date_range(
         self,
-        db_write_session,
-        db_read_session,
+        write_session,
+        read_session,
         fake_db_account,
         fake_db_issuance_metadata,
         esdb_client,
@@ -191,17 +191,15 @@ class TestCertificateServices:
             "account_id": fake_db_account.id,
             "is_storage": False,
         }
-        device = Device.create(
-            device_dict, db_write_session, db_read_session, esdb_client
-        )
+        device = Device.create(device_dict, write_session, read_session, esdb_client)
 
         assert device is not None
 
         issued_certificates = issue_certificates_in_date_range(
             from_datetime,
             to_datetime,
-            db_write_session,
-            db_read_session,
+            write_session,
+            read_session,
             esdb_client,
             fake_db_issuance_metadata.id,
             client,
@@ -212,8 +210,8 @@ class TestCertificateServices:
     def test_split_certificate_bundle(
         self,
         fake_db_granular_certificate_bundle: GranularCertificateBundle,
-        db_write_session: Session,
-        db_read_session: Session,
+        write_session: Session,
+        read_session: Session,
         esdb_client: EventStoreDBClient,
     ):
         """
@@ -225,8 +223,8 @@ class TestCertificateServices:
         child_bundle_1, child_bundle_2 = split_certificate_bundle(
             fake_db_granular_certificate_bundle,
             250,
-            db_write_session,
-            db_read_session,
+            write_session,
+            read_session,
             esdb_client,
         )
 
@@ -257,8 +255,8 @@ class TestCertificateServices:
         fake_db_account_2: Account,
         fake_db_user: User,
         fake_db_granular_certificate_bundle: GranularCertificateBundle,
-        db_write_session: Session,
-        db_read_session: Session,
+        write_session: Session,
+        read_session: Session,
         esdb_client: EventStoreDBClient,
     ):
         """
@@ -271,11 +269,11 @@ class TestCertificateServices:
         assert fake_db_granular_certificate_bundle.id is not None
 
         # Whitelist the source account for the target account
-        fake_db_account_2 = db_write_session.merge(fake_db_account_2)
+        fake_db_account_2 = write_session.merge(fake_db_account_2)
         fake_db_account_2.update(
             AccountUpdate(account_whitelist=[fake_db_account.id]),  # type: ignore
-            db_write_session,
-            db_read_session,
+            write_session,
+            read_session,
             esdb_client,
         )
 
@@ -292,7 +290,7 @@ class TestCertificateServices:
         ), f"Action type not set: {certificate_transfer}"
 
         _ = process_certificate_bundle_action(
-            certificate_transfer, db_write_session, db_read_session, esdb_client
+            certificate_transfer, write_session, read_session, esdb_client
         )
 
         # Check that the target account received the split bundle
@@ -301,7 +299,7 @@ class TestCertificateServices:
             source_id=fake_db_account_2.id,  # type: ignore
         )
         certificate_transfered = query_certificate_bundles(
-            certificate_query, db_read_session
+            certificate_query, read_session
         )
 
         assert certificate_transfered is not None
@@ -310,8 +308,8 @@ class TestCertificateServices:
         # De-whitelist the account and verfiy the transfer is rejected
         fake_db_account_2.update(
             AccountUpdate(account_whitelist=[]),  # type: ignore
-            db_write_session,
-            db_read_session,
+            write_session,
+            read_session,
             esdb_client,
         )
 
@@ -325,15 +323,15 @@ class TestCertificateServices:
 
         with pytest.raises(HTTPException):
             _db_certificate_action = process_certificate_bundle_action(
-                certificate_transfer, db_write_session, db_read_session, esdb_client
+                certificate_transfer, write_session, read_session, esdb_client
             )
 
     def test_cancel_by_percentage(
         self,
         fake_db_granular_certificate_bundle: GranularCertificateBundle,
         fake_db_user: User,
-        db_write_session: Session,
-        db_read_session: Session,
+        write_session: Session,
+        read_session: Session,
         esdb_client: EventStoreDBClient,
     ):
         """
@@ -353,7 +351,7 @@ class TestCertificateServices:
         )
 
         _ = process_certificate_bundle_action(
-            certificate_action, db_write_session, db_read_session, esdb_client
+            certificate_action, write_session, read_session, esdb_client
         )
 
         # Check that 75% of the bundle was cancelled
@@ -363,7 +361,7 @@ class TestCertificateServices:
             certificate_bundle_status=CertificateStatus.CANCELLED,
         )
         certificates_cancelled = query_certificate_bundles(
-            certificate_query, db_read_session
+            certificate_query, read_session
         )
 
         assert certificates_cancelled[0].bundle_quantity == 750  # type: ignore
@@ -372,7 +370,7 @@ class TestCertificateServices:
         self,
         fake_db_granular_certificate_bundle: GranularCertificateBundle,
         fake_db_granular_certificate_bundle_2: GranularCertificateBundle,
-        db_read_session: Session,
+        read_session: Session,
     ):
         """Test that the query_certificate_bundles function can handle sparse filter input on device ID
         and production starting datetime."""
@@ -389,7 +387,7 @@ class TestCertificateServices:
         )
 
         certificate_bundles_from_query = query_certificate_bundles(
-            certificate_query, db_read_session
+            certificate_query, read_session
         )
 
         assert certificate_bundles_from_query is not None
@@ -420,13 +418,13 @@ class TestCertificateServices:
         )
 
         certificate_bundles_from_query = query_certificate_bundles(
-            certificate_query, db_read_session
+            certificate_query, read_session
         )
 
     def test_issue_certificates_from_manual_submission(
         self,
-        db_write_session: Session,
-        db_read_session: Session,
+        write_session: Session,
+        read_session: Session,
         fake_db_wind_device: Device,
         fake_db_issuance_metadata: IssuanceMetaData,
         esdb_client: EventStoreDBClient,
@@ -444,8 +442,8 @@ class TestCertificateServices:
 
         readings = MeasurementReport.create(
             measurement_df.to_dict(orient="records"),
-            db_write_session,
-            db_read_session,
+            write_session,
+            read_session,
             esdb_client,
         )
 
@@ -463,8 +461,8 @@ class TestCertificateServices:
             fake_db_wind_device,
             from_datetime,
             to_datetime,
-            db_write_session,
-            db_read_session,
+            write_session,
+            read_session,
             esdb_client,
             fake_db_issuance_metadata.id,
             client,
@@ -481,8 +479,8 @@ class TestCertificateServices:
 
     def test_issue_certificates_from_elexon(
         self,
-        db_write_session: Session,
-        db_read_session: Session,
+        write_session: Session,
+        read_session: Session,
         fake_db_account: Account,
         fake_db_wind_device: Device,
         fake_db_issuance_metadata: IssuanceMetaData,
@@ -521,9 +519,7 @@ class TestCertificateServices:
             "account_id": fake_db_account.id,
             "is_storage": False,
         }
-        devices = Device.create(
-            device_dict, db_write_session, db_read_session, esdb_client
-        )
+        devices = Device.create(device_dict, write_session, read_session, esdb_client)
 
         if isinstance(devices, list):
             device = devices[0]
@@ -534,8 +530,8 @@ class TestCertificateServices:
             device,  # type: ignore
             from_datetime,
             to_datetime,
-            db_write_session,
-            db_read_session,
+            write_session,
+            read_session,
             esdb_client,
             fake_db_issuance_metadata.id,
             client,  # type: ignore
