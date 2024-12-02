@@ -388,26 +388,26 @@ class TestCertificateServices:
             issuance_ids=issuance_ids,
         )
 
-        certificates_from_query = query_certificate_bundles(
+        certificate_bundles_from_query = query_certificate_bundles(
             certificate_query, db_read_session
         )
 
-        assert certificates_from_query is not None
-        assert len(certificates_from_query) == 2
+        assert certificate_bundles_from_query is not None
+        assert len(certificate_bundles_from_query) == 2
         assert (
-            certificates_from_query[0].device_id
+            certificate_bundles_from_query[0].device_id
             == fake_db_granular_certificate_bundle.device_id
         )
         assert (
-            certificates_from_query[1].device_id
+            certificate_bundles_from_query[1].device_id
             == fake_db_granular_certificate_bundle_2.device_id
         )
         assert (
-            certificates_from_query[0].production_starting_interval
+            certificate_bundles_from_query[0].production_starting_interval
             == fake_db_granular_certificate_bundle.production_starting_interval
         )
         assert (
-            certificates_from_query[1].production_starting_interval
+            certificate_bundles_from_query[1].production_starting_interval
             == fake_db_granular_certificate_bundle_2.production_starting_interval
         )
 
@@ -419,7 +419,7 @@ class TestCertificateServices:
             issuance_ids=["invalid_id"],
         )
 
-        certificates_from_query = query_certificate_bundles(
+        certificate_bundles_from_query = query_certificate_bundles(
             certificate_query, db_read_session
         )
 

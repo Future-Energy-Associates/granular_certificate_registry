@@ -456,7 +456,7 @@ def process_certificate_bundle_action(
 
 
 def apply_bundle_quantity_or_percentage(
-    certificates_from_query: list[GranularCertificateBundle],
+    certificate_bundles_from_query: list[GranularCertificateBundle],
     certificate_bundle_action: GranularCertificateCancel
     | GranularCertificateTransfer
     | GranularCertificateReserve
@@ -474,7 +474,7 @@ def apply_bundle_quantity_or_percentage(
     it will return the GC Bundle unsplit.
 
     Args:
-        certificates_from_query (list[GranularCertificateBundle]): The certificates from the query
+        certificate_bundles_from_query (list[GranularCertificateBundle]): The certificates from the query
         certificate_bundle_action (GranularCertificateAction): The certificate action
         write_session (Session): The database write session
         read_session (Session): The database read session
@@ -491,14 +491,14 @@ def apply_bundle_quantity_or_percentage(
     if (certificate_bundle_action.certificate_quantity is None) & (
         certificate_bundle_action.certificate_bundle_percentage is None
     ):
-        return certificates_from_query
+        return certificate_bundles_from_query
 
     certificates_to_transfer = []
 
     if certificate_bundle_action.certificate_quantity is not None:
         certificates_to_split = [
             certificate_bundle_action.certificate_quantity
-            for i in range(len(certificates_from_query))
+            for i in range(len(certificate_bundles_from_query))
         ]
     elif certificate_bundle_action.certificate_bundle_percentage is not None:
         certificates_to_split = [
@@ -506,12 +506,12 @@ def apply_bundle_quantity_or_percentage(
                 certificate_bundle_action.certificate_bundle_percentage
                 * certificate_from_query.bundle_quantity
             )
-            for certificate_from_query in certificates_from_query
+            for certificate_from_query in certificate_bundles_from_query
         ]
 
     # Only check the bundle quantity if the query on bundle quantity parameter is provided,
     # otherwise, split the bundle based on the percentage of the total certificates in the bundle
-    for idx, granular_certificate_bundle in enumerate(certificates_from_query):
+    for idx, granular_certificate_bundle in enumerate(certificate_bundles_from_query):
         if certificate_bundle_action.certificate_quantity is not None:
             if (
                 granular_certificate_bundle.bundle_quantity
@@ -659,22 +659,22 @@ def transfer_certificates(
         raise HTTPException(status_code=403, detail=msg)
 
     # Retrieve certificates to transfer
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_bundle_action.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         logger.error("No certificates found to transfer with given query parameters.")
         return None
 
-    for certificate in certificates_from_query:
+    for certificate in certificate_bundles_from_query:
         assert (
             certificate.certificate_bundle_status == CertificateStatus.ACTIVE
         ), f"Certificate with ID {certificate.issuance_id} is not active and cannot be transferred"
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_transfer = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+        certificate_bundles_from_query,
         certificate_bundle_action,
         write_session,
         read_session,
@@ -708,17 +708,17 @@ def cancel_certificates(
     """
 
     # Retrieve certificates to cancel
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_transfer.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         logger.info("No certificates found to cancel with given query parameters.")
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_cancel = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+        certificate_bundles_from_query,
         certificate_transfer,
         write_session,
         read_session,
@@ -753,17 +753,17 @@ def claim_certificates(
     """
 
     # Retrieve certificates to claim
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_claim.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         logger.info("No certificates found to claim with given query parameters.")
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_claim = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+        certificate_bundles_from_query,
         certificate_claim,
         write_session,
         read_session,
@@ -804,17 +804,17 @@ def withdraw_certificates(
     # TODO add logic for removing withdrawn GCs from the main table
 
     # Retrieve certificates to withdraw
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_bundle_action.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         logger.info("No certificates found to withdraw with given query parameters.")
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_withdraw = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+        certificate_bundles_from_query,
         certificate_bundle_action,
         write_session,
         read_session,
@@ -851,17 +851,17 @@ def lock_certificates(
     """
 
     # Retrieve certificates to lock
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_bundle_action.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         logger.info("No certificates found to lock with given query parameters.")
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_lock = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+        certificate_bundles_from_query,
         certificate_bundle_action,
         write_session,
         read_session,
@@ -895,17 +895,17 @@ def reserve_certificates(
     """
 
     # Retrieve certificates to reserve
-    certificates_from_query = get_certificate_bundles_by_id(
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
         certificate_reserve.granular_certificate_bundle_ids, write_session
     )
 
-    if not certificates_from_query:
+    if not certificate_bundles_from_query:
         logger.info("No certificates found to reserve with given query parameters.")
         return
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_reserve = apply_bundle_quantity_or_percentage(
-        certificates_from_query,
+        certificate_bundles_from_query,
         certificate_reserve,
         write_session,
         read_session,

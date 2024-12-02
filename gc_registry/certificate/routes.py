@@ -122,12 +122,12 @@ def query_certificate_bundles_route(
     read_session: Session = Depends(db.get_read_session),
 ):
     """Return all certificates from the specified Account that match the provided search criteria."""
-    certificates_from_query = query_certificate_bundles(
+    certificate_bundles_from_query = query_certificate_bundles(
         certificate_bundle_query, read_session
     )
 
     query_dict = certificate_bundle_query.model_dump()
-    query_dict["granular_certificate_bundles"] = certificates_from_query
+    query_dict["granular_certificate_bundles"] = certificate_bundles_from_query
 
     certificate_query = GranularCertificateQueryRead.model_validate(query_dict)
 
