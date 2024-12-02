@@ -10,7 +10,6 @@ from pydantic import BaseModel
 from sqlmodel import Field, Session, SQLModel, select
 
 from gc_registry.core.database import cqrs
-from gc_registry.logging_config import logger
 
 T = TypeVar("T", bound="ActiveRecord")
 
@@ -63,7 +62,7 @@ class ActiveRecord(SQLModel):
         else:
             raise ValueError(f"The input type {type(source)} can not be processed")
 
-        logger.debug(f"Creating {cls.__name__}: {obj[0].model_dump_json()}")
+        # logger.debug(f"Creating {cls.__name__}: {obj[0].model_dump_json()}")
         created_entities = cqrs.write_to_database(
             obj,  # type: ignore
             write_session,
@@ -85,7 +84,7 @@ class ActiveRecord(SQLModel):
         read_session: Session,
         esdb_client: EventStoreDBClient,
     ) -> SQLModel | None:
-        logger.debug(f"Updating {self.__class__.__name__}: {self.model_dump_json()}")
+        # logger.debug(f"Updating {self.__class__.__name__}: {self.model_dump_json()}")
         updated_entity = cqrs.update_database_entity(
             entity=self,
             update_entity=update_entity,
@@ -102,7 +101,7 @@ class ActiveRecord(SQLModel):
         read_session: Session,
         esdb_client: EventStoreDBClient,
     ) -> list[SQLModel] | None:
-        logger.debug(f"Deleting {self.__class__.__name__}: {self.model_dump_json()}")
+        # logger.debug(f"Deleting {self.__class__.__name__}: {self.model_dump_json()}")
         deleted_entities = cqrs.delete_database_entities(
             entities=self,
             write_session=write_session,

@@ -18,6 +18,7 @@ from gc_registry.certificate.schemas import (
     IssuanceMetaDataBase,
 )
 from gc_registry.certificate.services import (
+    create_issuance_id,
     process_certificate_action,
     query_certificates,
 )
@@ -44,26 +45,22 @@ def create_certificate_bundle(
 ):
     """Create a GC Bundle with the specified properties."""
 
-    # Bundle issuance ID is the unique combination of device ID,
-    # energy carrier, and production starting interval.
-    certificate_bundle.issuance_id = f"""
-        {certificate_bundle.device_id}-{certificate_bundle.production_starting_interval}
-    """
+    try:
+        certificate_bundle.issuance_id = create_issuance_id(certificate_bundle)
+        certificate_bundle.hash = create_bundle_hash(certificate_bundle, nonce)
 
-    # Bundle hash is the sha256 of the bundle's properties and, if the result of a bundle split,
-    # a nonce taken from the hash of the parent bundle.
-    certificate_bundle.hash = create_bundle_hash(certificate_bundle, nonce)
+        db_certificate_bundles = GranularCertificateBundle.create(
+            certificate_bundle, write_session, read_session, esdb_client
+        )
 
-    db_certificate_bundles = GranularCertificateBundle.create(
-        certificate_bundle, write_session, read_session, esdb_client
-    )
+        if not db_certificate_bundles:
+            raise HTTPException(status_code=400, detail="Could not create GC Bundle")
 
-    if not db_certificate_bundles:
-        raise HTTPException(status_code=500, detail="Could not create GC Bundle")
+        db_certificate_bundle = db_certificate_bundles[0].model_dump()
 
-    db_certificate_bundle = db_certificate_bundles[0].model_dump()  # type: ignore
-
-    return db_certificate_bundle
+        return db_certificate_bundle
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
@@ -79,18 +76,21 @@ def create_issuance_metadata(
 ):
     """Create GC issuance metadata with the specified properties."""
 
-    db_issuance_metadata = IssuanceMetaData.create(
-        issuance_metadata, write_session, read_session, esdb_client
-    )
-
-    if not db_issuance_metadata:
-        raise HTTPException(
-            status_code=500, detail="Could not create Issuance Metadata"
+    try:
+        db_issuance_metadata = IssuanceMetaData.create(
+            issuance_metadata, write_session, read_session, esdb_client
         )
 
-    db_issuance_metadata = db_issuance_metadata[0].model_dump()  # type: ignore
+        if not db_issuance_metadata:
+            raise HTTPException(
+                status_code=400, detail="Could not create Issuance Metadata"
+            )
 
-    return db_issuance_metadata
+        db_issuance_metadata = db_issuance_metadata[0].model_dump()  # type: ignore
+
+        return db_issuance_metadata
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
@@ -106,11 +106,14 @@ def certificate_bundle_transfer(
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
 
-    db_certificate_action = process_certificate_action(
-        certificate_transfer, write_session, read_session, esdb_client
-    )
+    try:
+        db_certificate_action = process_certificate_action(
+            certificate_transfer, write_session, read_session, esdb_client
+        )
 
-    return db_certificate_action
+        return db_certificate_action
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
@@ -154,23 +157,26 @@ def query_certificate_bundles(
     status_code=202,
 )
 def certificate_bundle_cancellation(
-    certificate_bundle_action: GranularCertificateCancel,
+    certificate_cancel: GranularCertificateCancel,
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Cancel a fixed number of certificates matched to the given filter parameters within the specified Account."""
 
-    # If no beneficiary is specified, default to the account holder
-    if certificate_bundle_action.beneficiary is None:
-        user_name = User.by_id(certificate_bundle_action.user_id, read_session).name
-        certificate_bundle_action.beneficiary = f"{user_name}"
+    try:
+        # If no beneficiary is specified, default to the account holder
+        if certificate_cancel.beneficiary is None:
+            user_name = User.by_id(certificate_cancel.user_id, read_session).name
+            certificate_cancel.beneficiary = f"{user_name}"
 
-    db_certificate_action = process_certificate_action(
-        certificate_bundle_action, write_session, read_session, esdb_client
-    )
+        db_certificate_action = process_certificate_action(
+            certificate_cancel, write_session, read_session, esdb_client
+        )
 
-    return db_certificate_action
+        return db_certificate_action
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
@@ -185,11 +191,15 @@ def certificate_bundle_recurring_transfer(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Set up a protocol that transfers a fixed number of certificates matching the provided search criteria to a given target Account once per time period."""
-    db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, write_session, read_session, esdb_client
-    )
 
-    return db_certificate_action
+    try:
+        db_certificate_action = GranularCertificateAction.create(
+            certificate_bundle_action, write_session, read_session, esdb_client
+        )
+
+        return db_certificate_action
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
@@ -204,11 +214,14 @@ def certificate_bundle_recurring_cancellation(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Set up a protocol that cancels a fixed number of certificates matching the provided search criteria within a given Account once per time period."""
-    db_certificate_action = GranularCertificateAction.create(
-        certificate_bundle_action, write_session, read_session, esdb_client
-    )
+    try:
+        db_certificate_action = GranularCertificateAction.create(
+            certificate_bundle_action, write_session, read_session, esdb_client
+        )
 
-    return db_certificate_action
+        return db_certificate_action
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
@@ -225,12 +238,16 @@ def certificate_bundle_claim(
     """Claim a fixed number of cancelled certificates matching the provided search criteria within a given Account,
     if the User is specified as the Beneficiary of those cancelled GCs. For more information on the claim process,
     please see page 15 of the EnergyTag GC Scheme Standard document."""
-    certificate_bundle_action.action_type = CertificateActionType.CLAIM
-    db_certificate_action = process_certificate_action(
-        certificate_bundle_action, write_session, read_session, esdb_client
-    )
 
-    return db_certificate_action
+    try:
+        certificate_bundle_action.action_type = CertificateActionType.CLAIM
+        db_certificate_action = process_certificate_action(
+            certificate_bundle_action, write_session, read_session, esdb_client
+        )
+
+        return db_certificate_action
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
