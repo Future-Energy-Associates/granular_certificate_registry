@@ -8,7 +8,8 @@ from gc_registry.certificate.schemas import mutable_gc_attributes
 
 
 def create_bundle_hash(
-    gc_bundle: GranularCertificateBundle | GranularCertificateBundleBase,
+    granular_certificate_bundle: GranularCertificateBundle
+    | GranularCertificateBundleBase,
     nonce: str | None = "",
 ):
     """
@@ -23,14 +24,14 @@ def create_bundle_hash(
     no matter the lifecycle stage the GC is in.
 
     Args:
-        gc_bundle (GranularCertificateBundle): The child GC Bundle
+        granular_certificate_bundle (GranularCertificateBundle): The child GC Bundle
         nonce (str): The hash of the parent GC Bundle
 
     Returns:
         str: The hash of the child GC Bundle
     """
 
-    gc_bundle_dict = gc_bundle.model_dump_json(
+    granular_certificate_bundle_dict = granular_certificate_bundle.model_dump_json(
         exclude=set(["id", "created_at", "hash"] + mutable_gc_attributes)
     )
-    return sha256(f"{gc_bundle_dict}{nonce}".encode()).hexdigest()
+    return sha256(f"{granular_certificate_bundle_dict}{nonce}".encode()).hexdigest()

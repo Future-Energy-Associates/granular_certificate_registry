@@ -16,23 +16,14 @@ from gc_registry.core.models.base import (
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
 mutable_gc_attributes = [
-    "certificate_status",
+    "certificate_bundle_status",
     "account_id",
     "sdr_allocation_id",
     "storage_efficiency_factor",
     "is_deleted",
-    "bundle_id_range_start",
-    "bundle_id_range_end",
+    "certificate_bundle_id_range_start",
+    "certificate_bundle_id_range_end",
 ]
-
-certificate_query_param_map = {
-    "source_id": "account_id",
-    "certificate_period_start": None,
-    "certificate_period_end": None,
-    "device_id": "device_id",
-    "energy_source": "energy_source",
-    "certificate_status": "certificate_status",
-}
 
 
 class GranularCertificateBundleBase(BaseModel):
@@ -62,7 +53,7 @@ class GranularCertificateBundleBase(BaseModel):
     )
 
     ### Mutable Attributes ###
-    certificate_status: CertificateStatus = Field(
+    certificate_bundle_status: CertificateStatus = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
     )
     account_id: int = Field(
@@ -73,7 +64,7 @@ class GranularCertificateBundleBase(BaseModel):
         foreign_key="issuancemetadata.id",
         description="Reference to the associated issuance metadata",
     )
-    bundle_id_range_start: int = Field(
+    certificate_bundle_id_range_start: int = Field(
         sa_column=Column(BigInteger()),
         description="""The individual Granular Certificates within this GC Bundle, each representing a
                         contant volume of energy, generated within the production start and end time interval,
@@ -82,7 +73,7 @@ class GranularCertificateBundleBase(BaseModel):
                         and maximum IDs contained within the Bundle, inclusive of both range end points and all integers
                         within that range.""",
     )
-    bundle_id_range_end: int = Field(
+    certificate_bundle_id_range_end: int = Field(
         sa_column=Column(BigInteger()),
         description="""The start and end range IDs of GC Bundles may change as they are split and transferred between Accounts,
                        or partially cancelled.""",
@@ -90,7 +81,7 @@ class GranularCertificateBundleBase(BaseModel):
     bundle_quantity: int = Field(
         description="""The quantity of Granular Certificates within this GC Bundle, according to a
                         standardised energy volume per Granular Certificate, rounded down to the nearest Wh. Equal to
-                        (bundle_id_range_end - bundle_id_range_start + 1)."""
+                        (certificate_bundle_id_range_end - certificate_bundle_id_range_start + 1)."""
     )
     beneficiary: str | None = Field(
         default=None,
@@ -201,7 +192,13 @@ class IssuanceMetaDataBase(BaseModel):
     )
 
 
-class GranularCertificateBundleRead(BaseModel):
+class GranularCertificateBundleRead(GranularCertificateBundleBase):
+    id: int = Field(
+        description="A unique ID assigned to this GC Bundle.",
+    )
+
+
+class GranularCertificateBundleReadFull(BaseModel):
     """The GC Bundle is the primary unit of issuance and transfer within the EnergyTag standard, and only the Resgistry
     Administrator role can create, update, or withdraw GC Bundles.
 
@@ -216,14 +213,14 @@ class GranularCertificateBundleRead(BaseModel):
     """
 
     ### Mutable Attributes ###
-    certificate_status: CertificateStatus = Field(
+    certificate_bundle_status: CertificateStatus = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
     )
     account_id: int = Field(
         foreign_key="account.id",
         description="Each GC Bundle is issued to a single unique production Account that its production Device is individually registered to.",
     )
-    bundle_id_range_start: int = Field(
+    certificate_bundle_id_range_start: int = Field(
         description="""The individual Granular Certificates within this GC Bundle, each representing a
                         contant volume of energy, generated within the production start and end time interval,
                         is issued an ID in a format that can be represented sequentially and in a
@@ -231,14 +228,14 @@ class GranularCertificateBundleRead(BaseModel):
                         and maximum IDs contained within the Bundle, inclusive of both range end points and all integers
                         within that range.""",
     )
-    bundle_id_range_end: int = Field(
+    certificate_bundle_id_range_end: int = Field(
         description="""The start and end range IDs of GC Bundles may change as they are split and transferred between Accounts,
                        or partially cancelled.""",
     )
     bundle_quantity: int = Field(
         description="""The quantity of Granular Certificates within this GC Bundle, according to a
                         standardised energy volume per Granular Certificate, rounded down to the nearest Wh. Equal to
-                        (bundle_id_range_end - bundle_id_range_start + 1)."""
+                        (certificate_bundle_id_range_end - certificate_bundle_id_range_start + 1)."""
     )
 
     ### Bundle Characteristics ###
@@ -425,7 +422,7 @@ class GranularCertificateQuery(BaseModel):
         default=None,
         description="Filter GC Bundles associated with the specified production device.",
     )
-    energy_source: str | None = Field(
+    energy_source: EnergySourceType | None = Field(
         default=None,
         description="Filter GC Bundles based on the fuel type used by the production Device.",
     )
@@ -439,24 +436,61 @@ class GranularCertificateQuery(BaseModel):
         description="""The UTC datetime up to which GC Bundles within the specified Account are to be filtered.
         If provided without certificate_period_start, returns all GC Bundles up to the specified datetime.""",
     )
-    certificate_status: CertificateStatus | None = Field(
+    certificate_bundle_status: CertificateStatus | None = Field(
         default=None, description="""Filter on the status of the GC Bundles."""
     )
 
     @model_validator(mode="after")
-    def validate_date_range(cls, values):
-        start = values.certificate_period_start
-        end = values.certificate_period_end
-        if start and end and start >= end:
+    def validate_issuance_ids(cls, values):
+        if values.issuance_ids and (
+            values.certificate_period_start or values.certificate_period_end
+        ):
             raise HTTPException(
                 status_code=422,
-                detail="certificate_period_end must be greater than certificate_period_start.",
+                detail="Cannot provide issuance_ids with certificate_period_start or certificate_period_end.",
             )
+        return values
+
+    @model_validator(mode="after")
+    def period_start_and_end_validation(cls, values):
+        if not hasattr(values, "certificate_period_start") and not hasattr(
+            values, "certificate_period_end"
+        ):
+            return values
+
+        if values.certificate_period_start and not values.certificate_period_end:
+            now = datetime.datetime.now()  # :TODO: Use a timezone-aware datetime
+            if values.certificate_period_start < now - datetime.timedelta(days=30):
+                raise HTTPException(
+                    status_code=422,
+                    detail="certificate_period_end must be provided if certificate_period_start is more than 30 days ago.",
+                )
+        if values.certificate_period_end and not values.certificate_period_start:
+            raise HTTPException(
+                status_code=422,
+                detail="certificate_period_start must be provided if certificate_period_end is provided.",
+            )
+
+        if values.certificate_period_start and values.certificate_period_end:
+            if (
+                values.certificate_period_end - values.certificate_period_start
+                > datetime.timedelta(days=30)
+            ):
+                raise HTTPException(
+                    status_code=422,
+                    detail="Difference between certificate_period_start and certificate_period_end must be 30 days or less.",
+                )
+            if values.certificate_period_start >= values.certificate_period_end:
+                raise HTTPException(
+                    status_code=422,
+                    detail="certificate_period_end must be greater than certificate_period_start.",
+                )
+
         return values
 
 
 class GranularCertificateQueryRead(GranularCertificateQuery):
-    granular_certificate_bundles: list[GranularCertificateBundleBase] = Field(
+    granular_certificate_bundles: list[GranularCertificateBundleRead] = Field(
         description="The list of GC Bundles that match the query parameters."
     )
     total_certificate_volume: int | None = Field(
