@@ -1,6 +1,7 @@
+import logging
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from markdown import markdown
@@ -8,15 +9,21 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .account.routes import router as account_router
 from .certificate.routes import router as certificate_router
+from .core.database.db import get_db_name_to_client
+from .core.models.base import LoggingLevelRequest
 from .device.routes import router as device_router
-from .organisation.routes import router as organisation_router
+from .logging_config import logger, set_logger_and_children_level
+from .measurement.routes import router as measurements_router
 from .settings import settings
 from .storage.routes import router as storage_router
 from .user.routes import router as user_router
 
+STATIC_DIR_FP = Path(__file__).parent / "static"
+
 descriptions = {}
 for desc in ["api", "certificate", "storage"]:
-    with open(Path(settings.STATIC_DIR_FP, "descriptions", f"{desc}.md"), "r") as file:
+    static_dir = STATIC_DIR_FP / "descriptions" / f"{desc}.md"
+    with open(static_dir, "r") as file:
         descriptions[desc] = markdown(file.read())
 
 tags_metadata = [
@@ -27,10 +34,6 @@ tags_metadata = [
     {
         "name": "Storage",
         "description": descriptions["storage"],
-    },
-    {
-        "name": "Organisations",
-        "description": "Top-level entities that manage multiple Users and Accounts.",
     },
     {
         "name": "Users",
@@ -57,21 +60,42 @@ app = FastAPI(
         "email": "connor@futureenergy.associates",
     },
     docs_url=None,
+    dependencies=[Depends(get_db_name_to_client)],
 )
 
 app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
 
+# add instantiated instance of sync functionality here
+
 # app.include_router(authentication.router)
-app.include_router(certificate_router, prefix="/certificates")
-app.include_router(storage_router, prefix="/storage")
-app.include_router(organisation_router, prefix="/organisations")
-app.include_router(user_router, prefix="/users")
-app.include_router(account_router, prefix="/accounts")
-app.include_router(device_router, prefix="/devices")
+app.include_router(
+    certificate_router,
+    prefix="/certificate",
+)
+app.include_router(
+    storage_router,
+    prefix="/storage",
+)
+app.include_router(
+    user_router,
+    prefix="/user",
+)
+app.include_router(
+    account_router,
+    prefix="/account",
+)
+app.include_router(
+    device_router,
+    prefix="/device",
+)
+app.include_router(
+    measurements_router,
+    prefix="/measurement",
+)
 
 openapi_data = app.openapi()
 
-templates = Jinja2Templates(directory=f"{settings.STATIC_DIR_FP}/templates")
+templates = Jinja2Templates(directory=STATIC_DIR_FP / "templates")
 
 
 @app.get("/", response_class=HTMLResponse, tags=["Core"])
@@ -89,10 +113,78 @@ async def read_root(request: Request):
             },
             {
                 "tag": "a",
-                "tag_kwargs": {"href": f"{request.url._url}docs"},
+                "tag_kwargs": {"href": f"{request.url._url}/docs"},
                 "value": "/docs",
             },
         ],
     }
 
     return templates.TemplateResponse("index.jinja", params)
+
+
+# Assemble fastapi loggers
+uvicorn_logger = logging.getLogger("uvicorn")
+uvicorn_access_logger = logging.getLogger("uvicorn.access")
+fastapi_logger = logging.getLogger("fastapi")
+
+
+@app.post("/change_log_level", tags=["Core"])
+async def change_log_level_endpoint(request: LoggingLevelRequest):
+    """Change the logging level at runtime for all relevant loggers."""
+    global logger, uvicorn_logger, uvicorn_access_logger, fastapi_logger
+
+    numeric_level = getattr(logging, request.level)
+
+    # List of all loggers to modify
+    loggers_to_update = [
+        logger,  # Application logger
+        uvicorn_logger,  # Main Uvicorn logger
+        uvicorn_access_logger,  # Uvicorn access log
+        fastapi_logger,  # FastAPI logger
+    ]
+
+    for logger_instance in loggers_to_update:
+        set_logger_and_children_level(logger_instance, numeric_level)
+
+    # Debug information to verify changes
+    debug_info = {}
+    for logger_instance in loggers_to_update:
+        # Handle root logger specially
+        current_name = logger_instance.name if logger_instance.name else "root"
+
+        debug_info[current_name] = {
+            "effective_level": logging.getLevelName(
+                logger_instance.getEffectiveLevel()
+            ),
+            "handlers": [
+                {"handler": str(handler), "level": logging.getLevelName(handler.level)}
+                for handler in logger_instance.handlers
+            ],
+        }
+
+        # Add information about child loggers
+        if logger_instance.name:  # Skip for root logger
+            children = [
+                name
+                for name in logging.root.manager.loggerDict
+                if name.startswith(logger_instance.name + ".")
+            ]
+            for child_name in children:
+                child_logger = logging.getLogger(child_name)
+                debug_info[child_name] = {
+                    "effective_level": logging.getLevelName(
+                        child_logger.getEffectiveLevel()
+                    ),
+                    "handlers": [
+                        {
+                            "handler": str(handler),
+                            "level": logging.getLevelName(handler.level),
+                        }
+                        for handler in child_logger.handlers
+                    ],
+                }
+
+    return {
+        "message": f"Log level changed to {request.level}",
+        "logger_status": debug_info,
+    }

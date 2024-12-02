@@ -23,10 +23,10 @@ class StorageChargeRecordBase(utils.ActiveRecord):
     gc_issuance_id: int = Field(
         description="The unique issuance ID of the GC Bundle that was cancelled and allocated to this SCR.",
     )
-    gc_bundle_id_range_start: int = Field(
+    granular_certificate_certificate_bundle_id_range_start: int = Field(
         description="The start range ID of the GC Bundle that was cancelled and allocated to this SCR.",
     )
-    gc_bundle_id_range_end: int = Field(
+    granular_certificate_certificate_bundle_id_range_end: int = Field(
         description="The end range ID of the GC Bundle that was cancelled and allocated to this SCR.",
     )
     scr_geographic_matching_method: str = Field(
@@ -36,6 +36,7 @@ class StorageChargeRecordBase(utils.ActiveRecord):
         description="When allocated, the unique ID of the Storage Discharge Record that has been allocated to this SCR. If blank, no SDR has been allocated to this SCR.",
         foreign_key="storagedischargerecord.sdr_allocation_id",
     )
+    is_deleted: bool = Field(default=False)
 
 
 class StorageDischargeRecordBase(utils.ActiveRecord):
@@ -65,6 +66,7 @@ class StorageDischargeRecordBase(utils.ActiveRecord):
     efficiency_factor_interval_end: datetime.datetime | None = Field(
         description="The UTC datetime to which the Storage Device calculates its effective efficiency factor for this SDR.",
     )
+    is_deleted: bool = Field(default=False)
 
 
 class StorageActionBase(utils.ActiveRecord):
@@ -83,7 +85,7 @@ class StorageActionBase(utils.ActiveRecord):
     )
     user_id: int = Field(
         description="The User that is performing the action, and can be verified as having the sufficient authority to perform the requested action on the Account specified.",
-        foreign_key="user.id",
+        foreign_key="registry_user.id",
     )
     source_allocation_id: int | None = Field(
         description="The specific SCRs/SDRs onto which the action will be performed. Returns all records with the specified allocation ID."
@@ -108,11 +110,7 @@ class StorageActionBase(utils.ActiveRecord):
     storage_energy_source: str | None = Field(
         description="Filter records based on the fuel type used by the production Device.",
     )
-    # TODO this also breaks pydantic validation, need to revisit
-    # sparse_filter_list: dict[int, datetime.datetime] | None = Field(
-    #     description="Overrides all other search criteria. Provide a list of Device ID - Datetime pairs to retrieve GC Bundles issued to each Device and datetime specified.",
-    #     sa_column=Column(ARRAY(String())),
-    # )
+    is_deleted: bool = Field(default=False)
 
 
 class StorageActionResponse(StorageActionBase):

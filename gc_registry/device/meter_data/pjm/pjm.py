@@ -6,6 +6,7 @@ import httpx
 import pandas as pd
 
 from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.device.meter_data.abstract_meter_client import AbstractMeterDataClient
 
 
 def mock_response(endpoint: str) -> httpx.Response:
@@ -21,11 +22,12 @@ def parse_datetime(date_str, format="%m/%d/%Y %I:%M:%S %p"):
     return datetime.datetime.strptime(date_str, format)
 
 
-class PJM:
+class PJM(AbstractMeterDataClient):
     def __init__(self):
         self.base_url = "https://dataminer2.pjm.com/feed"
+        self.name = "PJM"
 
-    def get_data(self, endpoint: str, test=False):
+    def get_metering_by_device_in_datetime_range(self, endpoint: str, test=False):
         if test:
             response = mock_response(endpoint)
         else:
@@ -35,7 +37,7 @@ class PJM:
 
         return response
 
-    def map_generation_to_certificates(
+    def map_metering_to_certificates(
         self,
         generation_data: list[dict[Any, Any]],
         account_id: str | None = None,
@@ -48,26 +50,30 @@ class PJM:
         for data in generation_data:
             bundle_mwh = data["mw"] * 1000
 
-            # get existing "bundle_id_range_end" from the last item in mapped_data
+            # get existing "certificate_bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
-                bundle_id_range_start = mapped_data[-1].bundle_id_range_end + 1
+                certificate_bundle_id_range_start = (
+                    mapped_data[-1].certificate_bundle_id_range_end + 1
+                )
             else:
-                bundle_id_range_start = 0
+                certificate_bundle_id_range_start = 0
 
-            bundle_id_range_end = bundle_id_range_start + bundle_mwh
+            certificate_bundle_id_range_end = (
+                certificate_bundle_id_range_start + bundle_mwh
+            )
 
             transformed = {
                 ### Account details ###
                 "account_id": account_id,
                 ### Mutable Attributes ###
-                "certificate_status": "Active",
-                "bundle_id_range_start": bundle_id_range_start,
-                "bundle_id_range_end": bundle_id_range_end,
+                "certificate_bundle_status": "Active",
+                "certificate_bundle_id_range_start": certificate_bundle_id_range_start,
+                "certificate_bundle_id_range_end": certificate_bundle_id_range_end,
                 "bundle_quantity": bundle_mwh,
                 ### Bundle Characteristics ###
                 "energy_carrier": "Electricity",
                 "energy_source": data["fuel_type"],
-                "face_value": bundle_mwh,
+                "face_value": 1,
                 "issuance_post_energy_carrier_conversion": False,
                 "registry_configuration": 1,
                 ### Production Device Characteristics ###
@@ -87,9 +93,12 @@ class PJM:
                 "production_ending_interval": parse_datetime(
                     data["datetime_beginning_utc"]
                 ),  # Assuming 1-hour interval
-                "issuance_datestamp": datetime.datetime.utcnow().date(),
+                "issuance_datestamp": datetime.datetime.now(
+                    tz=datetime.timezone.utc
+                ).date(),
                 "expiry_datestamp": (
-                    datetime.datetime.utcnow() + datetime.timedelta(days=365 * 3)
+                    datetime.datetime.now(tz=datetime.timezone.utc)
+                    + datetime.timedelta(days=365 * 3)
                 ).date(),
                 ### Issuing Body Characteristics ###
                 "country_of_issuance": "USA",
@@ -104,9 +113,3 @@ class PJM:
             mapped_data.append(valid_data)
 
         return mapped_data
-
-
-if __name__ == "__main__":
-    pjm = PJM()
-    r = pjm.get_data("gen_by_fuel", test=True)
-    print(pjm.map_generation_to_certificates(r.json()))

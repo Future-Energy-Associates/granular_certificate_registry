@@ -1,65 +1,115 @@
-from fastapi import APIRouter, Depends
+from esdbclient import EventStoreDBClient
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
-from gc_registry import utils
-from gc_registry.account import models
-from gc_registry.authentication import services
-from gc_registry.core.database import db
+from gc_registry.account.models import Account, AccountBase, AccountRead
+from gc_registry.account.schemas import AccountUpdate, AccountWhitelist
+from gc_registry.account.validation import (
+    validate_account,
+    validate_account_whitelist_update,
+)
+from gc_registry.core.database import db, events
 
 # Router initialisation
 router = APIRouter(tags=["Accounts"])
 
 
-### Account ###
-@router.post("/account", response_model=models.AccountRead)
+@router.post("/create", status_code=201, response_model=AccountRead)
 def create_account(
-    account_base: models.AccountBase,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    account_base: AccountBase,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    db_account = models.Account.create(account_base, session)
+    validate_account(account_base, read_session)
+    accounts = Account.create(account_base, write_session, read_session, esdb_client)
+    if not accounts:
+        raise HTTPException(status_code=500, detail="Could not create Account")
 
-    return utils.format_json_response(
-        db_account, headers, response_model=models.AccountRead
-    )
+    account = accounts[0].model_dump()
+
+    return account
 
 
-@router.get("/account/{id}", response_model=models.AccountRead)
+@router.get("/{account_id}", response_model=AccountRead)
 def read_account(
     account_id: int,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    read_session: Session = Depends(db.get_read_session),
 ):
-    db_account = models.Account.by_id(account_id, session)
+    account = Account.by_id(account_id, read_session)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    return account
 
-    return utils.format_json_response(
-        db_account, headers, response_model=models.AccountRead
-    )
 
-
-@router.patch("/account/{id}", response_model=models.AccountRead)
+@router.patch("/update/{account_id}", response_model=AccountRead)
 def update_account(
-    account_update: models.AccountUpdate,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    account_id: int,
+    account_update: AccountUpdate,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    db_account = models.Account.by_id(account_update.id, session)
-    db_account.update(account_update, session)
+    account = Account.by_id(account_id, write_session)
+    if not account:
+        raise HTTPException(
+            status_code=404, detail=f"Account ID not found: {account_id}"
+        )
 
-    return utils.format_json_response(
-        db_account, headers, response_model=models.AccountRead
+    updated_account = account.update(
+        account_update, write_session, read_session, esdb_client
+    )
+    if not updated_account:
+        raise HTTPException(
+            status_code=400, detail=f"Error during account update: {account_id}"
+        )
+    return updated_account.model_dump()
+
+
+@router.patch("/update_whitelist/{account_id}", response_model=AccountRead)
+def update_whitelist(
+    account_id: int,
+    account_whitelist_update: AccountWhitelist,
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+):
+    account = Account.by_id(account_id, write_session)
+    if not account:
+        raise HTTPException(
+            status_code=404, detail=f"Account ID not found: {account_id}"
+        )
+
+    modified_whitelist = validate_account_whitelist_update(
+        account, account_whitelist_update, read_session
     )
 
+    account_update = AccountUpdate(account_whitelist=modified_whitelist)
 
-@router.delete("/account/{id}", response_model=models.AccountRead)
+    updated_account = account.update(
+        account_update, write_session, read_session, esdb_client
+    )
+    if not updated_account:
+        raise HTTPException(
+            status_code=400, detail=f"Error during account update: {account_id}"
+        )
+    return updated_account.model_dump()
+
+
+@router.delete("/delete/{account_id}", status_code=200, response_model=AccountRead)
 def delete_account(
     account_id: int,
-    headers: dict = Depends(services.validate_user_and_get_headers),
-    session: Session = Depends(db.db_name_to_client["read"].yield_session),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    db_account = models.Account.by_id(account_id, session)
-    db_account.delete(session)
-
-    return utils.format_json_response(
-        db_account, headers, response_model=models.AccountRead
-    )
+    try:
+        account = Account.by_id(account_id, write_session)
+        accounts = account.delete(write_session, read_session, esdb_client)
+        if not accounts:
+            raise ValueError(f"Account id {account_id} not found")
+        return accounts[0].model_dump()
+    except Exception:
+        raise HTTPException(
+            status_code=404, detail="Could not delete Account not found"
+        )

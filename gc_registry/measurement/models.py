@@ -15,7 +15,13 @@ class MeasurementReportRead(MeasurementReportBase):
 
 
 class MeasurementReportUpdate(BaseModel):
-    id: int
-    device_id: int | None
-    interval_start_datetime: datetime.datetime | None
-    interval_end_datetime: datetime.datetime | None
+    device_id: int | None = None
+    interval_start_datetime: datetime.datetime | None = None
+    interval_end_datetime: datetime.datetime | None = None
+
+
+class MeasurementSubmissionResponse(BaseModel):
+    message: str
+    first_reading_datetime: datetime.datetime
+    last_reading_datetime: datetime.datetime
+    total_usage_per_device: dict[int, float]
