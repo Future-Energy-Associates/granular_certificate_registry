@@ -21,7 +21,7 @@ from gc_registry.certificate.services import (
     process_certificate_bundle_action,
     query_certificate_bundles,
     create_issuance_id,
-    query_certificates,
+    query_certificate_bundles,
 )
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import CertificateActionType
