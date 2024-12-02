@@ -84,11 +84,13 @@ def split_certificate_bundle(
     """
 
     if size_to_split == 0:
-        raise ValueError("The size to split must be greater than 0")
+        err_msg = "The size to split must be greater than 0"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
     if size_to_split >= gc_bundle.bundle_quantity:
-        raise ValueError(
-            "The size to split must be less than the total certificates in the parent bundle"
-        )
+        err_msg = "The size to split must be less than the total certificates in the parent bundle"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Create two child bundles
     gc_bundle_child_1 = GranularCertificateBundleCreate(**gc_bundle.model_dump())
@@ -268,7 +270,8 @@ def issue_certificates_by_device_in_date_range(
     )
 
     if not certificates:
-        logger.error(f"No meter data retrieved for device: {device.meter_data_id}")
+        err_msg = f"No meter data retrieved for device: {device.meter_data_id}"
+        logger.error(err_msg)
         return None
 
     if not device_max_certificate_id:
@@ -284,8 +287,10 @@ def issue_certificates_by_device_in_date_range(
             )
 
         if device_max_certificate_id is None:
-            raise ValueError("Max certificate ID is None")
-
+            err_msg = "Max certificate ID is None"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
+        
         valid_certificate = validate_granular_certificate_bundle(
             db_read_session,
             certificate,
@@ -417,9 +422,9 @@ def process_certificate_action(
     }
 
     if valid_certificate_action.action_type not in certificate_action_functions.keys():
-        raise ValueError(
-            f"Action type ({valid_certificate_action.action_type}) not in {certificate_action_functions.keys()}"
-        )
+        err_msg = f"Action type ({valid_certificate_action.action_type}) not in {certificate_action_functions.keys()}"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # try:
     action_function: Callable[..., Any] = certificate_action_functions[
@@ -623,12 +628,10 @@ def transfer_certificates(
 
     """
 
-    if not certificate_bundle_action.target_id:
-        raise ValueError("Target account ID is required")
     if not Account.exists(certificate_bundle_action.target_id, write_session):
-        raise ValueError(
-            f"Target account does not exist: {certificate_bundle_action.target_id}"
-        )
+        err_msg = f"Target account does not exist: {certificate_bundle_action.target_id}"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Check that the target account has whitelisted the source account
     account = Account.by_id(certificate_bundle_action.target_id, read_session)
@@ -636,8 +639,9 @@ def transfer_certificates(
         [] if account.account_whitelist is None else account.account_whitelist
     )
     if certificate_bundle_action.source_id not in account_whitelist:
-        msg = f"Target account ({certificate_bundle_action.target_id}) has not whitelisted the source account ({certificate_bundle_action.source_id}) for transfer."
-        raise ValueError(msg)
+        err_msg = f"Target account ({certificate_bundle_action.target_id}) has not whitelisted the source account ({certificate_bundle_action.source_id}) for transfer."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Retrieve certificates to transfer
     certificates_from_query = get_certificate_bundles_by_id(
@@ -645,17 +649,17 @@ def transfer_certificates(
     )
 
     if not certificates_from_query:
-        raise ValueError(
-            "No certificates found to transfer with given query parameters."
-        )
+        err_msg = "No certificates found to transfer with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     if any(
         c.certificate_status != CertificateStatus.ACTIVE
         for c in certificates_from_query
     ):
-        raise ValueError(
-            f"Can only transfer active certificates, found: { {c.certificate_status for c in certificates_from_query} }"
-        )
+        err_msg = f"Can only transfer active certificates, found: { {c.certificate_status for c in certificates_from_query} }"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_transfer = apply_bundle_quantity_or_percentage(
@@ -698,13 +702,15 @@ def cancel_certificates(
     )
 
     if not certificates_from_query:
-        raise ValueError("No certificates found to cancel with given query parameters.")
-
+        err_msg = "No certificates found to cancel with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+    
     valid_statuses = [CertificateStatus.ACTIVE, CertificateStatus.RESERVED]
     if any(c.certificate_status not in valid_statuses for c in certificates_from_query):
-        raise ValueError(
-            f"Certificates must be in ACTIVE or RESERVED status to cancel, found: { {c.certificate_status for c in certificates_from_query} }"
-        )
+        err_msg = f"Certificates must be in ACTIVE or RESERVED status to cancel, found: { {c.certificate_status for c in certificates_from_query} }"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_cancel = apply_bundle_quantity_or_percentage(
@@ -748,15 +754,17 @@ def claim_certificates(
     )
 
     if not certificates_from_query:
-        raise ValueError("No certificates found to claim with given query parameters.")
+        err_msg = "No certificates found to claim with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     if any(
         c.certificate_status != CertificateStatus.CANCELLED
         for c in certificates_from_query
     ):
-        raise ValueError(
-            f"Can only claim cancelled certificates, found: { {c.certificate_status for c in certificates_from_query} }"
-        )
+        err_msg = f"Can only claim cancelled certificates, found: { {c.certificate_status for c in certificates_from_query} }"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_claim = apply_bundle_quantity_or_percentage(
@@ -801,9 +809,9 @@ def withdraw_certificates(
     )
 
     if not certificates_from_query:
-        raise ValueError(
-            "No certificates found to withdraw with given query parameters."
-        )
+        err_msg = "No certificates found to withdraw with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_withdraw = apply_bundle_quantity_or_percentage(
@@ -849,7 +857,9 @@ def lock_certificates(
     )
 
     if not certificates_from_query:
-        raise ValueError("No certificates found to lock with given query parameters.")
+        err_msg = "No certificates found to lock with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_lock = apply_bundle_quantity_or_percentage(
@@ -892,9 +902,9 @@ def reserve_certificates(
     )
 
     if not certificates_from_query:
-        raise ValueError(
-            "No certificates found to reserve with given query parameters."
-        )
+        err_msg = "No certificates found to reserve with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
     # Split bundles if required, but only if certificate_quantity or percentage is provided
     certificates_to_reserve = apply_bundle_quantity_or_percentage(
