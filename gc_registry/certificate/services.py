@@ -368,7 +368,7 @@ def issue_certificates_in_date_range(
         return None
 
     # Issue certificates for each device
-    certificates: list[Any] = []
+    certificate_bundles: list[Any] = []
     for device in devices:
         logger.info(f"Issuing certificates for device: {device.id}")
 
@@ -392,9 +392,9 @@ def issue_certificates_in_date_range(
             meter_data_client,
         )
         if created_entities:
-            certificates.extend(created_entities)
+            certificate_bundles.extend(created_entities)
 
-    return certificates
+    return certificate_bundles
 
 
 def process_certificate_bundle_action(
