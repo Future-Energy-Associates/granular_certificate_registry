@@ -59,7 +59,7 @@ app = FastAPI(
         "name": "Please direct feedback to",
         "email": "connor@futureenergy.associates",
     },
-    docs_url=None,
+    docs_url="/docs",
     dependencies=[Depends(get_db_name_to_client)],
 )
 
