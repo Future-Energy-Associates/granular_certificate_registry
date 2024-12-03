@@ -75,7 +75,6 @@ Development tools:
 | I want to know about...              |                                  |
 |--------------------------------------|----------------------------------|
 | [Development](docs/DEVELOPMENT.md)   | Linting, formatting, testing etc |
-| [Deployment](docs/DEPLOYMENT.md)     | General deployment docs          |
 | [Contributing](docs/CONTRIBUTING.md) | Our processes for contributors   |
 | [Change Log](./CHANGELOG.md)         | Log of code changes              |
 
