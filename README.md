@@ -23,6 +23,10 @@ To get started interfacing with the GC Registry container, follow these steps to
     - `localhost:8000/docs` - Swagger-style schema and endpoint descriptions that allows basic interaction with API
     - `localhost:8000/redoc` - alternative, non-interactive documentation from Redocly that is more human-readable than Swagger
 - This repository uses a [makefile](Makefile) for quick access to convenience functions that are common across both users and developers. For instance, `make dev` will quickly call Docker compose to load up the container cluster. 
+- On first build, the database containers will not contain the schemas for the entities. We have used `alembic` to manage the schema migrations and for ease of setting up - use `make db.update` to load in the most recent schema to the database.
+    - If during development you make any changes to the `sqlmodel` entity definitions, you can quickly reflect that change in the database by running `make db.revision "NAME={name_your_revision}"`, with a suitably descriptive name for the intended changes in place of `name_your_revision`.
+    - This will create a new migration file in `gc_registry/core/alembic/versions`, and we recommend double checking the contents of this auto-generated file before committing it to the database with `make db.update`.
+    - The database can be fully reset using `make db.reset`; this will clear all entities in both database instances and reset the schema to the most recent iteration.  
 - Initially, the database instances will contain no elements. To get started quickly, we recommend seeding the database with some example User, Account, Device, and GC Bundle entities courtesy of Elexon (the UK aggregator of electricity system data) with the command `make db.seed`.
 
 ### Interfacing with the Registry
