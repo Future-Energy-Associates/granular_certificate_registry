@@ -9,6 +9,7 @@ Dependency management is handled through Poetry - on first use, run `poetry inst
 
 To get started interfacing with the GC Registry container, follow these steps to get started, using your IDE and API messenger of choice:
 - Make sure you have the Docker daemon running, either through Docker desktop or the CLI.
+- Create a `.env` file in the root directory and populate it with the example values in the `.env.example` file provided. Make any configuration edits as required here. 
 - On first use, from the root directory run `docker compose -f compose.override.yml up --build` to build the image and run the container cluster. The cluster is composed of four containers:
     - `gc_registry` - the FastAPI app and backend services for the registry
     - `eventsotre` - an open-source streaming database that sequentially records registry events immutably
@@ -33,11 +34,11 @@ To get started interfacing with the GC Registry container, follow these steps to
 
 Each entity has the four basic crud operation endpoints accessible through the lower case singular name of the entity as the router and the operation or ID as the suffix. For example, either through Postman to `localhost:8000` or through a notebook with `client = httpx.Client("localhost:8000)` 
 - `GET(account/1)` will return the account with ID 1, which in this case would be first account created on the registry as the integer ID primary keys are unique and serial across each entity.
-- Creating an entity is possible like so:
+- Creating an entity is possible by passing jsons programmatically, or manually through the payload entry on Postman:
     ```python
-    from gc_registry.account.schemas import AccountBase
-    account = AccountBase(account_name="Example Account", user_ids=[1], account_whitelist=[1])
-    client.post("account/create", data=account.model_dump_json())
+    import json
+    account = {"account_name": "Example Account", "user_ids": [1], "account_whitelist": [1]}
+    client.post("account/create", data=json.dumps(account))
     ```
     This will create an account with the name `Example Account`, belonging to the user with ID `1`, and has whitelisted the account with ID `1` to receive GC Bundles from.
 - Querying certificates is done through the `certificates/query` POST endpoint, and allows for advanced requests to be expressed through the `CertificateQuery` object, the schema for which can be found in the docs.
