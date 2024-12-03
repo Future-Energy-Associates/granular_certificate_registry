@@ -260,5 +260,5 @@ def seed_certificates_for_all_devices_in_date_range(
 if __name__ == "__main__":
     seed_all_generators_from_elexon()
     to_datetime = datetime.datetime.now() - datetime.timedelta(days=7)
-    from_datetime = to_datetime - datetime.timedelta(days=1)
+    from_datetime = to_datetime - datetime.timedelta(days=7)
     seed_certificates_for_all_devices_in_date_range(from_datetime, to_datetime)

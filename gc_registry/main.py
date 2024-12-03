@@ -1,10 +1,15 @@
+import datetime
 import logging
 from pathlib import Path
+from typing import Callable
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from markdown import markdown
+from pyinstrument import Profiler
+from pyinstrument.renderers.html import HTMLRenderer
+from pyinstrument.renderers.speedscope import SpeedscopeRenderer
 from starlette.middleware.sessions import SessionMiddleware
 
 from .account.routes import router as account_router
@@ -113,8 +118,8 @@ async def read_root(request: Request):
             },
             {
                 "tag": "a",
-                "tag_kwargs": {"href": f"{request.url._url}/docs"},
-                "value": "/docs",
+                "tag_kwargs": {"href": f"{request.url._url}redoc"},
+                "value": "/redoc",
             },
         ],
     }
@@ -188,3 +193,40 @@ async def change_log_level_endpoint(request: LoggingLevelRequest):
         "message": f"Log level changed to {request.level}",
         "logger_status": debug_info,
     }
+
+
+if settings.PROFILING_ENABLED:
+    profile_type: str = "html"
+
+    @app.middleware("http")
+    async def profile_request(request: Request, call_next: Callable):
+        """Profile the current request
+
+        Taken from https://pyinstrument.readthedocs.io/en/latest/guide.html#profile-a-web-request-in-fastapi
+        with small improvements.
+
+        """
+        # we map a profile type to a file extension, as well as a pyinstrument profile renderer
+        profile_type_to_ext = {"html": "html", "speedscope": "speedscope.json"}
+        profile_type_to_renderer = {
+            "html": HTMLRenderer,
+            "speedscope": SpeedscopeRenderer,
+        }
+
+        # we profile the request along with all additional middlewares, by interrupting
+        # the program every 1ms1 and records the entire stack at that point
+        with Profiler(interval=0.001, async_mode="enabled") as profiler:
+            response = await call_next(request)
+
+        # we dump the profiling into a file
+        extension = profile_type_to_ext[profile_type]
+        renderer = profile_type_to_renderer[profile_type]()
+
+        # create a new dated folder in core/profiling with todays date
+        todays_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        profiling_dir = Path(__file__).parent / "core" / "profiling" / todays_date
+        profiling_dir.mkdir(exist_ok=True)
+
+        with open(Path(profiling_dir, f"profile.{extension}"), "w") as out:
+            out.write(profiler.output(renderer=renderer))
+        return response

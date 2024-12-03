@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     CERTIFICATE_GRANULARITY_HOURS: float = 1
     CERTIFICATE_EXPIRY_YEARS: int = 2
     CAPACITY_MARGIN: float = 1.1  # TODO: Review what the margin should be - Punped storage seemed to break this validation
+    PROFILING_ENABLED: bool = True
 
     DATABASE_HOST_WRITE: str
     DATABASE_HOST_READ: str
