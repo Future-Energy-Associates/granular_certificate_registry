@@ -46,7 +46,7 @@ psr_type_to_energy_source = {
     "Hydro Water Reservoir": "hydro",
     "Nuclear": "nuclear",
     "Other renewable": "other renewable",
-    "Solar": "solar",
+    "Solar": "solar_pv",
 }
 
 

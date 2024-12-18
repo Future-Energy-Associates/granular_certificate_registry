@@ -110,6 +110,10 @@ db.test.migrations:
 db.seed:
 	docker compose run --rm gc_registry poetry run seed-db
 
+.PHONY: db.seed.elexon
+db.seed.elexon:
+	docker compose run --rm gc_registry poetry run seed-db-elexon
+
 .PHONY: dev
 dev:
 	docker compose up
