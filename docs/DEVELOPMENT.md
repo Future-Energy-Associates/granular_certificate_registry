@@ -1,4 +1,4 @@
-# Tariff Tribe - Development
+# FEA GC Registry - Development
 
 We use [Poetry](https://python-poetry.org/) for dependency/environment management. To get started with local development, ensure you have poetry installed globally on your system. The quickest way to do so is using:
 ```bash

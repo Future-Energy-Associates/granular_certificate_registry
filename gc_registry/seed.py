@@ -9,6 +9,7 @@ from gc_registry.certificate.services import issue_certificates_in_date_range
 from gc_registry.core.database import cqrs, db, events
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
+from gc_registry.logging_config import logger
 from gc_registry.user.models import User
 
 
@@ -18,7 +19,7 @@ def seed_data():
     read_session = db.get_read_session()
     esdb_client = events.get_esdb_client()
 
-    print("Seeding the WRITE database with data....")
+    logger.info("Seeding the WRITE database with data....")
 
     bmu_ids = [
         "E_MARK-1",
@@ -89,7 +90,7 @@ def seed_data():
             from_datetime, to_datetime, meter_data_id=bmu_id
         )
         if len(data) == 0:
-            print(f"No data found for {bmu_id}")
+            logger.info(f"No data found for {bmu_id}")
             continue
 
         certificate_bundles = client.map_metering_to_certificates(
@@ -101,7 +102,7 @@ def seed_data():
         )
 
         if not certificate_bundles:
-            print(f"No certificate bundles found for {bmu_id}")
+            logger.info(f"No certificate bundles found for {bmu_id}")
         else:
             _ = cqrs.write_to_database(
                 [
@@ -113,7 +114,7 @@ def seed_data():
                 esdb_client,
             )
 
-    print("Seeding complete!")
+    logger.info("Seeding complete!")
 
     write_session.close()
     read_session.close()
@@ -152,14 +153,16 @@ def seed_all_generators_from_elexon(
     read_session = db.get_read_session()
     esdb_client = events.get_esdb_client()
 
+    # Get a list of generators from the DB
+    db_devices: list[Any] = Device.all(read_session)
+    elexon_device_ids = [d.meter_data_id for d in db_devices]
+
     # Create year long ranges from the from_date to the to_date
     data_list: list[dict[str, Any]] = []
     now = datetime.datetime.now()
     for from_datetime in pd.date_range(from_date, now.date(), freq="Y"):
         year_period_end = from_datetime + datetime.timedelta(days=365)
         to_datetime = year_period_end if year_period_end < now else now
-
-        print(f"Getting data from {from_datetime} to {to_datetime}")
 
         data = client.get_asset_dataset_in_datetime_range(
             dataset="IGCPU",
@@ -174,6 +177,13 @@ def seed_all_generators_from_elexon(
     df.drop_duplicates(subset=["registeredResourceName"], inplace=True, keep="last")
     df = df[df.bmUnit.notna()]
     df["installedCapacity"] = df["installedCapacity"].astype(int)
+
+    # drop bmUnit that are in the db
+    df = df[~df.bmUnit.isin(elexon_device_ids)]
+
+    if df.shape[0] == 0:
+        logger.info("No new generators to seed")
+        return
 
     # drop all non-renewable psr types
     df = df[df.psrType.isin(client.renewable_psr_types)]
@@ -257,8 +267,14 @@ def seed_certificates_for_all_devices_in_date_range(
     )
 
 
-if __name__ == "__main__":
+def seed_all_generators_and_certificates_from_elexon(
+    from_datetime: datetime.datetime | None = None,
+    to_datetime: datetime.datetime | None = None,
+):
     seed_all_generators_from_elexon()
-    to_datetime = datetime.datetime.now() - datetime.timedelta(days=7)
-    from_datetime = to_datetime - datetime.timedelta(days=1)
+
+    if not to_datetime or not from_datetime:
+        to_datetime = datetime.datetime.now() - datetime.timedelta(days=7)
+        from_datetime = to_datetime - datetime.timedelta(days=1)
+
     seed_certificates_for_all_devices_in_date_range(from_datetime, to_datetime)

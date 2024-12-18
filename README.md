@@ -77,7 +77,7 @@ Development tools:
 |--------------------------------------|----------------------------------|
 | [Development](docs/DEVELOPMENT.md)   | Linting, formatting, testing etc |
 | [Contributing](docs/CONTRIBUTING.md) | Our processes for contributors   |
-| [Change Log](./CHANGELOG.md)         | Log of code changes              |
+| [Change Log](docs/CHANGELOG.md)         | Log of code changes              |
 
 
 

@@ -515,17 +515,17 @@ class GranularCertificateTransfer(GranularCertificateActionBase):
         description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to.",
     )
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_action_type_is_not_set(cls, values):
-        if "action_type" in values:
+        if values.action_type != CertificateActionType.TRANSFER:
             raise ValueError("`action_type` cannot be set explicitly.")
         return values
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_quantity_or_percentage(cls, values):
         if (
-            "certificate_quantity" in values
-            and "certificate_bundle_percentage" in values
+            values.certificate_quantity is not None
+            and values.certificate_bundle_percentage is not None
         ):
             raise ValueError(
                 "Can only pass one of `certificate_quantity` or `certificate_bundle_percentage`."
@@ -543,17 +543,17 @@ class GranularCertificateCancel(GranularCertificateActionBase):
         description="The Beneficiary entity that may make a claim on the attributes of the cancelled GC Bundles. If not specified, the Account holder is treated as the Beneficiary.",
     )
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_action_type_is_not_set(cls, values):
-        if "action_type" in values:
+        if values.action_type != CertificateActionType.CANCEL:
             raise ValueError("`action_type` cannot be set explicitly.")
         return values
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_quantity_or_percentage(cls, values):
         if (
-            "certificate_quantity" in values
-            and "certificate_bundle_percentage" in values
+            values.certificate_quantity is not None
+            and values.certificate_bundle_percentage is not None
         ):
             raise ValueError(
                 "Can only pass one of `certificate_quantity` or `certificate_bundle_percentage`."
@@ -570,17 +570,17 @@ class GranularCertificateReserve(GranularCertificateActionBase):
         description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to.",
     )
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_action_type_is_not_set(cls, values):
-        if "action_type" in values:
+        if values.action_type != CertificateActionType.RESERVE:
             raise ValueError("`action_type` cannot be set explicitly.")
         return values
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_quantity_or_percentage(cls, values):
         if (
-            "certificate_quantity" in values
-            and "certificate_bundle_percentage" in values
+            values.certificate_quantity is not None
+            and values.certificate_bundle_percentage is not None
         ):
             raise ValueError(
                 "Can only pass one of `certificate_quantity` or `certificate_bundle_percentage`."
@@ -601,17 +601,17 @@ class GranularCertificateClaim(GranularCertificateActionBase):
         description="For (recurring) transfers, the Account ID into which the GC Bundles are to be transferred to.",
     )
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_action_type_is_not_set(cls, values):
-        if "action_type" in values:
+        if values.action_type != CertificateActionType.CLAIM:
             raise ValueError("`action_type` cannot be set explicitly.")
         return values
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_quantity_or_percentage(cls, values):
         if (
-            "certificate_quantity" in values
-            and "certificate_bundle_percentage" in values
+            values.certificate_quantity is not None
+            and values.certificate_bundle_percentage is not None
         ):
             raise ValueError(
                 "Can only pass one of `certificate_quantity` or `certificate_bundle_percentage`."
@@ -625,17 +625,17 @@ class GranularCertificateWithdraw(GranularCertificateActionBase):
         const=True,
     )
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_action_type_is_not_set(cls, values):
-        if "action_type" in values:
+        if values.action_type != CertificateActionType.WITHDRAW:
             raise ValueError("`action_type` cannot be set explicitly.")
         return values
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_quantity_or_percentage(cls, values):
         if (
-            "certificate_quantity" in values
-            and "certificate_bundle_percentage" in values
+            values.certificate_quantity is not None
+            and values.certificate_bundle_percentage is not None
         ):
             raise ValueError(
                 "Can only pass one of `certificate_quantity` or `certificate_bundle_percentage`."
@@ -649,17 +649,17 @@ class GranularCertificateLock(GranularCertificateActionBase):
         const=True,
     )
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_action_type_is_not_set(cls, values):
-        if "action_type" in values:
+        if values.action_type != CertificateActionType.LOCK:
             raise ValueError("`action_type` cannot be set explicitly.")
         return values
 
-    @model_validator(mode="before")
+    @model_validator(mode="after")
     def ensure_quantity_or_percentage(cls, values):
         if (
-            "certificate_quantity" in values
-            and "certificate_bundle_percentage" in values
+            values.certificate_quantity is not None
+            and values.certificate_bundle_percentage is not None
         ):
             raise ValueError(
                 "Can only pass one of `certificate_quantity` or `certificate_bundle_percentage`."

@@ -23,10 +23,11 @@ def validate_account(account, read_session):
         )
 
     # All user_ids linked to the account must exist in the database
-    stmt = select(User.id).filter(User.id.in_(account.user_ids))
-    user_ids_in_db = read_session.execute(stmt).scalars().all()
-
-    if set(user_ids_in_db) != set(account.user_ids):
+    user_ids_in_db = (
+        read_session.query(User.id).filter(User.id.in_(account.user_ids)).all()
+    )
+    user_ids_in_db_set = {user_id for (user_id,) in user_ids_in_db}
+    if user_ids_in_db_set != set(account.user_ids):
         raise HTTPException(
             status_code=400,
             detail="One or more users assigned to this account do not exist in the database.",
