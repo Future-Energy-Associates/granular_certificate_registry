@@ -29,6 +29,7 @@ def validate_account(account, read_session):
     user_ids_in_db_set = {user_id for (user_id,) in user_ids_in_db}
     if user_ids_in_db_set != set(account.user_ids):
         raise HTTPException(
+            status_code=400,
             detail="One or more users assigned to this account do not exist in the database.",
         )
 
