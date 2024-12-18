@@ -540,7 +540,9 @@ def apply_bundle_quantity_or_percentage(
                 granular_certificate_bundle.bundle_quantity
                 <= certificate_bundle_action.certificate_quantity
             ):
-                certificates_bundles_to_transfer.append(granular_certificate_bundle)
+                certificates_bundles_to_transfer.append(
+                    write_session.merge(granular_certificate_bundle)
+                )
                 continue
 
         child_bundle_1, _child_bundle_2 = split_certificate_bundle(
@@ -551,7 +553,7 @@ def apply_bundle_quantity_or_percentage(
             esdb_client,
         )
         if child_bundle_1:
-            certificates_bundles_to_transfer.append(child_bundle_1)
+            certificates_bundles_to_transfer.append(write_session.merge(child_bundle_1))
 
     return certificates_bundles_to_transfer
 
@@ -592,7 +594,7 @@ def query_certificate_bundles(
     # certificates
     stmt: SelectOfScalar = select(GranularCertificateBundle).where(
         GranularCertificateBundle.account_id == certificate_query.source_id,
-        ~GranularCertificateBundle.is_deleted,
+        GranularCertificateBundle.is_deleted == False,  # noqa
     )
 
     exclude = {"user_id", "localise_time", "source_id"}
