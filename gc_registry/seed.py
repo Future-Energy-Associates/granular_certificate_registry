@@ -9,9 +9,8 @@ from gc_registry.certificate.services import issue_certificates_in_date_range
 from gc_registry.core.database import cqrs, db, events
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
-from gc_registry.user.models import User
-
 from gc_registry.logging_config import logger
+from gc_registry.user.models import User
 
 
 def seed_data():
@@ -155,7 +154,7 @@ def seed_all_generators_from_elexon(
     esdb_client = events.get_esdb_client()
 
     # Get a list of generators from the DB
-    db_devices: list[Device] = Device.all(read_session)
+    db_devices: list[Any] = Device.all(read_session)
     elexon_device_ids = [d.meter_data_id for d in db_devices]
 
     # Create year long ranges from the from_date to the to_date
@@ -267,8 +266,11 @@ def seed_certificates_for_all_devices_in_date_range(
         client,  # type: ignore
     )
 
-def seed_all_generators_and_certificates_from_elexon(from_datetime: datetime.datetime | None = None, to_datetime: datetime.datetime | None = None):
 
+def seed_all_generators_and_certificates_from_elexon(
+    from_datetime: datetime.datetime | None = None,
+    to_datetime: datetime.datetime | None = None,
+):
     seed_all_generators_from_elexon()
 
     if not to_datetime or not from_datetime:
@@ -276,4 +278,3 @@ def seed_all_generators_and_certificates_from_elexon(from_datetime: datetime.dat
         from_datetime = to_datetime - datetime.timedelta(days=1)
 
     seed_certificates_for_all_devices_in_date_range(from_datetime, to_datetime)
-
