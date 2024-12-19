@@ -11,11 +11,14 @@ from sqlmodel import Field
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
 
-class UserRoles(str, Enum):
-    ADMIN = "admin"
-    PRODUCTION_USER = "production_user"
-    TRADING_USER = "trading_user"
-    AUDIT_USER = "audit_user"
+class UserRoles(int, Enum):
+    ADMIN = 4
+    PRODUCTION_USER = 3
+    TRADING_USER = 2
+    AUDIT_USER = 1
+
+    def __str__(self):
+        return self.name.lower()
 
 
 class DeviceTechnologyType(str, enum.Enum):

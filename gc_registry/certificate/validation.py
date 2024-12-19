@@ -96,7 +96,7 @@ def validate_user_access(
     granular_certificate_action: GranularCertificateAction, read_session: Session
 ):
     """
-    Validate that the user's role allows it to perform the requested action.
+    Validate that the user has access to the source account of the desired action.
 
     Args:
         granular_certificate_action (GranularCertificateAction): The action to validate
