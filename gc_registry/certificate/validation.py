@@ -1,11 +1,9 @@
 from typing import Any
 
-from fastapi import HTTPException
 from fluent_validator import validate  # type: ignore
 from sqlmodel import Session
 
 from gc_registry.certificate.models import (
-    GranularCertificateAction,
     GranularCertificateBundle,
 )
 from gc_registry.certificate.schemas import GranularCertificateBundleCreate
@@ -15,7 +13,6 @@ from gc_registry.device.services import (
     get_device_capacity_by_id,
 )
 from gc_registry.settings import settings
-from gc_registry.user.models import User
 
 
 def verifiy_bundle_lineage(
@@ -90,27 +87,3 @@ def validate_granular_certificate_bundle(
     return GranularCertificateBundle.model_validate(
         granular_certificate_bundle.model_dump()
     )
-
-
-def validate_user_access(
-    granular_certificate_action: GranularCertificateAction, read_session: Session
-):
-    """
-    Validate that the user has access to the source account of the desired action.
-
-    Args:
-        granular_certificate_action (GranularCertificateAction): The action to validate
-
-    Raises:
-        HTTPException: If the user action is rejected, return a 403 with the reason for rejection.
-    """
-
-    # Get the user's info
-    user = User.by_id(granular_certificate_action.user_id, read_session)
-
-    user_account_ids = [] if user.account_ids is None else user.account_ids
-
-    # Assert that the user has access to the source account
-    if granular_certificate_action.source_id not in user_account_ids:
-        msg = "User does not have access to the specified source account"
-        raise HTTPException(status_code=403, detail=msg)
