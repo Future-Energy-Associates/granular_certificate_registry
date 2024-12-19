@@ -277,7 +277,7 @@ def fake_db_wind_device(
 ) -> Device:
     device_dict = {
         "device_name": "fake_wind_device",
-        "meter_data_id": "BMU-XYZ",
+        "local_device_identifier": "BMU-XYZ",
         "grid": "fake_grid",
         "energy_source": EnergySourceType.wind,
         "technology_type": DeviceTechnologyType.wind_turbine,
@@ -308,7 +308,7 @@ def fake_db_solar_device(
         "grid": "fake_grid",
         "energy_source": EnergySourceType.solar_pv,
         "technology_type": DeviceTechnologyType.solar_pv,
-        "meter_data_id": "BMU-ABC",
+        "local_device_identifier": "BMU-ABC",
         "capacity": 1000,
         "account_id": fake_db_account.id,
         "fuel_source": "solar",

@@ -206,21 +206,21 @@ class TestCertificateServices:
     ):
         from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
         to_datetime = from_datetime + datetime.timedelta(hours=2)
-        meter_data_id = "T_RATS-4"
+        local_device_identifier = "T_RATS-4"
 
         client = ElexonClient()
 
-        device_capacities = client.get_device_capacities([meter_data_id])
+        device_capacities = client.get_device_capacities([local_device_identifier])
 
         # create a new device
         device_dict = {
             "device_name": "Ratcliffe on Soar",
-            "meter_data_id": meter_data_id,
+            "local_device_identifier": local_device_identifier,
             "grid": "National Grid",
             "energy_source": "wind",
             "technology_type": "wind",
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
-            "capacity": device_capacities[meter_data_id],
+            "capacity": device_capacities[local_device_identifier],
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": fake_db_account.id,
@@ -607,7 +607,7 @@ class TestCertificateServices:
     ):
         from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
         to_datetime = from_datetime + datetime.timedelta(hours=4)
-        meter_data_ids = [
+        local_device_identifiers = [
             "E_MARK-1",
             "T_RATS-1",
             "T_RATS-2",
@@ -616,23 +616,23 @@ class TestCertificateServices:
             "T_RATSGT-2",
             "T_RATSGT-4",
         ]
-        meter_data_id = meter_data_ids[0]
+        local_device_identifier = local_device_identifiers[0]
 
         client = ElexonClient()
 
-        device_capacities = client.get_device_capacities([meter_data_id])
+        device_capacities = client.get_device_capacities([local_device_identifier])
 
         W_IN_MW = 1e6
 
         # create a new device
         device_dict: dict[Hashable, Any] = {
             "device_name": "Ratcliffe on Soar",
-            "meter_data_id": meter_data_id,
+            "local_device_identifier": local_device_identifier,
             "grid": "National Grid",
             "energy_source": "wind",
             "technology_type": "wind",
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
-            "capacity": device_capacities[meter_data_id] * W_IN_MW,
+            "capacity": device_capacities[local_device_identifier] * W_IN_MW,
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": fake_db_account.id,

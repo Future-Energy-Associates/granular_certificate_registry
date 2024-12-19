@@ -152,17 +152,17 @@ class ElexonClient:
         self,
         from_datetime: datetime.datetime,
         to_datetime: datetime.datetime,
-        meter_data_id: str,
+        local_device_identifier: str,
         dataset="B1610",
     ) -> list[dict[str, Any]]:
         data = self.get_dataset_in_datetime_range(
             dataset=dataset,
             from_datetime=from_datetime,
             to_datetime=to_datetime,
-            bmu_ids=[meter_data_id],
+            bmu_ids=[local_device_identifier],
         )
 
-        logger.info(f"Data for {meter_data_id}: {len(data)}")
+        logger.info(f"Data for {local_device_identifier}: {len(data)}")
         if not data:
             return []
 

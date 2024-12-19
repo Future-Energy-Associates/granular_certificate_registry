@@ -72,7 +72,7 @@ def seed_data():
     for bmu_id in bmu_ids:
         device_dict = {
             "device_name": bmu_id,
-            "meter_data_id": bmu_id,
+            "local_device_identifier": bmu_id,
             "grid": "National Grid",
             "energy_source": "wind",
             "technology_type": "wind",
@@ -87,7 +87,7 @@ def seed_data():
 
         # Use Elexon to get data from the Elexon API
         data = client.get_metering_by_device_in_datetime_range(
-            from_datetime, to_datetime, meter_data_id=bmu_id
+            from_datetime, to_datetime, local_device_identifier=bmu_id
         )
         if len(data) == 0:
             logger.info(f"No data found for {bmu_id}")
@@ -155,7 +155,7 @@ def seed_all_generators_from_elexon(
 
     # Get a list of generators from the DB
     db_devices: list[Any] = Device.all(read_session)
-    elexon_device_ids = [d.meter_data_id for d in db_devices]
+    elexon_device_ids = [d.local_device_identifier for d in db_devices]
 
     # Create year long ranges from the from_date to the to_date
     data_list: list[dict[str, Any]] = []
@@ -197,7 +197,7 @@ def seed_all_generators_from_elexon(
 
         device_dict = {
             "device_name": bmu_dict["registeredResourceName"],
-            "meter_data_id": bmu_dict["bmUnit"],
+            "local_device_identifier": bmu_dict["bmUnit"],
             "grid": "National Grid",
             "energy_source": client.psr_type_to_energy_source.get(
                 bmu_dict["psrType"], "other"
