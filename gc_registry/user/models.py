@@ -49,6 +49,5 @@ class UserRead(UserBase):
 class UserUpdate(BaseModel):
     name: str | None = None
     primary_contact: str | None = None
-    roles: List[str] | None = None
     account_ids: List[int] | None = None
     organisation: str | None = None

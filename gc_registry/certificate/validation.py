@@ -109,7 +109,6 @@ def validate_user_access(
     user = User.by_id(granular_certificate_action.user_id, read_session)
 
     user_account_ids = [] if user.account_ids is None else user.account_ids
-    _user_roles = [] if user.roles is None else user.roles
 
     # Assert that the user has access to the source account
     if granular_certificate_action.source_id not in user_account_ids:

@@ -11,6 +11,13 @@ from sqlmodel import Field
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
 
 
+class UserRoles(str, Enum):
+    ADMIN = "admin"
+    PRODUCTION_USER = "production_user"
+    TRADING_USER = "trading_user"
+    AUDIT_USER = "audit_user"
+
+
 class DeviceTechnologyType(str, enum.Enum):
     solar_pv = "solar_pv"
     wind_turbine = "wind_turbine"
