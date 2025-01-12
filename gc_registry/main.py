@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from markdown import markdown
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -62,6 +63,14 @@ app = FastAPI(
     },
     docs_url="/docs",
     dependencies=[Depends(get_db_name_to_client)],
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['http://localhost:9000'],
+    allow_credentials=True,  # Allows cookies/session
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
