@@ -17,7 +17,7 @@ const IssueForm = ({ onIssue, devices, selectedDevice, selectedAccount }) => {
       <Form.Item
         name="device"
         label="To Device"
-        rules={[
+        rules={[    
           { required: true, message: "Please select the device to issue to!" },
         ]}
       >
