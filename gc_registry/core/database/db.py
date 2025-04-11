@@ -78,13 +78,6 @@ class DButils:
         with Session(self.engine) as session, session.begin():
             yield session
 
-    def yield_twophase_session(self, write_object) -> Generator[Any, Any, Any]:
-        with Session(self.engine, twophase=True) as session:
-            yield session
-
-    def get_session(self) -> Session:
-        return Session(self.engine)
-
 
 # Initialising the DButil clients
 db_name_to_client: dict[str, Any] = {}
@@ -114,17 +107,10 @@ def get_db_name_to_client():
     return db_name_to_client
 
 
-def get_session(target: str) -> Generator[Session, None, None]:
-    with next(db_name_to_client[target].yield_session()) as session:
-        try:
-            yield session
-        finally:
-            session.close()
+def get_write_session() -> Generator[Session, None, None]:
+    db_client = db_name_to_client["db_write"]
+    yield next(db_client.yield_session())
 
-
-def get_write_session() -> Session:
-    return next(get_session("db_write"))
-
-
-def get_read_session() -> Session:
-    return next(get_session("db_read"))
+def get_read_session() -> Generator[Session, None, None]:
+    db_client = db_name_to_client["db_read"]
+    yield next(db_client.yield_session())

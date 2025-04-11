@@ -10,7 +10,7 @@ class BackendUser(HttpUser):
         response = self.client.post(
             "/auth/login",
             data={
-                "username": "Admin",
+                "username": "admin_user@usermail.com",
                 "password": "admin",
             },
         )
@@ -27,10 +27,10 @@ class BackendUser(HttpUser):
         self.client.post("/certificate/query", json=payload, headers=headers)
 
 
-class FrontendUser(HttpUser):
-    wait_time = between(1, 5)
-    host = "http://localhost:3000"
+# class FrontendUser(HttpUser):
+#     wait_time = between(1, 5)
+#     host = "http://localhost:3000"
 
-    @task
-    def load_frontend(self):
-        self.client.get("/")
+#     @task
+#     def load_frontend(self):
+#         self.client.get("/")

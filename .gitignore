@@ -12,7 +12,6 @@
 
 # directories
 /data
-/gc_registry/dev
 /snap
 /usr
 /libx32
