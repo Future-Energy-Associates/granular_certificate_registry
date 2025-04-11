@@ -25,8 +25,8 @@ LoggedInUser = Annotated[User, Depends(get_current_user)]
 def create_user(
     user_base: UserBase,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.ADMIN)
@@ -37,7 +37,7 @@ def create_user(
 
 @router.get("/me", response_model=UserRead)
 def read_current_user(
-    current_user: LoggedInUser, read_session: Session = Depends(db.get_read_session)
+    current_user: LoggedInUser, read_session: Session = Depends(db.get_read_db)
 ) -> UserRead:
     user_read = UserRead.model_validate(current_user.model_dump())
     user_accounts = get_accounts_by_user_id(current_user.id, read_session)
@@ -47,7 +47,7 @@ def read_current_user(
 
 @router.get("/me/accounts", response_model=list[AccountRead] | None)
 def read_current_user_accounts(
-    current_user: LoggedInUser, read_session: Session = Depends(db.get_read_session)
+    current_user: LoggedInUser, read_session: Session = Depends(db.get_read_db)
 ) -> list[AccountRead] | None:
     accounts = get_accounts_by_user_id(current_user.id, read_session)
     return accounts
@@ -57,7 +57,7 @@ def read_current_user_accounts(
 def read_user(
     user_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
     user = User.by_id(user_id, read_session)
@@ -80,8 +80,8 @@ def update_user(
     user_id: int,
     user_update: UserUpdate,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Users can update their own information. Admins can update any user information.
@@ -108,8 +108,8 @@ def update_user(
 def delete_user(
     user_id: int,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.ADMIN)
@@ -123,8 +123,8 @@ def change_role(
     user_id: int,
     role: UserRoles,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.ADMIN)

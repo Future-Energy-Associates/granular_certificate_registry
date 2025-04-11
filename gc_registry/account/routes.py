@@ -42,8 +42,8 @@ router = APIRouter(tags=["Accounts"])
 def create_account(
     account_base: AccountBase,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
@@ -76,7 +76,7 @@ def create_account(
 def read_account(
     account_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     account = Account.by_id(account_id, read_session)
     if not account:
@@ -89,8 +89,8 @@ def update_account(
     account_id: int,
     account_update: AccountUpdate,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
@@ -127,8 +127,8 @@ def update_whitelist(
     account_id: int,
     account_whitelist_update: AccountWhitelist,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
@@ -151,7 +151,7 @@ def update_whitelist(
 def get_whitelist(
     account_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ) -> list[Account] | None:
     """Return the list of accounts that the given account has whitelisted to receive certificates from."""
     validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
@@ -172,7 +172,7 @@ def get_whitelist(
 def get_whitelist_inverse(
     account_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ) -> list[Account] | None:
     """Return the list of accounts that have whitelisted the given account to receive certificates from."""
     validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
@@ -193,8 +193,8 @@ def get_whitelist_inverse(
 def delete_account(
     account_id: int,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
@@ -214,7 +214,7 @@ def delete_account(
 @router.get("/list", response_model=list[AccountRead])
 def list_all_accounts(
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     """List all active accounts on the registry."""
     validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
@@ -226,7 +226,7 @@ def list_all_accounts(
 def get_users_by_account_id(
     account_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     """Get all users associated with an account."""
     validate_user_role(current_user, required_role=UserRoles.ADMIN)
@@ -253,7 +253,7 @@ def get_users_by_account_id(
 def get_account_summary(
     account_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     """Get a summary of an account."""
     validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
@@ -278,7 +278,7 @@ def get_account_summary(
 def get_all_devices_by_account_id(
     account_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
 
@@ -303,7 +303,7 @@ def get_all_devices_by_account_id(
 def get_devices_for_account_certificates(
     account_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     """Return all devices associated with an account that have certificates issued against them."""
     validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
@@ -325,7 +325,7 @@ def list_all_account_bundles(
     account_id: int,
     limit: int | None = None,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     """Return all certificate bundles from the specified Account.
 

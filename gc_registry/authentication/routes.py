@@ -20,8 +20,8 @@ router = APIRouter(tags=["Authentication"])
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(OAuth2PasswordRequestForm),
     json_data: LoginRequest | None = None,
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Login for access token.

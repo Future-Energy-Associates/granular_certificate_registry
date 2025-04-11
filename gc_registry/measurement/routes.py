@@ -54,8 +54,8 @@ async def submit_readings(
     file: UploadFile = File(...),
     deviceID: int = Form(...),
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Submit meter readings as a CSV file for a single device,
@@ -157,8 +157,8 @@ async def submit_readings(
 def create_measurement(
     measurement_base: models.MeasurementReportBase,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
@@ -177,7 +177,7 @@ def create_measurement(
 def read_measurement(
     measurement_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
 
@@ -191,8 +191,8 @@ def update_measurement(
     measurement_id: int,
     measurement_update: models.MeasurementReportUpdate,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     # Measurement updates are only allowed for Admin users as GCs may have been issued against them
@@ -209,8 +209,8 @@ def update_measurement(
 def delete_measurement(
     measurement_id: int,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     # Measurement deletions are only allowed for Admin users as GCs may have been issued against them

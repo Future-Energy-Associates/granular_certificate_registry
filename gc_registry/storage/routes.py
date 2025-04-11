@@ -34,8 +34,8 @@ router = APIRouter(tags=["Storage"])
 def create_SCR(
     scr_base: StorageChargeRecordBase,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Create a Storage Charge Record with the specified properties."""
@@ -52,8 +52,8 @@ def create_SCR(
 def query_SCR(
     scr_query: StorageAction,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Return all SCRs from the specified Account that match the provided search criteria."""
@@ -72,8 +72,8 @@ def query_SCR(
 def create_SDR(
     sdr_base: StorageDischargeRecordBase,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Create a Storage Discharge Record with the specified properties."""
@@ -92,8 +92,8 @@ def create_SDR(
 def query_SDR(
     sdr_query: StorageAction,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Return all SDRs from the specified Account that match the provided search criteria."""
@@ -112,8 +112,8 @@ def query_SDR(
 def SCR_withdraw(
     storage_action_base: StorageAction,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SCRs from the specified Account matching the provided search criteria."""
@@ -132,8 +132,8 @@ def SCR_withdraw(
 def SDR_withdraw(
     storage_action_base: StorageAction,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """(Issuing Body only) - Withdraw a fixed number of SDRs from the specified Account matching the provided search criteria."""
@@ -152,8 +152,8 @@ def SDR_withdraw(
 def issue_SDGC(
     sdgc_create: GranularCertificateBundleCreate,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """A GC Bundle that has been issued following the verification of a cancelled GC Bundle and the proper allocation of a pair

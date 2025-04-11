@@ -53,9 +53,8 @@ class DButils:
         self.engine = create_engine(
             self.connection_str,
             pool_pre_ping=True,
-            pool_size=10,
-            max_overflow=20,
-            pool_timeout=30,
+            pool_size=100,
+            max_overflow=-1,
             pool_recycle=1800,
             echo=False,
         )
@@ -91,10 +90,37 @@ def get_db_name_to_client():
     return db_name_to_client
 
 
-def get_write_session() -> Generator[Session, None, None]:
+def get_write_session():
     db_client = db_name_to_client["db_write"]
-    yield next(db_client.yield_session())
+    session = next(db_client.yield_session())
+    return session
 
-def get_read_session() -> Generator[Session, None, None]:
+
+def get_read_session():
     db_client = db_name_to_client["db_read"]
-    yield next(db_client.yield_session())
+    session = next(db_client.yield_session())
+    return session
+
+
+def get_write_db():
+    db_client = db_name_to_client["db_write"]
+    session = next(db_client.yield_session())
+    try:
+        yield session
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def get_read_db():
+    db_client = db_name_to_client["db_read"]
+    session = next(db_client.yield_session())
+    try:
+        yield session
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()

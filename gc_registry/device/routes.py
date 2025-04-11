@@ -18,8 +18,8 @@ router = APIRouter(tags=["Devices"])
 def create_device(
     device_create: models.DeviceCreate,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Only production users can create devices and associate them with an account they control."""
@@ -41,7 +41,7 @@ def create_device(
 def read_device(
     device_id: int,
     current_user: User = Depends(get_current_user),
-    read_session: Session = Depends(db.get_read_session),
+    read_session: Session = Depends(db.get_read_db),
 ):
     validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
     device = models.Device.by_id(device_id, read_session)
@@ -56,8 +56,8 @@ def update_device(
     device_id: int,
     device_update: models.DeviceUpdate,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
@@ -72,8 +72,8 @@ def update_device(
 def delete_device(
     device_id: int,
     current_user: User = Depends(get_current_user),
-    write_session: Session = Depends(db.get_write_session),
-    read_session: Session = Depends(db.get_read_session),
+    write_session: Session = Depends(db.get_write_db),
+    read_session: Session = Depends(db.get_read_db),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
