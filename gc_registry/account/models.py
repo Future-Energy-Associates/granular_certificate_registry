@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship
 
@@ -18,14 +18,10 @@ if TYPE_CHECKING:
 
 class Account(AccountBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    users: List["User"] = Relationship(
+    users: list["User"] = Relationship(
         back_populates="accounts", link_model=UserAccountLink
     )
-    devices: List["Device"] = Relationship(back_populates="account")
-
-
-class AccountRead(AccountBase):
-    id: int
+    devices: list["Device"] = Relationship(back_populates="account")
 
 
 class AccountWhitelistLink(utils.ActiveRecord, table=True):

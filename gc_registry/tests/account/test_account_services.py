@@ -4,6 +4,7 @@ from gc_registry.account import services
 from gc_registry.account.models import Account
 from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.device.models import Device
+from gc_registry.user import services as users_services
 from gc_registry.user.models import User
 
 
@@ -32,7 +33,7 @@ class TestCertificateServices:
         assert fake_db_account is not None
         assert fake_db_account.id is not None
 
-        users = services.get_users_by_account_id(fake_db_account.id, read_session)
+        users = users_services.get_users_by_account_id(fake_db_account.id, read_session)
 
         assert users is not None
 

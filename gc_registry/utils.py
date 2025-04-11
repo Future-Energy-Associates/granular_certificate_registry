@@ -71,11 +71,6 @@ class ActiveRecord(SQLModel):
 
         return created_entities
 
-    def save(self, session):
-        session.add(self)
-        session.commit()
-        session.refresh(self)
-
     def update(
         self,
         update_entity: BaseModel,

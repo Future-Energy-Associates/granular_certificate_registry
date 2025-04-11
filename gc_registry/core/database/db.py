@@ -1,4 +1,3 @@
-import importlib
 from typing import Any, Generator
 
 from sqlmodel import Session, SQLModel, create_engine
@@ -28,16 +27,6 @@ __all__ = [
 ]
 
 
-# Defining utility functions and classes
-def schema_path_to_class(schema_path):
-    *module_path, schema_class_name = schema_path.split(".")
-    schema_class = getattr(
-        importlib.import_module(".".join(module_path)), schema_class_name
-    )
-
-    return schema_class
-
-
 class DButils:
     def __init__(
         self,
@@ -59,10 +48,7 @@ class DButils:
         if test:
             self.connection_str = f"sqlite:///{self._db_test_fp}"
         else:
-            self.connection_str = (
-                f"postgresql://{self._db_username}:{self._db_password}@{self._db_host}:"
-                f"{self._db_port}/{self._db_name}"
-            )
+            self.connection_str = f"postgresql://{self._db_username}:{self._db_password}@{self._db_host}:{self._db_port}/{self._db_name}"
 
         self.engine = create_engine(
             self.connection_str,
@@ -99,8 +85,6 @@ def get_db_name_to_client():
                 db_username=settings.POSTGRES_USER,
                 db_password=settings.POSTGRES_PASSWORD,
                 db_port=settings.DATABASE_PORT,
-                db_test_fp=settings.DB_TEST_FP,
-                test=False,
             )
             db_name_to_client[db_name] = db_client
 

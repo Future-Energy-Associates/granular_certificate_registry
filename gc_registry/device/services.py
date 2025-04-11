@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
 from sqlmodel.sql.expression import SelectOfScalar
 
+from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.device.models import Device
 from gc_registry.settings import settings
 
@@ -14,6 +15,20 @@ def get_all_devices(db_session: Session) -> list[Device]:
 
 def get_devices_by_account_id(account_id: int, db_session: Session) -> list[Device]:
     stmt: SelectOfScalar = select(Device).where(Device.account_id == account_id)
+    devices = db_session.exec(stmt).all()
+
+    return list(devices)
+
+
+def get_certificate_devices_by_account_id(
+    db_session: Session, account_id: int
+) -> list[Device]:
+    stmt: SelectOfScalar = (
+        select(Device)
+        .join(GranularCertificateBundle)
+        .where(GranularCertificateBundle.account_id == account_id)
+        .distinct()
+    )
     devices = db_session.exec(stmt).all()
 
     return list(devices)

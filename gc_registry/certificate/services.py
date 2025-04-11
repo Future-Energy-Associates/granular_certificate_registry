@@ -1,6 +1,7 @@
 import datetime
 from typing import Any, Callable
 
+import pandas as pd
 from esdbclient import EventStoreDBClient
 from sqlalchemy import func
 from sqlmodel import Session, SQLModel, desc, or_, select
@@ -11,6 +12,7 @@ from gc_registry.certificate.models import (
     GranularCertificateAction,
     GranularCertificateBundle,
     GranularCertificateBundleUpdate,
+    IssuanceMetaData,
 )
 from gc_registry.certificate.schemas import (
     CertificateStatus,
@@ -262,15 +264,17 @@ def issue_certificates_by_device_in_date_range(
     )
 
     # check if the device has already been issued certificates for the given period
-    if max_issued_timestamp and max_issued_timestamp >= to_datetime:
-        logger.info(
-            f"Device {device.id} has already been issued certificates for the period {from_datetime} to {to_datetime}"
-        )
-        return None
+    if max_issued_timestamp is not None:
+        max_issued_timestamp = pd.to_datetime(max_issued_timestamp, utc=True)
+        if max_issued_timestamp >= to_datetime:
+            logger.info(
+                f"Device {device.id} has already been issued certificates for the period {from_datetime} to {to_datetime}"
+            )
+            return None
 
-    # If max timestamp ias after from them use the max timestamp as the from_datetime
-    if max_issued_timestamp and max_issued_timestamp > from_datetime:
-        from_datetime = max_issued_timestamp
+        # If max timestamp ias after from them use the max timestamp as the from_datetime
+        if max_issued_timestamp > from_datetime:
+            from_datetime = max_issued_timestamp
 
     # TODO CAG - this is messy by me, will refactor down the road
     # Also, validation later on assumes the metering data is datetime sorted -
@@ -991,3 +995,23 @@ def reserve_certificates(
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 
     return
+
+
+def get_latest_issuance_metadata(db_session: Session) -> IssuanceMetaData | None:
+    """Get the latest IssuanceMetaData based on created_at.
+
+    Args:
+        db_session (Session): The database session
+    Returns:
+        int: The latest issuance metadata object
+
+    """
+    stmt: SelectOfScalar = (
+        select(IssuanceMetaData).order_by(desc(IssuanceMetaData.created_at)).limit(1)
+    )
+    latest_issuance_metadata = db_session.exec(stmt).first()
+
+    if not latest_issuance_metadata:
+        return None
+    else:
+        return latest_issuance_metadata

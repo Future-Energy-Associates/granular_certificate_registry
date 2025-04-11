@@ -1,0 +1,8 @@
+.card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 168px;
+  gap: 24px;
+  width: 100%;
+}

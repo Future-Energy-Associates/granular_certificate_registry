@@ -16,7 +16,7 @@ router = APIRouter(tags=["Devices"])
 
 @router.post("/create", response_model=models.DeviceRead)
 def create_device(
-    device_base: models.DeviceBase,
+    device_create: models.DeviceCreate,
     current_user: User = Depends(get_current_user),
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
@@ -24,10 +24,10 @@ def create_device(
 ):
     """Only production users can create devices and associate them with an account they control."""
     validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
-    validate_user_access(current_user, device_base.account_id, read_session)
+    validate_user_access(current_user, device_create.account_id, read_session)
 
     devices = models.Device.create(
-        device_base, write_session, read_session, esdb_client
+        device_create, write_session, read_session, esdb_client
     )
     if not devices:
         raise HTTPException(status_code=500, detail="Could not create Device")

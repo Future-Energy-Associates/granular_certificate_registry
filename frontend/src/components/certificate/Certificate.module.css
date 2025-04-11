@@ -1,0 +1,40 @@
+.summary-value {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #3c4043;
+}
+
+.summary-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #202224;
+}
+
+.card-wrapper {
+  border-radius: 12px;
+}
+
+.card-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-img {
+  width: 40px;
+  height: 40px;
+}
+
+.information-container {
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+}
+
+.top-device-container {
+  display: flex;
+  flex-direction: column;
+  min-width: 90px;
+}

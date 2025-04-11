@@ -1,6 +1,7 @@
 import datetime
 from typing import Any
 
+import pandas as pd
 from sqlalchemy.sql.expression import select
 from sqlmodel import Session
 
@@ -43,8 +44,8 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
 
         stmt = select(MeasurementReport).filter(
             MeasurementReport.device_id == device_id,
-            MeasurementReport.interval_start_datetime >= start_datetime,
-            MeasurementReport.interval_end_datetime <= end_datetime,
+            MeasurementReport.interval_start_datetime >= pd.Timestamp(start_datetime),
+            MeasurementReport.interval_end_datetime <= pd.Timestamp(end_datetime),
         )
 
         meter_records = read_session.exec(stmt).all()  # type: ignore

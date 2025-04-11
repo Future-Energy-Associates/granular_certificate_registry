@@ -1,0 +1,62 @@
+/* Container for pagination */
+.pagination-container {
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background-color: #fff;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .custom-paging li {
+    border: none !important;
+    height: 40px;
+    width: 40px;
+    font-weight: 500;
+  }
+  
+  /* Custom Previous and Next buttons */
+  .pagination-btn {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background-color: #fff;
+    color: #344054;
+    font-weight: 500;
+    padding: 0 16px;
+    height: 36px;
+    transition: background-color 0.3s, color 0.3s;
+    cursor: pointer;
+  }
+  
+  /* Disabled state for buttons */
+  .pagination-btn.disabled {
+    color: #b0b3b8;
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+  }
+  
+  /* Custom page number styling */
+  .pagination-number {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #344054;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Active page number */
+  .pagination-number.active {
+    background-color: #f5f5ff;
+    color: #1a50dd;
+  }
+  
+  /* Hover effect for page numbers */
+  .pagination-number:hover {
+    background-color: #f0f0f0;
+  }
+  

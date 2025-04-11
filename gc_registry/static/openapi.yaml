@@ -2015,7 +2015,7 @@ components:
           format: uuid
           title: Organisation Id
           type: string
-        primary_contact:
+        email:
           title: Primary Contact
           type: string
         website:
@@ -2024,7 +2024,7 @@ components:
       required:
       - name
       - business_id
-      - primary_contact
+      - email
       title: Organisation
       type: object
     OrganisationBase:
@@ -2038,7 +2038,7 @@ components:
         name:
           title: Name
           type: string
-        primary_contact:
+        email:
           title: Primary Contact
           type: string
         website:
@@ -2047,7 +2047,7 @@ components:
       required:
       - name
       - business_id
-      - primary_contact
+      - email
       title: OrganisationBase
       type: object
     OrganisationRead:
@@ -2065,7 +2065,7 @@ components:
           format: uuid
           title: Organisation Id
           type: string
-        primary_contact:
+        email:
           title: Primary Contact
           type: string
         website:
@@ -2074,7 +2074,7 @@ components:
       required:
       - name
       - business_id
-      - primary_contact
+      - email
       - id
       title: OrganisationRead
       type: object
@@ -2093,7 +2093,7 @@ components:
           format: uuid
           title: Organisation Id
           type: string
-        primary_contact:
+        email:
           title: Primary Contact
           type: string
         website:
@@ -2858,7 +2858,7 @@ components:
           format: uuid
           title: Organisation Id
           type: string
-        primary_contact:
+        email:
           title: Primary Contact
           type: string
         role:
@@ -2880,7 +2880,7 @@ components:
           type: string
       required:
       - name
-      - primary_contact
+      - email
       - id
       - role
       title: User
@@ -2894,7 +2894,7 @@ components:
           format: uuid
           title: Organisation Id
           type: string
-        primary_contact:
+        email:
           title: Primary Contact
           type: string
         role:
@@ -2912,7 +2912,7 @@ components:
           type: array
       required:
       - name
-      - primary_contact
+      - email
       - id
       - role
       title: UserBase
@@ -2926,7 +2926,7 @@ components:
           format: uuid
           title: Organisation Id
           type: string
-        primary_contact:
+        email:
           title: Primary Contact
           type: string
         role:
@@ -2948,7 +2948,7 @@ components:
           type: string
       required:
       - name
-      - primary_contact
+      - email
       - id
       - role
       - id
@@ -2967,7 +2967,7 @@ components:
           format: uuid
           title: Organisation Id
           type: string
-        primary_contact:
+        email:
           title: Primary Contact
           type: string
         role:

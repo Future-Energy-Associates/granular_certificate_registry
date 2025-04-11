@@ -32,25 +32,30 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def get_user(user_name: str, read_session: Session) -> User | None:
+def get_user(email: str, read_session: Session) -> User | None:
     """Retrieve a User from the database matching the provided name.
 
     Args:
-        user_name (str): The name of the User to retrieve.
+        email (str): The email address of the User to retrieve.
         read_session (Session): The database session to read from.
 
     Returns:
         user: The User object matching the provided name.
 
+    Raises:
+        HTTPException: If the user does not exist, return a 404.
+
     """
-    return read_session.exec(select(User).where(User.name == user_name)).first()
+    user = read_session.exec(select(User).where(User.email == email)).first()
+
+    return user
 
 
-def authenticate_user(user_name: str, password: str, read_session: Session) -> User:
+def authenticate_user(email: str, password: str, read_session: Session) -> User:
     """Authenticate a user by verifying their password.
 
     Args:
-        user_name (str): The name of the User to authenticate.
+        email (str): The email address of the User to authenticate.
         password (str): The password to verify.
         read_session (Session): The database session to read from.
 
@@ -58,16 +63,21 @@ def authenticate_user(user_name: str, password: str, read_session: Session) -> U
         user: The User object matching the provided name.
 
     Raises:
-        HTTPException: If the user does not exist or the password is incorrect, return a 404 or 401 respectively.
+        HTTPException: If the user's password is incorrect, return a 401.
 
     """
-    user = get_user(user_name, read_session)
+    user = get_user(email, read_session)
+
     if user is None:
-        raise HTTPException(status_code=404, detail=f"User '{user_name}' not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User '{email}' not found.",
+        )
+
     if not verify_password(password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Password for '{user_name}' is incorrect.",
+            detail=f"Password for '{email}' is incorrect.",
         )
     return user
 
@@ -114,12 +124,12 @@ async def get_current_user(
     """
     try:
         payload = jwt.decode(token, st.JWT_SECRET_KEY, algorithms=[st.JWT_ALGORITHM])
-        user_name = payload.get("sub")
-        if user_name is None:
+        email = payload.get("sub")
+        if email is None:
             raise CredentialsException
     except JWTError:
         raise CredentialsException
-    user = get_user(user_name, read_session)
+    user = get_user(email, read_session)
     if user is None:
         raise CredentialsException
     return user

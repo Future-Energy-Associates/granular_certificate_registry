@@ -31,7 +31,7 @@ def validate_account(account: Account | AccountBase, read_session: Session):
         user_ids_in_db = read_session.exec(
             select(User.id).filter(User.id.in_(account.user_ids))  # type: ignore
         ).all()
-        user_ids_in_db_set = {user_id for (user_id,) in user_ids_in_db}
+        user_ids_in_db_set = set(user_ids_in_db)
         if user_ids_in_db_set != set(account.user_ids):
             raise HTTPException(
                 status_code=400,

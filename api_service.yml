@@ -1,0 +1,23 @@
+runtime: custom
+env: flex
+
+resources:
+  cpu: 1
+  memory_gb: 4
+  disk_size_gb: 10
+
+network:
+  instance_tag: registry
+  name: default
+
+env_variables:
+  ENVIRONMENT: "PROD"
+  FRONTEND_URL: "https://frontend-dot-rich-store-445612-c6.ew.r.appspot.com"
+
+automatic_scaling:
+  min_num_instances: 1
+  max_num_instances: 5
+  cpu_utilization:
+    target_utilization: 0.6
+
+service: api

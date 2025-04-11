@@ -3,13 +3,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 import gc_registry.device.services as device_services
+import gc_registry.user.services as user_services
 from gc_registry.account.models import (
     Account,
-    AccountBase,
-    AccountRead,
     AccountWhitelistLink,
 )
-from gc_registry.account.schemas import AccountSummary, AccountUpdate, AccountWhitelist
+from gc_registry.account.schemas import (
+    AccountBase,
+    AccountRead,
+    AccountSummary,
+    AccountUpdate,
+    AccountWhitelist,
+)
 from gc_registry.account.validation import (
     validate_account,
     validate_and_apply_account_whitelist_update,
@@ -23,7 +28,8 @@ from gc_registry.certificate.services import get_certificate_bundles_by_account_
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import UserRoles
 from gc_registry.device.models import DeviceRead
-from gc_registry.user.models import User
+from gc_registry.logging_config import logger
+from gc_registry.user.models import User, UserAccountLink
 from gc_registry.user.validation import validate_user_access, validate_user_role
 
 from . import services
@@ -42,11 +48,26 @@ def create_account(
 ):
     validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
     validate_account(account_base, read_session)
+
+    # By default, create the account as linked to the current user
+    account_base.user_ids = account_base.user_ids + [current_user.id]
+
     accounts = Account.create(account_base, write_session, read_session, esdb_client)
     if not accounts:
         raise HTTPException(status_code=500, detail="Could not create Account")
 
-    account = accounts[0].model_dump()
+    account = AccountRead.model_validate(accounts[0].model_dump())
+
+    # Update link table to link the current user and list of associated users to the account
+    _user_account_link = UserAccountLink.create(
+        [
+            {"user_id": user_id, "account_id": account.id}
+            for user_id in account_base.user_ids
+        ],
+        write_session,
+        read_session,
+        esdb_client,
+    )
 
     return account
 
@@ -76,13 +97,18 @@ def update_account(
     validate_user_access(current_user, account_id, read_session)
 
     account = Account.by_id(account_id, write_session)
-    if not account:
+    if not account or not account.id:
         raise HTTPException(
             status_code=404, detail=f"Account ID not found: {account_id}"
         )
 
     if account.is_deleted:
         raise HTTPException(status_code=400, detail="Cannot update deleted accounts.")
+
+    if account_update.user_ids is not None:
+        services.update_account_user_links(
+            account.id, account_update, write_session, read_session, esdb_client
+        )
 
     updated_account = account.update(
         account_update, write_session, read_session, esdb_client
@@ -92,6 +118,7 @@ def update_account(
         raise HTTPException(
             status_code=400, detail=f"Error during account update: {account_id}"
         )
+
     return updated_account
 
 
@@ -212,7 +239,7 @@ def get_users_by_account_id(
             status_code=400, detail="Cannot get users for deleted accounts."
         )
 
-    users = services.get_users_by_account_id(account_id, read_session)
+    users = user_services.get_users_by_account_id(account_id, read_session)
 
     if not users:
         raise HTTPException(status_code=404, detail="No users found for account")
@@ -255,13 +282,40 @@ def get_all_devices_by_account_id(
 ):
     validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
 
+    # check the account exists
+    account = Account.by_id(account_id, read_session)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
     devices = device_services.get_devices_by_account_id(account_id, read_session)
 
     if not devices:
-        raise HTTPException(status_code=404, detail="No devices found for account")
+        logger.info(f"No devices found for account {account_id}")
+        return []
 
     for device in devices:
         validate_user_access(current_user, device.account_id, read_session)
+
+    return [device.model_dump() for device in devices]
+
+
+@router.get("/{account_id}/certificates/devices", response_model=list[DeviceRead])
+def get_devices_for_account_certificates(
+    account_id: int,
+    current_user: User = Depends(get_current_user),
+    read_session: Session = Depends(db.get_read_session),
+):
+    """Return all devices associated with an account that have certificates issued against them."""
+    validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
+    validate_user_access(current_user, account_id, read_session)
+
+    devices = device_services.get_certificate_devices_by_account_id(
+        read_session, account_id
+    )
+
+    if not devices:
+        logger.info(f"No devices found for account {account_id} certificates")
+        return []
 
     return [device.model_dump() for device in devices]
 

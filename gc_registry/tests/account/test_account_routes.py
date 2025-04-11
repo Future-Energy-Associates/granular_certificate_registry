@@ -1,10 +1,12 @@
 from fastapi.testclient import TestClient
+from sqlmodel import Session, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from gc_registry.account.models import Account
-from gc_registry.account.schemas import AccountWhitelist
+from gc_registry.account.schemas import AccountUpdate, AccountWhitelist
 from gc_registry.certificate.models import GranularCertificateBundle
 from gc_registry.device.models import Device
-from gc_registry.user.models import User
+from gc_registry.user.models import User, UserAccountLink
 
 
 class TestAccountRoutes:
@@ -112,12 +114,14 @@ class TestAccountRoutes:
         assert wind_device["local_device_identifier"] == "BMU-XYZ"
 
         # Test getting all devices by account ID that does not exist
+        incorrect_id = 999
         response = api_client.get(
-            "/account/999/devices",
+            f"/account/{incorrect_id}/devices",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == 404
-        assert response.json()["detail"] == "No devices found for account"
+        print(response.json())
+        assert response.json()["detail"] == f"Account with id {incorrect_id} not found"
 
     def test_get_account_summary(
         self,
@@ -135,6 +139,14 @@ class TestAccountRoutes:
         )
         assert response.status_code == 200
         assert response.json()["energy_by_fuel_type"] == {"wind": 1000}
+        assert response.json()["num_devices_by_type"] == {
+            "wind_turbine": 1,
+            "solar_pv": 1,
+        }
+        assert response.json()["device_capacity_by_type"] == {
+            "wind_turbine": 3000,
+            "solar_pv": 1000,
+        }
 
         # Test getting all devices by account ID that does not exist
         fake_id = 1234
@@ -159,7 +171,7 @@ class TestAccountRoutes:
         )
         print(response.json())
         assert response.status_code == 200
-        assert response.json()[0]["primary_contact"] == "jake_fake@fakecorp.com"
+        assert response.json()[0]["email"] == "jake_fake@fakecorp.com"
 
     def test_get_whitelist_inverse(
         self,
@@ -185,29 +197,100 @@ class TestAccountRoutes:
         assert response.status_code == 200
         assert response.json()[0]["id"] == fake_db_account.id
 
+    def test_list_all_account_bundles(
+        self,
+        api_client: TestClient,
+        token: str,
+        fake_db_granular_certificate_bundle: GranularCertificateBundle,
+        fake_db_granular_certificate_bundle_2: GranularCertificateBundle,
+        fake_db_user: User,
+        fake_db_account: Account,
+    ):
+        # Test case 1: Try to query a certificate with correct parameters
+        response = api_client.get(
+            f"/account/{fake_db_account.id}/certificates",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
-def test_list_all_account_bundles(
-    api_client: TestClient,
-    token: str,
-    fake_db_granular_certificate_bundle: GranularCertificateBundle,
-    fake_db_granular_certificate_bundle_2: GranularCertificateBundle,
-    fake_db_user: User,
-    fake_db_account: Account,
-):
-    # Test case 1: Try to query a certificate with correct parameters
-    response = api_client.get(
-        f"/account/{fake_db_account.id}/certificates",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+        assert response.status_code == 200
+        assert len(response.json()["granular_certificate_bundles"]) == 2
 
-    assert response.status_code == 200
-    assert len(response.json()["granular_certificate_bundles"]) == 2
+        # Now test with a limit
+        response = api_client.get(
+            f"/account/{fake_db_account.id}/certificates?limit=1",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
-    # Now test with a limit
-    response = api_client.get(
-        f"/account/{fake_db_account.id}/certificates?limit=1",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+        assert response.status_code == 200
+        assert len(response.json()["granular_certificate_bundles"]) == 1
 
-    assert response.status_code == 200
-    assert len(response.json()["granular_certificate_bundles"]) == 1
+    def test_list_all_account_certificate_devices(
+        self,
+        api_client: TestClient,
+        token: str,
+        fake_db_granular_certificate_bundle: GranularCertificateBundle,
+        fake_db_wind_device: Device,
+        fake_db_user: User,
+        fake_db_account: Account,
+    ):
+        response = api_client.get(
+            f"/account/{fake_db_account.id}/certificates/devices",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        print(response.json())
+        assert response.status_code == 200
+        assert len(response.json()) == 1
+        assert response.json()[0]["device_name"] == "fake_wind_device"
+
+    def test_update_account_users(
+        self,
+        api_client: TestClient,
+        token: str,
+        fake_db_account: Account,
+        fake_db_user: User,
+        fake_db_user_2: User,
+        read_session: Session,
+    ):
+        """Test that the users for an account can be updated via their FastAPI routes."""
+
+        # Add fake_db_user_2 to fake_db_account
+        updated_account = AccountUpdate(user_ids=[fake_db_user.id, fake_db_user_2.id])  # type: ignore
+
+        response = api_client.patch(
+            f"account/update/{fake_db_account.id}",
+            content=updated_account.model_dump_json(exclude_defaults=True),
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["user_ids"] == [fake_db_user.id, fake_db_user_2.id]
+
+        # Check the user account link table to see that the users have been added
+        stmt: SelectOfScalar = select(UserAccountLink).where(
+            UserAccountLink.account_id == fake_db_account.id
+        )
+        user_account_links = read_session.exec(stmt).all()
+        assert len(user_account_links) == 2
+        assert user_account_links[0].user_id == fake_db_user.id
+        assert user_account_links[1].user_id == fake_db_user_2.id
+
+        # Remove fake_db_user_2 from fake_db_account
+        updated_account = AccountUpdate(user_ids=[fake_db_user.id])
+
+        response = api_client.patch(
+            f"account/update/{fake_db_account.id}",
+            content=updated_account.model_dump_json(exclude_defaults=True),
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["user_ids"] == [fake_db_user.id]
+
+        # Check the user account link table to see that the users have been removed
+        stmt_2: SelectOfScalar = select(UserAccountLink).where(
+            UserAccountLink.account_id == fake_db_account.id
+        )
+        user_account_links = read_session.exec(stmt_2).all()
+        assert len(user_account_links) == 1
+        assert user_account_links[0].user_id == fake_db_user.id

@@ -4,6 +4,7 @@ from typing import Any, Hashable, cast
 import pandas as pd
 import pytest
 from esdbclient import EventStoreDBClient
+from fastapi import HTTPException
 from sqlmodel import Session
 
 from gc_registry.account.models import Account, AccountWhitelistLink
@@ -29,7 +30,11 @@ from gc_registry.certificate.services import (
     split_certificate_bundle,
 )
 from gc_registry.certificate.validation import validate_granular_certificate_bundle
-from gc_registry.core.models.base import CertificateStatus
+from gc_registry.core.models.base import (
+    CertificateStatus,
+    DeviceTechnologyType,
+    EnergySourceType,
+)
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.meter_data.manual_submission import ManualSubmissionMeterClient
 from gc_registry.device.models import Device
@@ -161,7 +166,7 @@ class TestCertificateServices:
         # This will fail because the bundle_quantity is greater than the device max watts hours
 
         granular_certificate_bundle_dict["bundle_quantity"] = (
-            fake_db_wind_device.capacity * hours
+            1e6 * fake_db_wind_device.capacity * hours
         ) * 1.5
         granular_certificate_bundle_dict["certificate_bundle_id_range_end"] = (
             granular_certificate_bundle_dict["certificate_bundle_id_range_start"]
@@ -216,8 +221,8 @@ class TestCertificateServices:
             "device_name": "Ratcliffe on Soar",
             "local_device_identifier": local_device_identifier,
             "grid": "National Grid",
-            "energy_source": "wind",
-            "technology_type": "wind",
+            "energy_source": EnergySourceType.wind,
+            "technology_type": DeviceTechnologyType.wind_turbine,
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
             "capacity": device_capacities[local_device_identifier],
             "peak_demand": 100,
@@ -529,14 +534,12 @@ class TestCertificateServices:
         )
 
         # Test with an issuance ID that doesn't exist
-
-        certificate_query = GranularCertificateQuery(
-            user_id=fake_db_user.id,
-            source_id=fake_db_granular_certificate_bundle.account_id,
-            issuance_ids=["invalid_id"],
-        )
-
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(HTTPException) as exc_info:
+            certificate_query = GranularCertificateQuery(
+                user_id=fake_db_user.id,
+                source_id=fake_db_granular_certificate_bundle.account_id,
+                issuance_ids=["invalid_id"],
+            )
             query_certificate_bundles(certificate_query, read_session)
         assert "Invalid issuance ID" in str(exc_info.value)
 
@@ -636,17 +639,17 @@ class TestCertificateServices:
 
         # create a new device
         device_dict: dict[Hashable, Any] = {
-            "device_name": "Ratcliffe on Soar",
+            "device_name": f"Generator {local_device_identifier}",
             "local_device_identifier": local_device_identifier,
-            "grid": "National Grid",
-            "energy_source": "wind",
-            "technology_type": "wind",
+            "energy_source": EnergySourceType.wind,
+            "technology_type": DeviceTechnologyType.wind_turbine,
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
             "capacity": device_capacities[local_device_identifier] * W_IN_MW,
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": fake_db_account.id,
             "is_storage": False,
+            "grid": "GB National Grid",
         }
         devices = Device.create(device_dict, write_session, read_session, esdb_client)
 
@@ -673,6 +676,6 @@ class TestCertificateServices:
         query = GranularCertificateQuery(
             source_id=1,
             user_id=1,
-            issuance_ids=["id1", "id2"],
+            issuance_ids=["1-2024-10-01 12:00:00", "2-2024-10-01 12:00:00"],
         )
-        assert query.issuance_ids == ["id1", "id2"]
+        assert query.issuance_ids == ["1-2024-10-01 12:00:00", "2-2024-10-01 12:00:00"]

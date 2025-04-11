@@ -26,17 +26,13 @@ class DeviceTechnologyType(str, enum.Enum):
     wind_turbine = "wind_turbine"
     hydro = "hydro"
     battery_storage = "battery_storage"
-    ev_charger = "ev_charger"
+    other_storage = "other_storage"
     chp = "chp"
     other = "other"
 
-
-class EnergyCarrierType(str, enum.Enum):
-    electricity = "electricity"
-    natural_gas = "natural_gas"
-    hydrogen = "hydrogen"
-    heat = "heat"
-    other = "other"
+    @classmethod
+    def values(cls):
+        return [e.value for e in cls]
 
 
 class EnergySourceType(str, enum.Enum):
@@ -49,6 +45,14 @@ class EnergySourceType(str, enum.Enum):
     geothermal = "geothermal"
     battery_storage = "battery_storage"
     chp = "chp"
+    other = "other"
+
+
+class EnergyCarrierType(str, enum.Enum):
+    electricity = "electricity"
+    natural_gas = "natural_gas"
+    hydrogen = "hydrogen"
+    heat = "heat"
     other = "other"
 
 

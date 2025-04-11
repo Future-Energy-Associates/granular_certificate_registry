@@ -1,11 +1,8 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
-from sqlalchemy import ARRAY, Column, String
 from sqlmodel import Field, Relationship
 
 from gc_registry import utils
-from gc_registry.core.models.base import UserRoles
 from gc_registry.user.schemas import UserBase
 
 if TYPE_CHECKING:
@@ -24,33 +21,15 @@ class UserAccountLink(utils.ActiveRecord, table=True):
     is_deleted: bool = Field(default=False)
 
 
-class User(UserBase, table=True):
+class User(UserBase, utils.ActiveRecord, table=True):
     # Postgres reserves the name "user" as a keyword, so we use "registry_user" instead
     __tablename__: str = "registry_user"  # type: ignore
 
     id: int | None = Field(default=None, primary_key=True)
-    account_ids: List[int] | None = Field(
-        default=None,
-        description="The accounts to which the user is registered.",
-        sa_column=Column(ARRAY(String())),
-    )
-    accounts: List["Account"] | None = Relationship(
+    accounts: list["Account"] | None = Relationship(
         back_populates="users", link_model=UserAccountLink
     )
     organisation: str | None = Field(
         default=None,
         description="The organisation to which the user is registered.",
     )
-
-
-class UserRead(UserBase):
-    id: int
-
-
-class UserUpdate(BaseModel):
-    name: str | None = None
-    primary_contact: str | None = None
-    account_ids: List[int] | None = None
-    organisation: str | None = None
-    hashed_password: str | None = None
-    role: UserRoles | None = None

@@ -3,16 +3,20 @@ from typing import Any, Hashable
 
 import pandas as pd
 
-from gc_registry.account.models import Account
+from gc_registry.account.models import Account, AccountWhitelistLink
 from gc_registry.authentication.services import get_password_hash
 from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
 from gc_registry.certificate.services import issue_certificates_in_date_range
 from gc_registry.core.database import cqrs, db, events
-from gc_registry.core.models.base import UserRoles
+from gc_registry.core.models.base import (
+    DeviceTechnologyType,
+    EnergySourceType,
+    UserRoles,
+)
 from gc_registry.device.meter_data.elexon.elexon import ElexonClient
 from gc_registry.device.models import Device
 from gc_registry.logging_config import logger
-from gc_registry.user.models import User
+from gc_registry.user.models import User, UserAccountLink
 
 
 def seed_data():
@@ -25,35 +29,86 @@ def seed_data():
 
     bmu_ids = [
         "E_MARK-1",
+        "T_ABRBO-1",
         "T_RATS-1",
-        "T_RATS-2",
-        "T_RATS-3",
-        "T_RATS-4",
-        "T_RATSGT-2",
-        "T_RATSGT-4",
+        "E_BLARW-1",
+        "C__PSMAR001",
     ]
 
     client = ElexonClient()
-    from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
-    to_datetime = from_datetime + datetime.timedelta(days=1)
+    to_datetime = datetime.datetime(2025, 1, 16, 0, 0, 0)
+    from_datetime = to_datetime - datetime.timedelta(days=4)
 
     device_capacities = client.get_device_capacities(bmu_ids)
 
     # Create an inital Admin user
-    user_dict = {
-        "primary_contact": "a_user@usermail.com",
+    admin_user_dict = {
+        "email": "admin_user@usermail.com",
         "name": "Admin",
         "hashed_password": get_password_hash("admin"),
         "role": UserRoles.ADMIN,
     }
-    user = User.create(user_dict, write_session, read_session, esdb_client)[0]
+    admin_user = User.create(admin_user_dict, write_session, read_session, esdb_client)[
+        0
+    ]
+
+    production_user_dict = {
+        "email": "production_user@usermail.com",
+        "name": "Production",
+        "hashed_password": get_password_hash("production"),
+        "role": UserRoles.PRODUCTION_USER,
+    }
+    production_user = User.create(
+        production_user_dict, write_session, read_session, esdb_client
+    )[0]
+
+    trading_user_dict = {
+        "email": "trading_user@usermail.com",
+        "name": "Trading",
+        "hashed_password": get_password_hash("trading"),
+        "role": UserRoles.TRADING_USER,
+    }
+    trading_user = User.create(
+        trading_user_dict, write_session, read_session, esdb_client
+    )[0]
 
     # Create an Account to add the certificates to
     account_dict = {
         "account_name": "Test Account",
-        "user_ids": [user.id],
+        "user_ids": [admin_user.id, production_user.id, trading_user.id],
     }
     account = Account.create(account_dict, write_session, read_session, esdb_client)[0]
+
+    for user in [admin_user, production_user, trading_user]:
+        user_account_link_dict = {"user_id": user.id, "account_id": account.id}
+
+        _ = UserAccountLink.create(
+            user_account_link_dict, write_session, read_session, esdb_client
+        )
+
+    # create second Account
+    account_dict = {
+        "account_name": "Test Account 2",
+        "user_ids": [admin_user.id],
+    }
+    account_2 = Account.create(account_dict, write_session, read_session, esdb_client)[
+        0
+    ]
+    _ = UserAccountLink.create(
+        {"user_id": admin_user.id, "account_id": account_2.id},
+        write_session,
+        read_session,
+        esdb_client,
+    )
+
+    white_list_link_dict = {
+        "target_account_id": account_2.id,
+        "source_account_id": account.id,
+    }
+
+    _ = AccountWhitelistLink.create(
+        white_list_link_dict, write_session, read_session, esdb_client
+    )
 
     # Create issuance metadata for the certificates
     issuance_metadata_dict = {
@@ -77,10 +132,10 @@ def seed_data():
             "device_name": bmu_id,
             "local_device_identifier": bmu_id,
             "grid": "National Grid",
-            "energy_source": "wind",
-            "technology_type": "wind",
+            "energy_source": EnergySourceType.wind,
+            "technology_type": DeviceTechnologyType.wind_turbine,
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
-            "capacity": device_capacities[bmu_id],
+            "capacity": device_capacities.get(bmu_id, 99999),
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": account.id,
@@ -94,6 +149,7 @@ def seed_data():
         )
         if len(data) == 0:
             logger.info(f"No data found for {bmu_id}")
+            print(f"No data found for {bmu_id}")
             continue
 
         certificate_bundles = client.map_metering_to_certificates(
@@ -106,6 +162,7 @@ def seed_data():
 
         if not certificate_bundles:
             logger.info(f"No certificate bundles found for {bmu_id}")
+            print(f"No certificate bundles found for {bmu_id}")
         else:
             _ = cqrs.write_to_database(
                 [
@@ -118,6 +175,7 @@ def seed_data():
             )
 
     logger.info("Seeding complete!")
+    print("Seeding complete!")
 
     write_session.close()
     read_session.close()
@@ -131,7 +189,7 @@ def create_device_account_and_user(
     """Create a default device, account and user for the device"""
 
     user_dict = {
-        "primary_contact": "a_user@usermail.com",
+        "email": "a_user@usermail.com",
         "name": f"Default user for {device_name}",
         "hashed_password": get_password_hash("password"),
         "role": UserRoles.PRODUCTION_USER,
@@ -143,6 +201,15 @@ def create_device_account_and_user(
         "user_ids": [user.id],
     }
     account = Account.create(account_dict, write_session, read_session, esdb_client)[0]
+
+    user_account_link_dict: dict[Hashable, int] = {
+        "user_id": user.id,
+        "account_id": account.id,
+    }
+
+    _ = UserAccountLink.create(
+        user_account_link_dict, write_session, read_session, esdb_client
+    )
 
     return account, user
 

@@ -55,12 +55,13 @@ def write_to_database(
         read_session.rollback()
         return None
 
-    batch_create_events(
-        entity_ids=[entity.id for entity in entities],  # type: ignore
-        entity_names=[entity.__class__.__name__ for entity in entities],
-        event_type=EventTypes.CREATE,
-        esdb_client=esdb_client,
-    )
+    if not entities[0].__class__.__name__ == "UserAccountLink":
+        batch_create_events(
+            entity_ids=[entity.id for entity in entities],  # type: ignore
+            entity_names=[entity.__class__.__name__ for entity in entities],
+            event_type=EventTypes.CREATE,
+            esdb_client=esdb_client,
+        )
 
     write_session.commit()
     read_session.commit()

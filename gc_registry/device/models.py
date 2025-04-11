@@ -20,12 +20,20 @@ class Device(DeviceBase, table=True):
         description="A unique identifier for the device. Integers could be used for this purpose, alternaties include the GS1 codes currently used under EECS.",
         primary_key=True,
     )
-    account_id: int = Field(foreign_key="account.id")
+    account_id: int = Field(
+        foreign_key="account.id",
+        description="The account to which the device is registered, and into which GC Bundles will be issued for energy produced by this Device.",
+    )
+    is_deleted: bool = Field(default=False)
     account: "Account" = Relationship(back_populates="devices")
 
 
 class DeviceRead(DeviceBase):
     id: int
+
+
+class DeviceCreate(DeviceBase):
+    account_id: int
 
 
 class DeviceUpdate(SQLModel):

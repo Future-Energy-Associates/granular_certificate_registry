@@ -98,20 +98,15 @@ db.revision:
 	make db.fix  && \
 		echo "Creating new revision..." && \
 		docker compose run --rm gc_registry alembic revision --autogenerate -m $(NAME) && \
-		echo "Revision created successfully." && \
-		docker compose down
-
-.PHONY: eventstore.reset
-eventstore.reset:
-	docker compose run --rm gc_registry poetry run reset-eventstore && \
-	docker compose stop eventstore.db && \
-	docker compose down
+		echo "Revision created successfully."
 
 .PHONY: db.reset
 db.reset:
-	make eventstore.reset && \
+	docker compose down && \
 	docker volume rm granular_certificate_registry_postgres_data_read && \
 	docker volume rm granular_certificate_registry_postgres_data_write && \
+		docker volume rm granular_certificate_registry_eventstore-volume-data && \
+		docker volume rm granular_certificate_registry_eventstore-volume-logs && \
 	make db.update
 
 .PHONY: db.test.migrations

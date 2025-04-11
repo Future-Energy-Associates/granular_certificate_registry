@@ -149,3 +149,50 @@ The CI workflow installs the same versions of Python/Poetry as the project and i
 if you have an active pull request associated with a branch on GitHub, a failure in any part of the workflow will notify you and prevent you from merging the pull request.
 
 The CI workflow runs [`gitleaks`](https://github.com/gitleaks/gitleaks-action?tab=readme-ov-file) to make sure that no secrets are accidently leaked.
+
+## Deployment
+
+The application is deployed to GCP using the `app.yml` file using gcloud cli. Once installed you can follow these commands:
+
+1. Install gcloud cli tool 
+
+```
+(New-Object Net.WebClient).DownloadFile("https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe", "$env:Temp\GoogleCloudSDKInstaller.exe")
+
+& $env:Temp\GoogleCloudSDKInstaller.exe
+```
+Or download the Google Cloud CLI installer at https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe
+
+2. Login to GCP by running `gcloud init` from the root of the repo.
+
+3. Follow the setup process in the terminal and select the `demo-registry` project when prompted.
+
+4. Deploy app `gcloud app deploy api_service.yml`. Make sure to check the docker install runs successfully and the API is accessible, by testing locally before running this command.
+
+5. To connect to the service via SSH you can run `gcloud app instances ssh <Instance-ID> --service=default --version=<latest-version>` you'll then need to run `docker exec -it <CONTAINER_ID_OR_NAME> sh` to access the docker container. Use `gcloud app instances list` to list instances.
+
+### Eventstore deployment
+
+This uses GCP kubernetes engine
+
+1. Create instance via GCP Kubernetes Engine
+
+2. Auth with service `gcloud container clusters get-credentials registry-eventstore --region=europe-north1`
+
+3. `kubectl apply -f deployment\eventstore_deploy.yml`
+
+3. `kubectl apply -f deployment\eventstore_service.yml`
+
+4. Get the IP `kubectl get service eventstore-service`
+
+
+### Steps to Resolve CrashLoopBackOff for EventStore
+
+1. Inspect Pod Logs: View logs to identify the source of the error (e.g., unrecognized options) `kubectl logs eventstore-7994d68f8c-mxp7x -n default`
+
+2. List All Environment Variables in the Pod: Identify conflicting environment variables like ServiceServicePort: `kubectl exec -it eventstore-7994d68f8c-mxp7x -n default -- printenv`
+
+3. Disable Service Links: Prevent Kubernetes from injecting unwanted service environment variables. `kubectl edit deployment eventstore -n default` and add the following under spec.template.spec `enableServiceLinks: false`
+
+4. Restart Deployment: Apply changes and restart the pods `kubectl rollout restart deployment eventstore -n default`
+

@@ -1,0 +1,27 @@
+/* Custom RangePicker Dropdown */
+.custom-range-picker .ant-picker-dropdown {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Custom Period Time Button */
+  .period-time-button {
+    display: flex;
+    align-items: center;
+    border: 1px solid #d1d5db;
+    background-color: #fff;
+    color: #344054;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 4px 12px;
+    height: 36px;
+    transition: all 0.3s ease;
+  }
+  
+  .period-time-button:hover,
+  .period-time-button:focus {
+    border-color: #1a50dd;
+    color: #1a50dd;
+    background-color: #f5f5ff;
+  }
+  

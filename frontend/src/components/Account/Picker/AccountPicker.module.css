@@ -1,0 +1,84 @@
+.account-picker-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Style the account picker container */
+.account-picker {
+  max-width: 420px;
+  max-height: 390px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.account-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  height: 72px;
+  width: 380px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  padding-left: 12px;
+}
+
+.logo-img {
+  border-radius: 50%;
+  height: 48px;
+  width: 48px;
+}
+
+.account-card-divider {
+  margin: 0 24px 0 12px;
+  min-width: auto;
+  width: 360px;
+}
+
+.account-card:hover {
+  background-color: #f7f7f7;
+  border-color: #1890ff;
+}
+
+.card .ant-space {
+  display: flex;
+  align-items: center;
+}
+
+.card .ant-space div {
+  margin-left: 10px;
+}
+
+.card .ant-card-body {
+  padding: 12px;
+}
+
+.card .ant-card-meta-description {
+  font-size: 12px;
+}
+
+.card .ant-card-meta-title {
+  font-weight: bold;
+}
+
+.account-initial {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #043DDC;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 500;
+}

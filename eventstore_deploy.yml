@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eventstore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eventstore
+  template:
+    metadata:
+      labels:
+        app: eventstore
+    spec:
+      containers:
+      - name: eventstore
+        image: eventstore/eventstore:23.10.2-bookworm-slim
+        ports:
+        - containerPort: 2113
+        env:
+        - name: EVENTSTORE_CLUSTER_SIZE
+          value: "1"
+        - name: EVENTSTORE_RUN_PROJECTIONS
+          value: "All"
+        - name: EVENTSTORE_START_STANDARD_PROJECTIONS
+          value: "true"
+        - name: EVENTSTORE_HTTP_PORT
+          value: "2113"
+        - name: EVENTSTORE_EXT_TCP_PORT
+          value: "2113"
+        - name: EVENTSTORE_INSECURE
+          value: "true"
+        - name: EVENTSTORE_DISABLE_INTERNAL_TCP_TLS
+          value: "true"
+        - name: EVENTSTORE_DISABLE_EXTERNAL_TCP_TLS
+          value: "true"
+        - name: EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP
+          value: "true"
+        - name: EVENTSTORE_TELEMETRY_OPTOUT
+          value: "true"
+        - name: DOTNET_EnableWriteXorExecute
+          value: "0"

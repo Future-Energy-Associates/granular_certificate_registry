@@ -437,7 +437,7 @@ class GranularCertificateQuery(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_issuance_ids(cls, values):
+    def validate_issuance_ids_and_periods(cls, values):
         if values.issuance_ids and (
             values.certificate_period_start or values.certificate_period_end
         ):
@@ -445,6 +445,33 @@ class GranularCertificateQuery(BaseModel):
                 status_code=422,
                 detail="Cannot provide issuance_ids with certificate_period_start or certificate_period_end.",
             )
+        return values
+
+    @model_validator(mode="after")
+    def validate_issuance_ids(cls, values):
+        if values.issuance_ids:
+            if not isinstance(values.issuance_ids, list):
+                raise HTTPException(
+                    status_code=422,
+                    detail="issuance_ids must be a list of strings.",
+                )
+
+            for issuance_id in values.issuance_ids:
+                parts = issuance_id.split("-")
+                if len(parts) < 4:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Invalid issuance ID: {issuance_id}.",
+                    )
+                try:
+                    _ = int(parts[0])
+                    _ = datetime.datetime.fromisoformat("-".join(parts[1:]))
+                except ValueError:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Invalid issuance ID: {issuance_id}.",
+                    )
+
         return values
 
     @model_validator(mode="after")

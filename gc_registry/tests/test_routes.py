@@ -1,6 +1,5 @@
-import datetime
-
 from fastapi.testclient import TestClient
+from sqlmodel import Session
 
 from gc_registry.account.models import Account, AccountBase
 from gc_registry.account.schemas import AccountUpdate
@@ -11,30 +10,34 @@ class TestRoutes:
         self, api_client: TestClient, token: str, fake_db_account: Account
     ):
         """Test that entities can be read from the database by ID."""
-        fake_db_account_response = api_client.get(
+        response = api_client.get(
             f"account/{fake_db_account.id}",
             headers={"Authorization": f"Bearer {token}"},
         )
-        fake_db_account_from_db = Account(**fake_db_account_response.json())  # type: ignore
+        fake_db_account_from_db = Account(**response.json())
 
-        different_fields = [
-            {
-                "from_conftest": {field: fake_db_account.__dict__[field]},
-                "from_db": {field: fake_db_account_from_db.__dict__[field]},
-            }
-            for field in fake_db_account.__dict__
-            if fake_db_account.__dict__[field]
-            != fake_db_account_from_db.__dict__[field]
-            if field != "_sa_instance_state"
-        ]
-
-        fake_db_account_from_db.created_at = datetime.datetime.fromisoformat(
-            str(fake_db_account_from_db.created_at)
+        fake_db_account_from_db.created_at = fake_db_account_from_db.created_at.replace(
+            microsecond=0, tzinfo=None
+        )
+        fake_db_account.created_at = fake_db_account.created_at.replace(
+            microsecond=0, tzinfo=None
         )
 
-        assert (
-            fake_db_account_from_db == fake_db_account
-        ), f"Objects did not maych. Different fields: {different_fields}"
+        fake_db_account_dict = {
+            k: v
+            for k, v in fake_db_account.model_dump().items()
+            if k != "_sa_instance_state"
+        }
+        fake_db_account_from_db_dict = {
+            k: v
+            for k, v in fake_db_account_from_db.model_dump().items()
+            if k != "_sa_instance_state"
+        }
+        for k, v in fake_db_account_from_db_dict.items():
+            assert k in fake_db_account_dict.keys(), f"Key {k} not in fake_db_account"
+            assert (
+                v == fake_db_account_dict[k]
+            ), f"Value {v} not equal to fake_db_account value {fake_db_account_dict[k]}"
 
     def test_create_entity(self, api_client: TestClient, token: str):
         """Test that entities can be created in the database via their FastAPI routes."""
@@ -87,7 +90,11 @@ class TestRoutes:
         ), f"Expected {updated_account} but got {updated_account_from_db}"
 
     def test_delete_entity(
-        self, api_client: TestClient, token: str, fake_db_account: Account
+        self,
+        api_client: TestClient,
+        token: str,
+        fake_db_account: Account,
+        read_session: Session,
     ):
         """Test that entities can be deleted in the database via their FastAPI routes."""
 
@@ -96,11 +103,11 @@ class TestRoutes:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        deleted_account_response = api_client.get(
-            f"account/{fake_db_account.id}",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-        deleted_account = Account(**deleted_account_response.json())
+        assert fake_db_account.id is not None
+
+        deleted_account = Account.by_id(fake_db_account.id, read_session)
+
+        print(deleted_account)
 
         assert (
             deleted_account.is_deleted

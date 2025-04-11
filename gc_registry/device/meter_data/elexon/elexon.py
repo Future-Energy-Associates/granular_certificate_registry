@@ -238,7 +238,7 @@ class ElexonClient:
         self,
         bmu_ids: list[str],
         from_date: datetime.date = datetime.datetime.now().date()
-        - datetime.timedelta(days=365 * 4),
+        - datetime.timedelta(days=365 * 5),
         to_date: datetime.date = datetime.datetime.now().date(),
         dataset: str = "IGCPU",
     ) -> dict[str, Any]:
@@ -275,11 +275,6 @@ class ElexonClient:
         df = df[df.bmUnit.isin(bmu_ids)]
         df = df[["bmUnit", "installedCapacity"]]
         df["installedCapacity"] = df["installedCapacity"].astype(int)
-
-        # check if all bmu_ids are in the data
-        if len(df) != len(bmu_ids):
-            missing_bmu_ids = set(bmu_ids) - set(df["bmUnit"])
-            raise ValueError(f"Missing BMU IDs: {missing_bmu_ids}")
 
         device_dictionary = df.to_dict(orient="records")
         device_capacities = {

@@ -2,6 +2,15 @@
 
 Tracks changes between releases following the semantic versioning outlined in the development documentation.
 
+### v. 0.2.2
+
+**New Features**
+- Adds `GET /users/me` and `GET /users/me/accounts` to retrieve the logged in user and its linked accounts
+- Adds `GET /accounts/{account_id}/users` to retrieve the users linked to an account
+- Adds `GET /accounts/{account_id}/certificates` to retrieve the certificates linked to an account
+- Adds `GET /accounts/{account_id}/devices` to retrieve the devices linked to an account
+- Changes authentication to use the user's email address rather than user name
+
 ### v. 0.2.1
 
 **New Features**

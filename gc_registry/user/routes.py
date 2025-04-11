@@ -1,15 +1,22 @@
+from typing import Annotated
+
 from esdbclient import EventStoreDBClient
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 
+from gc_registry.account.schemas import AccountRead
+from gc_registry.account.services import get_accounts_by_user_id
 from gc_registry.authentication.services import get_current_user
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import UserRoles
-from gc_registry.user.models import User, UserBase, UserRead, UserUpdate
+from gc_registry.user.models import User
+from gc_registry.user.schemas import UserBase, UserRead, UserUpdate
 from gc_registry.user.validation import validate_user_role
 
 # Router initialisation
 router = APIRouter(tags=["Users"])
+
+LoggedInUser = Annotated[User, Depends(get_current_user)]
 
 ### User ###
 
@@ -28,6 +35,24 @@ def create_user(
     return user
 
 
+@router.get("/me", response_model=UserRead)
+def read_current_user(
+    current_user: LoggedInUser, read_session: Session = Depends(db.get_read_session)
+) -> UserRead:
+    user_read = UserRead.model_validate(current_user.model_dump())
+    user_accounts = get_accounts_by_user_id(current_user.id, read_session)
+    user_read.accounts = user_accounts
+    return user_read
+
+
+@router.get("/me/accounts", response_model=list[AccountRead] | None)
+def read_current_user_accounts(
+    current_user: LoggedInUser, read_session: Session = Depends(db.get_read_session)
+) -> list[AccountRead] | None:
+    accounts = get_accounts_by_user_id(current_user.id, read_session)
+    return accounts
+
+
 @router.get("/{user_id}", response_model=UserRead)
 def read_user(
     user_id: int,
@@ -37,7 +62,17 @@ def read_user(
     validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
     user = User.by_id(user_id, read_session)
 
-    return user
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {user_id} not found.",
+        )
+    user_read = UserRead.model_validate(user.model_dump())
+    user_accounts = get_accounts_by_user_id(user_id, read_session)
+
+    user_read.accounts = user_accounts
+
+    return user_read
 
 
 @router.patch("/update/{user_id}", response_model=UserRead)
