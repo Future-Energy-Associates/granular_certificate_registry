@@ -53,9 +53,8 @@ class DButils:
         self.engine = create_engine(
             self.connection_str,
             pool_pre_ping=True,
-            pool_size=10,
-            max_overflow=20,
-            pool_timeout=30,
+            pool_size=100,
+            max_overflow=-1,
             pool_recycle=1800,
             echo=False,
         )
@@ -63,13 +62,6 @@ class DButils:
     def yield_session(self) -> Generator[Any, Any, Any]:
         with Session(self.engine) as session, session.begin():
             yield session
-
-    def yield_twophase_session(self, write_object) -> Generator[Any, Any, Any]:
-        with Session(self.engine, twophase=True) as session:
-            yield session
-
-    def get_session(self) -> Session:
-        return Session(self.engine)
 
 
 # Initialising the DButil clients
@@ -98,17 +90,13 @@ def get_db_name_to_client():
     return db_name_to_client
 
 
-def get_session(target: str) -> Generator[Session, None, None]:
-    with next(db_name_to_client[target].yield_session()) as session:
-        try:
-            yield session
-        finally:
-            session.close()
+def get_write_session():
+    db_client = db_name_to_client["db_write"]
+    session = next(db_client.yield_session())
+    return session
 
 
-def get_write_session() -> Session:
-    return next(get_session("db_write"))
-
-
-def get_read_session() -> Session:
-    return next(get_session("db_read"))
+def get_read_session():
+    db_client = db_name_to_client["db_read"]
+    session = next(db_client.yield_session())
+    return session
