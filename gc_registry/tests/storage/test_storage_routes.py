@@ -2,10 +2,8 @@ import io
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, select
-from sqlmodel.sql.expression import SelectOfScalar
+from sqlmodel import Session
 
-from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
 from gc_registry.device.models import Device
 
 
@@ -78,8 +76,6 @@ def test_submit_storage_records_success(
         data=data,
         headers={"Authorization": f"Bearer {token_storage_validator}"},
     )
-
-    print(response.text)
 
     assert response.status_code == 201
     response_data = response.json()
