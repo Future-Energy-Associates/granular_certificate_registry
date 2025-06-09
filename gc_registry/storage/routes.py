@@ -10,15 +10,13 @@ from gc_registry.certificate.schemas import (
 from gc_registry.core.database import db, events
 from gc_registry.storage.models import (
     StorageAction,
-    StorageChargeRecord,
-    StorageDischargeRecord,
+    StorageRecord,
 )
 from gc_registry.storage.schemas import (
-    SCRQueryResponse,
-    SDRQueryResponse,
+    AllocatedStorageRecordSubmissionResponse,
     StorageActionResponse,
-    StorageChargeRecordBase,
-    StorageDischargeRecordBase,
+    StorageRecordBase,
+    StorageRecordQueryResponse,
 )
 from gc_registry.user.models import User
 
@@ -28,25 +26,25 @@ router = APIRouter(tags=["Storage"])
 
 @router.post(
     "/create_scr",
-    response_model=StorageChargeRecord,
+    response_model=StorageRecordBase,
     status_code=201,
 )
 def create_SCR(
-    scr_base: StorageChargeRecordBase,
+    scr_base: StorageRecord,
     current_user: User = Depends(get_current_user),
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Create a Storage Charge Record with the specified properties."""
-    scr = StorageChargeRecord.create(scr_base, write_session, read_session, esdb_client)
+    scr = StorageRecord.create(scr_base, write_session, read_session, esdb_client)
 
     return scr
 
 
 @router.get(
     "/query_scr",
-    response_model=SCRQueryResponse,
+    response_model=StorageRecordQueryResponse,
     status_code=200,
 )
 def query_SCR(
@@ -66,27 +64,25 @@ def query_SCR(
 
 @router.post(
     "/create_sdr",
-    response_model=StorageDischargeRecord,
+    response_model=StorageRecord,
     status_code=201,
 )
 def create_SDR(
-    sdr_base: StorageDischargeRecordBase,
+    sdr_base: StorageRecordBase,
     current_user: User = Depends(get_current_user),
     write_session: Session = Depends(db.get_write_session),
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Create a Storage Discharge Record with the specified properties."""
-    sdr = StorageDischargeRecord.create(
-        sdr_base, write_session, read_session, esdb_client
-    )
+    sdr = StorageRecord.create(sdr_base, write_session, read_session, esdb_client)
 
     return sdr
 
 
 @router.get(
     "/query_sdr",
-    response_model=SDRQueryResponse,
+    response_model=AllocatedStorageRecordSubmissionResponse,
     status_code=200,
 )
 def query_SDR(
