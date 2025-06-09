@@ -43,13 +43,10 @@ def get_device_capacity_by_id(db_session: Session, device_id: int) -> float | No
         return None
 
 
-def get_device_by_id(db_session: Session, device_id: int) -> Device:
+def get_device_by_id(db_session: Session, device_id: int) -> Device | None:
     stmt: SelectOfScalar = select(Device).where(Device.id == device_id)
     device = db_session.exec(stmt).first()
-    if device:
-        return device
-    else:
-        return None
+    return device
 
 
 def device_mw_capacity_to_wh_max(

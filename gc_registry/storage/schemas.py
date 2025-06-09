@@ -50,7 +50,7 @@ class AllocatedStorageRecordBase(utils.ActiveRecord):
     )
     sdr_proportion: float = Field(
         description="The proportion of the SDR that has been allocated to the linked SCR",
-        ge=0.0,
+        gt=0.0,
         le=1.0,
     )
     scr_allocation_methodology: str = Field(
@@ -122,9 +122,6 @@ class StorageActionBase(utils.ActiveRecord):
     )
     storage_id: int | None = Field(
         description="Filter records associated with the specified production device."
-    )
-    storage_energy_source: str | None = Field(
-        description="Filter records based on the fuel type used by the production Device.",
     )
     is_deleted: bool = Field(default=False)
 

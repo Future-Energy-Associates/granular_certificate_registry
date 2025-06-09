@@ -32,7 +32,7 @@ class StorageRecord(StorageRecordBase, table=True):
     ) -> list[Self]:
         """Retrieve all Storage Records with the specified validator IDs."""
         return read_session.exec(
-            select(cls).where(cls.validator_id.in_(validator_ids))
+            select(cls).where(cls.validator_id.in_(validator_ids))  # type: ignore
         ).all()
 
 

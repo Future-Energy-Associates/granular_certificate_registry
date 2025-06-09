@@ -68,6 +68,11 @@ def test_submit_storage_records_success(
     assert response_data["total_energy"] == 5300
     assert response_data["total_records"] == 5
 
+    assert response.status_code == 201
+    response_data = response.json()
+    assert response_data["message"] == "Allocation records created successfully."
+    assert response_data["total_records"] == 2
+
     # Submit allocation records
     allocation_files = {"file": ("allocations.csv", allocations_csv_file, "text/csv")}
     response = api_client.post(
