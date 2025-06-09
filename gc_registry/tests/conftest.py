@@ -264,11 +264,42 @@ def fake_db_user_2(write_session: Session, read_session: Session) -> User:
 
 
 @pytest.fixture()
+def fake_storage_validator_user(write_session: Session, read_session: Session) -> User:
+    user_dict = {
+        "name": "fake_storage_validator",
+        "email": "jake_fake_storage_validator@fakecorp.com",
+        "hashed_password": get_password_hash("password"),
+        "role": UserRoles.STORAGE_VALIDATOR,
+    }
+
+    user_write = User.model_validate(user_dict)
+
+    user_read = add_entity_to_write_and_read(user_write, write_session, read_session)
+
+    return user_read
+
+
+@pytest.fixture()
 def token(api_client, fake_db_user: User):
     token = api_client.post(
         "auth/login",
         data={
             "username": "jake_fake@fakecorp.com",
+            "password": "password",
+        },
+    )
+
+    return token.json()["access_token"]
+
+
+@pytest.fixture()
+def token_storage_validator(
+    api_client: TestClient, fake_storage_validator_user: User
+) -> str:
+    token = api_client.post(
+        "auth/login",
+        data={
+            "username": "jake_fake_storage_validator@fakecorp.com",
             "password": "password",
         },
     )
@@ -317,6 +348,31 @@ def fake_db_account_2(
 
     user_account_link = UserAccountLink.model_validate(
         {"user_id": fake_db_user.id, "account_id": account_read.id}
+    )
+
+    _ = add_entity_to_write_and_read(user_account_link, write_session, read_session)
+
+    return account_read
+
+
+@pytest.fixture()
+def fake_db_account_storage_validator(
+    write_session: Session, read_session: Session, fake_storage_validator_user: User
+) -> Account:
+    account_dict = {
+        "account_name": "fake_account_storage_validator",
+        "user_ids": [fake_storage_validator_user.id],
+        "users": [fake_storage_validator_user],
+    }
+
+    account_write = Account.model_validate(account_dict)
+
+    account_read = add_entity_to_write_and_read(
+        account_write, write_session, read_session
+    )
+
+    user_account_link = UserAccountLink.model_validate(
+        {"user_id": fake_storage_validator_user.id, "account_id": account_read.id}
     )
 
     _ = add_entity_to_write_and_read(user_account_link, write_session, read_session)
@@ -381,6 +437,37 @@ def fake_db_solar_device(
 
 
 @pytest.fixture()
+def fake_db_storage_device(
+    write_session: Session,
+    read_session: Session,
+    fake_db_account_storage_validator: Account,
+) -> Device:
+    device_dict = {
+        "device_name": "fake_storage_device",
+        "grid": "fake_grid",
+        "energy_source": EnergySourceType.battery_storage,
+        "technology_type": DeviceTechnologyType.battery_storage,
+        "local_device_identifier": "BMU-XYZ",
+        "capacity": 1000,
+        "account_id": fake_db_account_storage_validator.id,
+        "location": "USA",
+        "commissioning_date": "2020-01-01",
+        "operational_date": "2020-01-01",
+        "peak_demand": 100,
+        "is_storage": True,
+        "is_deleted": False,
+    }
+
+    storage_device = Device.model_validate(device_dict)
+
+    device_read = add_entity_to_write_and_read(
+        storage_device, write_session, read_session
+    )
+
+    return device_read
+
+
+@pytest.fixture()
 def fake_db_issuance_metadata(
     write_session: Session, read_session: Session
 ) -> IssuanceMetaData:
@@ -423,7 +510,7 @@ def fake_db_granular_certificate_bundle(
         "energy_source": EnergySourceType.wind,
         "face_value": 1,
         "is_storage": False,
-        "sdr_allocation_id": None,
+        "allocated_storage_record_id": None,
         "storage_efficiency_factor": None,
         "issuance_post_energy_carrier_conversion": False,
         "device_id": fake_db_wind_device.id,
@@ -481,7 +568,7 @@ def fake_db_granular_certificate_bundle_2(
         "energy_source": EnergySourceType.solar_pv,
         "face_value": 1,
         "is_storage": False,
-        "sdr_allocation_id": None,
+        "allocated_storage_record_id": None,
         "storage_efficiency_factor": None,
         "issuance_post_energy_carrier_conversion": False,
         "device_id": fake_db_solar_device.id,
