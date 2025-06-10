@@ -21,16 +21,16 @@ import { useSelector } from "react-redux";
 import { useAccount } from "../../context/AccountContext.js";
 import { useNavigate } from "react-router-dom";
 
-import DeviceRegisterDialog from "./DeviceRegisterForm";
-import DeviceUploadDialog from "./DeviceUploadDataForm";
-import Summary from "./Summary";
+import DeviceRegisterDialog from "./DeviceRegisterForm.js";
+import DeviceUploadDialog from "./DeviceUploadDataForm.js";
+import Summary from "./Summary.js";
 
-import FilterTable from "../common/FilterTable";
+import FilterTable from "../Common/FilterTable.js";
 
 const { Option } = Select;
 const { Search } = Input;
 
-import { DEVICE_TECHNOLOGY_TYPE } from "../../enum";
+import { DEVICE_TECHNOLOGY_TYPE } from "../../enum/index.js";
 
 const Device = () => {
   const navigate = useNavigate();

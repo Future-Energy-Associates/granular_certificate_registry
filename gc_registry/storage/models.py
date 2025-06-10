@@ -1,44 +1,48 @@
-from sqlmodel import Field
+from typing import Self
+
+from sqlmodel import Field, Session, select
 
 from gc_registry.storage.schemas import (
+    AllocatedStorageRecordBase,
     StorageActionBase,
-    StorageChargeRecordBase,
-    StorageDischargeRecordBase,
+    StorageRecordBase,
 )
 
 
-class StorageChargeRecord(StorageChargeRecordBase, table=True):
-    scr_allocation_id: int = Field(
-        description="The unique ID of the Storage Charge Record that allocated the energy of the Storage Device to this SDR.",
+class StorageRecord(StorageRecordBase, table=True):
+    id: int | None = Field(
+        default=None,
+        description="A unique identifier for this Storage Record.",
         primary_key=True,
     )
-    account_id: int = Field(
-        foreign_key="account.id",
-        description="Each SCR is issued to a single unique production Account that its Storage Device is individually registered to.",
-    )
-    device_id: int = Field(
-        foreign_key="device.id",
-        description="The Device ID of the Storage Device that is being charged.",
-    )
+    is_deleted: bool = Field(default=False)
+
+    @classmethod
+    def validator_ids_by_device_id(
+        cls, device_id: int, read_session: Session
+    ) -> list[int]:
+        """Retrieve all validator IDs for the specified device."""
+        return read_session.exec(
+            select(cls.validator_id).where(cls.device_id == device_id)
+        ).all()
+
+    @classmethod
+    def by_validator_ids(
+        cls, validator_ids: list[int], read_session: Session
+    ) -> list[Self]:
+        """Retrieve all Storage Records with the specified validator IDs."""
+        return read_session.exec(
+            select(cls).where(cls.validator_id.in_(validator_ids))  # type: ignore
+        ).all()
 
 
-class StorageDischargeRecord(StorageDischargeRecordBase, table=True):
-    sdr_allocation_id: int = Field(
-        description="The unique ID of this Storage Discharge Record.",
+class AllocatedStorageRecord(AllocatedStorageRecordBase, table=True):
+    id: int | None = Field(
+        default=None,
+        description="A unique identifier for this Allocated Storage Record.",
         primary_key=True,
     )
-    account_id: int = Field(
-        foreign_key="account.id",
-        description="Each SDR is issued to a single unique production Account that its Storage Device is individually registered to.",
-    )
-    device_id: int = Field(
-        foreign_key="device.id",
-        description="The Device ID of the Storage Device that is being charged.",
-    )
-    scr_allocation_id: int = Field(
-        description="The unique ID of the Storage Charge Record that allocated the energy charged into this Storage Device (adjusted for losses) to this SDR.",
-        foreign_key="storagechargerecord.scr_allocation_id",
-    )
+    is_deleted: bool = Field(default=False)
 
 
 class StorageAction(StorageActionBase, table=True):

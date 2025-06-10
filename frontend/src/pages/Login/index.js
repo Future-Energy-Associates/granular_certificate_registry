@@ -148,13 +148,18 @@ const Login = () => {
               </div>
 
               <div style={{ marginTop: 64, color: "#5F6368" }}>
-                <Text>Sponsored by:</Text>
-              </div>
-
-              <div className={styles["sponsors"]}>
-                <img src={pepLogo} alt="Private Energy Partners" />
-                <img src={googleLogo} alt="Google" />
-                <img src={energyTagLogo} alt="Energy tag" />
+                <Text>
+                  Made by Future Energy Associates Ltd. in partnership with:
+                  Private Energy Partners, Google and EnergyTag. See{" "}
+                  <a
+                    href="https://www.futureenergy.associates/granularcert-os"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    https://www.futureenergy.associates/granularcert-os
+                  </a>{" "}
+                  for more information.
+                </Text>
               </div>
             </div>
           </div>

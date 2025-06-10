@@ -16,6 +16,7 @@ class UserRoles(int, Enum):
     PRODUCTION_USER = 3
     TRADING_USER = 2
     AUDIT_USER = 1
+    STORAGE_VALIDATOR = 0
 
     def __str__(self):
         return self.name.lower()

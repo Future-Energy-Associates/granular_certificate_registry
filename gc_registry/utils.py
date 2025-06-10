@@ -47,7 +47,10 @@ class ActiveRecord(SQLModel):
     @classmethod
     def create(
         cls,
-        source: list[dict[Hashable, Any]] | dict[Hashable, Any] | BaseModel,
+        source: list[dict[Hashable, Any]]
+        | dict[Hashable, Any]
+        | dict[str, Any]
+        | BaseModel,
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,

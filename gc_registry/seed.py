@@ -6,7 +6,9 @@ import pandas as pd
 from gc_registry.account.models import Account, AccountWhitelistLink
 from gc_registry.authentication.services import get_password_hash
 from gc_registry.certificate.models import GranularCertificateBundle, IssuanceMetaData
-from gc_registry.certificate.services import issue_certificates_in_date_range
+from gc_registry.certificate.services import (
+    issue_certificates_metering_integration_for_all_devices_in_date_range,
+)
 from gc_registry.core.database import cqrs, db, events
 from gc_registry.core.models.base import (
     DeviceTechnologyType,
@@ -284,60 +286,6 @@ def seed_all_generators_from_elexon(
         _ = Device.create(device_dict, write_session, read_session, esdb_client)[0]  # type: ignore
 
 
-def seed_certificates_for_all_devices_in_date_range(
-    from_date: datetime.datetime, to_date: datetime.datetime
-) -> None:
-    """
-    Seed the database with all generators data from the given source
-    Args:
-        client: The client to use to get the data
-        from_datetime: The start datetime to get the data from
-        to_datetime: The end datetime to get the data to
-    """
-
-    _ = db.get_db_name_to_client()
-    write_session = db.get_write_session()
-    read_session = db.get_read_session()
-    esdb_client = events.get_esdb_client()
-
-    client = ElexonClient()
-
-    # Create issuance metadata for the certificates
-    issuance_metadata_dict: dict[Hashable, Any] = {
-        "country_of_issuance": "UK",
-        "connected_grid_identification": "NESO",
-        "issuing_body": "OFGEM",
-        "legal_status": "legal",
-        "issuance_purpose": "compliance",
-        "support_received": None,
-        "quality_scheme_reference": None,
-        "dissemination_level": None,
-        "issue_market_zone": "NESO",
-    }
-
-    issuance_metadata_list = IssuanceMetaData.create(
-        issuance_metadata_dict,
-        write_session,
-        read_session,
-        esdb_client,
-    )
-
-    if not issuance_metadata_list:
-        raise ValueError("Could not create issuance metadata")
-
-    issuance_metadata = issuance_metadata_list[0]
-
-    issue_certificates_in_date_range(
-        from_date,
-        to_date,
-        write_session,
-        read_session,
-        esdb_client,
-        issuance_metadata.id,  # type: ignore
-        client,  # type: ignore
-    )
-
-
 def seed_all_generators_and_certificates_from_elexon(
     from_datetime: datetime.datetime | None = None,
     to_datetime: datetime.datetime | None = None,
@@ -348,4 +296,8 @@ def seed_all_generators_and_certificates_from_elexon(
         to_datetime = datetime.datetime.now() - datetime.timedelta(days=7)
         from_datetime = to_datetime - datetime.timedelta(days=1)
 
-    seed_certificates_for_all_devices_in_date_range(from_datetime, to_datetime)
+    metering_client = ElexonClient()
+
+    issue_certificates_metering_integration_for_all_devices_in_date_range(
+        from_datetime, to_datetime, metering_client
+    )

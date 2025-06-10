@@ -167,32 +167,70 @@ Or download the Google Cloud CLI installer at https://dl.google.com/dl/cloudsdk/
 
 3. Follow the setup process in the terminal and select the `demo-registry` project when prompted.
 
-4. Deploy app `gcloud app deploy api_service.yml`. Make sure to check the docker install runs successfully and the API is accessible, by testing locally before running this command.
 
-5. To connect to the service via SSH you can run `gcloud app instances ssh <Instance-ID> --service=default --version=<latest-version>` you'll then need to run `docker exec -it <CONTAINER_ID_OR_NAME> sh` to access the docker container. Use `gcloud app instances list` to list instances.
+## Cloud Run setup and deployment
 
-### Eventstore deployment
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com
 
-This uses GCP kubernetes engine
+### Basic method for deploy
+1. Build and deploy
+gcloud run deploy api --source .
 
-1. Create instance via GCP Kubernetes Engine
+2. Export config
+gcloud run services describe api --format export > api_service.yaml
 
-2. Auth with service `gcloud container clusters get-credentials registry-eventstore --region=europe-north1`
+### Update config from yaml
+gcloud run services replace api_service.yaml
 
-3. `kubectl apply -f deployment\eventstore_deploy.yml`
+### Build and push container methods
 
-3. `kubectl apply -f deployment\eventstore_service.yml`
+# 1. Build the Docker image
+docker build -t us-east1-docker.pkg.dev/rich-store-445612-c6/cloud-run-source-deploy/api:latest .
 
-4. Get the IP `kubectl get service eventstore-service`
+# 2. Authenticate Docker to your Google Cloud registry
+gcloud auth configure-docker us-east1-docker.pkg.dev
+
+# 3. Push the image to the registry
+docker push us-east1-docker.pkg.dev/rich-store-445612-c6/cloud-run-source-deploy/api:latest
+
+### Build and push in one command (preferred method)
+gcloud builds submit --tag us-east1-docker.pkg.dev/rich-store-445612-c6/cloud-run-source-deploy/api:latest
+
+### Deploy version from image (preferred method)
+gcloud run deploy api --image us-east1-docker.pkg.dev/rich-store-445612-c6/cloud-run-source-deploy/api:latest --region us-east1 --platform managed
 
 
-### Steps to Resolve CrashLoopBackOff for EventStore
+### Get logs
+gcloud builds list --limit=5
+gcloud builds log 5b6cf1f8-ff5a-4a58-b44c-eda84841e7f8
 
-1. Inspect Pod Logs: View logs to identify the source of the error (e.g., unrecognized options) `kubectl logs eventstore-7994d68f8c-mxp7x -n default`
 
-2. List All Environment Variables in the Pod: Identify conflicting environment variables like ServiceServicePort: `kubectl exec -it eventstore-7994d68f8c-mxp7x -n default -- printenv`
+### Grant secrets access
 
-3. Disable Service Links: Prevent Kubernetes from injecting unwanted service environment variables. `kubectl edit deployment eventstore -n default` and add the following under spec.template.spec `enableServiceLinks: false`
+1. First, find your service account
+gcloud run services describe api --region us-east1 --format="value(serviceAccountEmail)"
 
-4. Restart Deployment: Apply changes and restart the pods `kubectl rollout restart deployment eventstore -n default`
+2. Then grant it the Secret Manager Secret Accessor role
+gcloud projects add-iam-policy-binding rich-store-445612-c6 --member="serviceAccount:YOUR_SERVICE_ACCOUNT_EMAIL" --role="roles/secretmanager.secretAccessor"
+
+
+### Local IP whitelist
+gcloud sql instances patch rich-store-445612-c6:us-east1:registry-read-us-east1 --project=rich-store-445612-c6 --authorized-networks=82.40.248.15/32
+
+### Cloud run access to SQL
+gcloud run services update api --add-cloudsql-instances=rich-store-445612-c6:us-east1:registry-read-us-east1
+
+
+## Task jobs (issuance)
+Issuance is run with a gcloud cloud run jobs that uses the same API image. The config is saved at `gc_registry\issuance_job.yml`.
+
+To update the jobs definition run `gcloud run jobs replace gc_registry/issuance_job.yml --region us-east1`
+
+It should be executd on a schedule every day, but can optionally be run manually using `gcloud run jobs execute issuance-job --region=us-east1`. You can also add the following args to change the date range of issuance `--update-env-vars=FROM_DATE=2025
+-03-14,TO_DATE=2025-03-31`.
+
+
+
+
+
 

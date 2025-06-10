@@ -43,3 +43,12 @@ def validate_user_role(user: User, required_role: UserRoles):
     if user.role < required_role:
         msg = f"User does not have the required role: {required_role}"
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=msg)
+
+
+def validate_user_role_for_storage_validator(user: User):
+    """
+    Validate that the user has the required role to perform the action.
+    """
+    if user.role != UserRoles.STORAGE_VALIDATOR:
+        msg = f"User does not have the required role: {UserRoles.STORAGE_VALIDATOR}"
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=msg)

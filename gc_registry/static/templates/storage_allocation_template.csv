@@ -1,0 +1,2 @@
+scr_allocation_id,sdr_allocation_id,sdr_proportion,scr_allocation_methodology,gc_allocation_id,sdgc_allocation_id,efficiency_factor_methodology,efficiency_factor_interval_start,efficiency_factor_interval_end,storage_efficiency_factor
+0,1,0.5,FIFO,1,,EnergyTag Standard,2024-01-01 00:00:00,2025-01-01 00:00:00,0.87

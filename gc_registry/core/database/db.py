@@ -35,6 +35,7 @@ class DButils:
         db_host: str | None = None,
         db_port: int | None = None,
         db_name: str | None = None,
+        gcp_instance: str | None = None,
         db_test_fp: str = "gc_registry_test.db",
         test: bool = False,
     ):
@@ -44,11 +45,16 @@ class DButils:
         self._db_port = db_port
         self._db_name = db_name
         self._db_test_fp = db_test_fp
+        self._gcp_instance = gcp_instance
 
         if test:
             self.connection_str = f"sqlite:///{self._db_test_fp}"
         else:
             self.connection_str = f"postgresql://{self._db_username}:{self._db_password}@{self._db_host}:{self._db_port}/{self._db_name}"
+
+        if settings.ENVIRONMENT == "PROD":
+            socket_path = f"/cloudsql/{self._gcp_instance}"
+            self.connection_str = f"postgresql://{self._db_username}:{self._db_password}@/{self._db_name}?host={socket_path}"
 
         self.engine = create_engine(
             self.connection_str,
@@ -73,17 +79,18 @@ def get_db_name_to_client():
 
     if db_name_to_client == {}:
         db_mapping = [
-            ("db_read", settings.DATABASE_HOST_READ),
-            ("db_write", settings.DATABASE_HOST_WRITE),
+            ("db_read", settings.DATABASE_HOST_READ, settings.GCP_INSTANCE_READ),
+            ("db_write", settings.DATABASE_HOST_WRITE, settings.GCP_INSTANCE_WRITE),
         ]
 
-        for db_name, db_host in db_mapping:
+        for db_name, db_host, gcp_instance in db_mapping:
             db_client = DButils(
                 db_host=db_host,
                 db_name=settings.POSTGRES_DB,
                 db_username=settings.POSTGRES_USER,
                 db_password=settings.POSTGRES_PASSWORD,
                 db_port=settings.DATABASE_PORT,
+                gcp_instance=gcp_instance,
             )
             db_name_to_client[db_name] = db_client
 

@@ -28,9 +28,9 @@ import CertificateActionDialog from "./CertificateActionDialog";
 import CertificateDetailDialog from "./CertificateDetailDialog";
 import Summary from "./Summary";
 
-import StatusTag from "../common/StatusTag";
+import StatusTag from "../Common/StatusTag";
 
-import FilterTable from "../common/FilterTable";
+import FilterTable from "../Common/FilterTable";
 
 import { CERTIFICATE_STATUS, ENERGY_SOURCE } from "../../enum";
 

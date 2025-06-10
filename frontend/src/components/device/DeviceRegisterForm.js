@@ -4,10 +4,10 @@ import { Modal, Input, Select, DatePicker, Checkbox, Form } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useAccount } from "../../context/AccountContext.js";
 
-import { createDevice } from "../../store/device/deviceThunk";
-import { getAccountDetails } from "../../store/account/accountThunk";
+import { createDevice } from "../../store/device/deviceThunk.js";
+import { getAccountDetails } from "../../store/account/accountThunk.js";
 
-import { ENERGY_SOURCE, DEVICE_TECHNOLOGY_TYPE } from "../../enum";
+import { ENERGY_SOURCE, DEVICE_TECHNOLOGY_TYPE } from "../../enum/index.js";
 
 const { Option } = Select;
 

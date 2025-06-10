@@ -123,8 +123,13 @@ origins = [
     "http://localhost:9000",
     "http://127.0.0.1:9000",
     "http://localhost:8000",
-    "https://frontend-dot-rich-store-445612-c6.ew.r.appspot.com",
-    "https://api-dot-rich-store-445612-c6.ew.r.appspot.com",
+    "https://frontend-dot-rich-store-445612-c6.ew.r.appspot.com",  # app engine
+    "https://api-dot-rich-store-445612-c6.ew.r.appspot.com",  # app engine
+    "https://frontend-640576971908.us-east1.run.app",  # cloud run
+    "https://api-640576971908.us-east1.run.app",  # cloud run
+    "https://frontend-ciatlb2uvq-ue.a.run.app",  # cloud run
+    "https://api-ciatlb2uvq-ue.a.run.app",  # cloud run
+    "https://demo-registry.energytag.org",
 ]
 
 app.add_middleware(

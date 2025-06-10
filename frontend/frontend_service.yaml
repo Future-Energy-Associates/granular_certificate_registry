@@ -1,0 +1,55 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  annotations:
+    run.googleapis.com/build-enable-automatic-updates: 'false'
+    run.googleapis.com/build-id: d589143d-d6ae-4a53-85ff-d9da27cd979e
+    run.googleapis.com/build-image-uri: us-east1-docker.pkg.dev/rich-store-445612-c6/cloud-run-source-deploy/frontend
+    run.googleapis.com/build-name: projects/640576971908/locations/global/builds/d589143d-d6ae-4a53-85ff-d9da27cd979e
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+    run.googleapis.com/urls: '["https://frontend-640576971908.us-east1.run.app","https://frontend-ciatlb2uvq-ue.a.run.app"]'
+  labels:
+    cloud.googleapis.com/location: us-east1
+  name: frontend
+  namespace: '640576971908'
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '100'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 506.0.0
+        run.googleapis.com/startup-cpu-boost: 'true'
+      labels:
+        client.knative.dev/nonce: zvbjmsxtsy
+        run.googleapis.com/startupProbeType: Default
+    spec:
+      containerConcurrency: 80
+      containers:
+      - image: us-east1-docker.pkg.dev/rich-store-445612-c6/cloud-run-source-deploy/frontend@sha256:9f891df540942efd93bef8a4425d94b6b9f8bf7a49cc08458c67c4396dd707cb
+        ports:
+        - containerPort: 8080
+          name: http1
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        env:
+        - name: ENVIRONMENT
+          value: PROD
+        - name: FRONTEND_URL
+          value: https://frontend-dot-rich-store-445612-c6.ew.r.appspot.com
+        - name: GOOGLE_CLOUD_PROJECT
+          value: "640576971908"
+        startupProbe:
+          failureThreshold: 1
+          periodSeconds: 240
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 240
+      serviceAccountName: 640576971908-compute@developer.gserviceaccount.com
+      timeoutSeconds: 300
+  traffic:
+  - latestRevision: true
+    percent: 100

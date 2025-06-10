@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, Typography, Divider, Space } from "antd";
-import StatusTag from "../common/StatusTag";
+import StatusTag from "../Common/StatusTag";
 
 const { Text } = Typography;
 
@@ -102,15 +102,15 @@ const CertificateDetailDialog = ({ open, onClose, certificateData }) => {
   const issuingDetails = [
     {
       label: "Country of issuance",
-      value: certificateData.country || "United States",
+      value: certificateData.country_of_issuance || "Not specified",
     },
     {
       label: "Connected grid identification",
-      value: certificateData.grid_id || "ZoneA1",
+      value: certificateData.connected_grid_identification || "Not specified",
     },
     {
       label: "Issuing body",
-      value: certificateData.issuing_body || "UK Renewable Energy Authority",
+      value: certificateData.issuing_body || "Not specified",
     },
     { label: "Legal status", value: "Regulated Entity" },
     { label: "Issuance purpose", value: "Disclosure" },

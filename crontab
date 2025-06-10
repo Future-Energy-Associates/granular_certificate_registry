@@ -1,0 +1,2 @@
+# /code/crontab
+0 0 * * * cd /code && /usr/local/bin/poetry run python gc_registry/certificate/issuance_task.py >> /code/cron.log 2>&1

@@ -20,7 +20,14 @@ class UserBase(BaseModel):
                        and 'Production User'. The roles are used to determine the actions that the User is allowed
                        to perform within the registry, according to the EnergyTag Standard.""",
     )
-    hashed_password: str | None = None
+    hashed_password: str | None = Field(
+        default=None,
+        description="The hashed password of the user.",
+    )
+    organisation: str | None = Field(
+        default=None,
+        description="The organisation to which the user is registered.",
+    )
     is_deleted: bool = Field(default=False)
 
     @field_validator("email")
@@ -28,6 +35,10 @@ class UserBase(BaseModel):
         if not re.match(r"[^@]+@[^@]+\.[^@]+", v):
             raise ValueError("Please enter a valid email address.")
         return v
+
+
+class UserCreate(UserBase):
+    password: str
 
 
 class UserUpdate(BaseModel):
@@ -58,3 +69,15 @@ class UserRead(BaseModel):
             else None,
             "organisation": self.organisation,
         }
+
+
+class CreateTestAccount(BaseModel):
+    email: str
+    name: str
+    organisation: str
+
+
+class CreateTestAccountResponse(BaseModel):
+    user: UserRead
+    account: AccountRead
+    password: str

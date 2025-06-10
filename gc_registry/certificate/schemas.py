@@ -136,10 +136,10 @@ class GranularCertificateBundleBase(BaseModel):
     is_storage: int = Field(
         description="Indicates whether the Device ID is associated with a storage Device.",
     )
-    sdr_allocation_id: int | None = Field(
+    allocated_storage_record_id: int | None = Field(
         default=None,
-        description="The unique ID of the Storage Discharge Record that has been allocated to this GC Bundle.",
-        foreign_key="storagedischargerecord.sdr_allocation_id",
+        description="The unique ID of the allocated Storage Discharge Record that has been allocated to this GC Bundle.",
+        foreign_key="allocatedstoragerecord.id",
     )
     storage_efficiency_factor: float | None = Field(
         default=None,
@@ -298,10 +298,10 @@ class GranularCertificateBundleReadFull(BaseModel):
     is_storage: bool = Field(
         description="Indicates whether the Device ID is associated with a storage Device.",
     )
-    sdr_allocation_id: int | None = Field(
+    allocated_storage_record_id: int | None = Field(
         default=None,
-        description="The unique ID of the Storage Discharge Record that has been allocated to this GC Bundle.",
-        foreign_key="storagedischargerecord.sdr_allocation_id",
+        description="The unique ID of the allocated Storage Discharge Record that has been allocated to this GC Bundle.",
+        foreign_key="allocatedstoragerecord.id",
     )
     discharging_start_datetime: datetime.datetime | None = Field(
         default=None,

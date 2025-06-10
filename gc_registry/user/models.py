@@ -29,7 +29,3 @@ class User(UserBase, utils.ActiveRecord, table=True):
     accounts: list["Account"] | None = Relationship(
         back_populates="users", link_model=UserAccountLink
     )
-    organisation: str | None = Field(
-        default=None,
-        description="The organisation to which the user is registered.",
-    )

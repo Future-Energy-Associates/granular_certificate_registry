@@ -6,16 +6,16 @@ const Login = React.lazy(() => import("./pages/Login"));
 
 const Main = React.lazy(() => import("./pages/Main"));
 
-const Certificate = React.lazy(() => import("./components/certificate"));
+const Certificate = React.lazy(() => import("./components/Certificate"));
 
-const Device = React.lazy(() => import("./components/device"));
+const Device = React.lazy(() => import("./components/Device"));
 
 // const Transfer = React.lazy(() => import("./components/Transfer"));
 
-const AccountPicker = React.lazy(() => import("./components/account/Picker"));
+const AccountPicker = React.lazy(() => import("./components/Account/Picker"));
 
 const AccountManagement = React.lazy(() =>
-  import("./components/account/Management")
+  import("./components/Account/Management")
 );
 
 import {

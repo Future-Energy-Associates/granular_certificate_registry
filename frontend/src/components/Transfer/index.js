@@ -31,9 +31,9 @@ import {
 import CertificateActionDialog from "../Certificate/CertificateActionDialog";
 import CertificateDetailDialog from "../Certificate/CertificateDetailDialog";
 
-import StatusTag from "../common/StatusTag";
+import StatusTag from "../Common/StatusTag";
 
-import FilterTable from "../common/FilterTable";
+import FilterTable from "../Common/FilterTable";
 
 import {
   CERTIFICATE_STATUS,

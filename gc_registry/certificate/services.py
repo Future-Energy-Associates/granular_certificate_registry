@@ -1,7 +1,8 @@
 import datetime
-from typing import Any, Callable
+from typing import Any, Callable, Hashable
 
 import pandas as pd
+import pytz
 from esdbclient import EventStoreDBClient
 from sqlalchemy import func
 from sqlmodel import Session, SQLModel, desc, or_, select
@@ -29,7 +30,7 @@ from gc_registry.certificate.schemas import (
     GranularCertificateWithdraw,
 )
 from gc_registry.certificate.validation import validate_granular_certificate_bundle
-from gc_registry.core.database import cqrs
+from gc_registry.core.database import cqrs, db, events
 from gc_registry.core.models.base import CertificateActionType
 from gc_registry.core.services import create_bundle_hash
 from gc_registry.device.meter_data.abstract_meter_client import AbstractMeterDataClient
@@ -254,6 +255,22 @@ def issue_certificates_by_device_in_date_range(
         list[GranularCertificateBundle]: The list of certificates issued
     """
 
+    # check that date times are in UTC
+    if from_datetime.tzinfo is None or to_datetime.tzinfo is None:
+        err_msg = "from_datetime and to_datetime must be timezone aware"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+
+    if (
+        from_datetime.tzinfo != pytz.UTC
+        and from_datetime.tzinfo != datetime.timezone.utc
+    ) or (
+        to_datetime.tzinfo != pytz.UTC and to_datetime.tzinfo != datetime.timezone.utc
+    ):
+        err_msg = "from_datetime and to_datetime must be in UTC"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+
     if not device.id or not device.local_device_identifier:
         logger.error(f"No device ID or meter data ID for device: {device}")
         return None
@@ -272,7 +289,7 @@ def issue_certificates_by_device_in_date_range(
             )
             return None
 
-        # If max timestamp ias after from them use the max timestamp as the from_datetime
+        # If max timestamp is after from them use the max timestamp as the from_datetime
         if max_issued_timestamp > from_datetime:
             from_datetime = max_issued_timestamp
 
@@ -426,6 +443,58 @@ def issue_certificates_in_date_range(
             certificate_bundles.extend(created_entities)
 
     return certificate_bundles
+
+
+def issue_certificates_metering_integration_for_all_devices_in_date_range(
+    from_date: datetime.datetime, to_date: datetime.datetime, metering_client: Any
+) -> None:
+    """
+    Seed the database with all generators data from the given source
+    Args:
+        client: The client to use to get the data
+        from_datetime: The start datetime to get the data from
+        to_datetime: The end datetime to get the data to
+    """
+
+    _ = db.get_db_name_to_client()
+    write_session = db.get_write_session()
+    read_session = db.get_read_session()
+    esdb_client = events.get_esdb_client()
+
+    # Create issuance metadata for the certificates
+    issuance_metadata_dict: dict[Hashable, Any] = {
+        "country_of_issuance": "UK",
+        "connected_grid_identification": "NESO",
+        "issuing_body": "OFGEM",
+        "legal_status": "legal",
+        "issuance_purpose": "compliance",
+        "support_received": None,
+        "quality_scheme_reference": None,
+        "dissemination_level": None,
+        "issue_market_zone": "NESO",
+    }
+
+    issuance_metadata_list = IssuanceMetaData.create(
+        issuance_metadata_dict,
+        write_session,
+        read_session,
+        esdb_client,
+    )
+
+    if not issuance_metadata_list:
+        raise ValueError("Could not create issuance metadata")
+
+    issuance_metadata = issuance_metadata_list[0]
+
+    issue_certificates_in_date_range(
+        from_date,
+        to_date,
+        write_session,
+        read_session,
+        esdb_client,
+        issuance_metadata.id,  # type: ignore
+        metering_client,
+    )
 
 
 def process_certificate_bundle_action(

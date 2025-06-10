@@ -3,6 +3,7 @@ from typing import Any, Hashable, cast
 
 import pandas as pd
 import pytest
+import pytz
 from esdbclient import EventStoreDBClient
 from fastapi import HTTPException
 from sqlmodel import Session
@@ -208,7 +209,7 @@ class TestCertificateServices:
         fake_db_issuance_metadata,
         esdb_client,
     ):
-        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=pytz.UTC)
         to_datetime = from_datetime + datetime.timedelta(hours=2)
         local_device_identifier = "T_RATS-4"
 
@@ -584,7 +585,7 @@ class TestCertificateServices:
             len(readings) == 24 * 31
         ), f"Incorrect number of readings found ({len(readings)}); expected {24 * 31}."
 
-        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=pytz.UTC)
         to_datetime = from_datetime + datetime.timedelta(days=31)
 
         client = ManualSubmissionMeterClient()
@@ -618,7 +619,7 @@ class TestCertificateServices:
         fake_db_issuance_metadata: IssuanceMetaData,
         esdb_client: EventStoreDBClient,
     ):
-        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        from_datetime = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=pytz.UTC)
         to_datetime = from_datetime + datetime.timedelta(hours=4)
         local_device_identifiers = [
             "E_MARK-1",

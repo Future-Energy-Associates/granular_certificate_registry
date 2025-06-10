@@ -1,0 +1,27 @@
+version: '3'
+services:
+  eventstore.db:
+    image: eventstore/eventstore:23.10.2-bookworm-slim
+    hostname: eventstore
+    environment:
+      - EVENTSTORE_CLUSTER_SIZE=1
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_START_STANDARD_PROJECTIONS=true
+      - EVENTSTORE_HTTP_PORT=2113
+      - EVENTSTORE_EXT_TCP_PORT=2113
+      - EVENTSTORE_INSECURE=true
+      - EVENTSTORE_DISABLE_INTERNAL_TCP_TLS=true
+      - EVENTSTORE_DISABLE_EXTERNAL_TCP_TLS=true
+      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+      - EVENTSTORE_TELEMETRY_OPTOUT=true
+      - DOTNET_EnableWriteXorExecute=0
+      - EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS=10.142.0.2
+      - EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2113
+    restart: always
+    ports:
+      - "2113:2113"
+    expose:
+      - "2113"
+    volumes:
+      - /mnt/eventstore/data:/var/lib/eventstore
+      - /mnt/eventstore/logs:/var/log/eventstore
