@@ -1,10 +1,9 @@
-import pandas as pd
-from collections import deque
 from abc import ABC, abstractmethod
 
-from gc_registry.storage.models import AllocatedStorageRecord, StorageRecord
-
 from gc_registry.logging_config import logger
+from gc_registry.storage.models import AllocatedStorageRecord, StorageRecord
+from gc_registry.storage.schemas import StorageEfficiency
+
 
 class StorageAllocator(ABC):
     """
@@ -29,12 +28,16 @@ class StorageAllocator(ABC):
         self.efficiency = efficiency
 
     @abstractmethod
-    def allocate(self,storage_records: list[StorageRecord]):
+    def allocate(
+        self,
+        storage_charge_records: list[StorageRecord],
+        storage_efficiency: StorageEfficiency,
+    ):
         """
-        Perform the allocation given a DataFrame with 'ID', 'datetime', and 'MWh'.
+        Perform the allocation given a list of storage charge records and the storage efficiency.
+        This method should be implemented by subclasses to define the specific allocation logic.
         """
         pass
-    
 
     def validate_records(self) -> list[AllocatedStorageRecord] | None:
         """
@@ -44,14 +47,12 @@ class StorageAllocator(ABC):
             err = "No records provided for allocation."
             logger.error(err)
             return None
-        
+
         validated_records = []
         for record in self.allocations:
             allocated_storage_record = AllocatedStorageRecord.model_validate(record)
             validated_records.append(allocated_storage_record)
         if not validated_records:
             raise ValueError("No valid records found for allocation.")
-        
+
         return validated_records
-
-

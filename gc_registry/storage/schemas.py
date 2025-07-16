@@ -35,6 +35,7 @@ class StorageRecordBase(utils.ActiveRecord):
         description="An optional ID provided by the Storage Validator party to reference this Storage Charge/Discharge Record.",
     )
 
+
 class StorageEfficiency(BaseModel):
     efficiency_factor_methodology: str = Field(
         description="The method by which the energy storage losses of the Storage Device were calculated.",
@@ -52,7 +53,8 @@ class StorageEfficiency(BaseModel):
         le=1.0,
     )
 
-class AllocatedStorageRecordBase(utils.ActiveRecord,StorageEfficiency):
+
+class AllocatedStorageRecordBase(utils.ActiveRecord, StorageEfficiency):
     device_id: int = Field(
         description="The Device ID of the Storage Device that is being charged or discharged.",
         foreign_key="device.id",
