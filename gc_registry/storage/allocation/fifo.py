@@ -1,5 +1,6 @@
 from collections import deque
 
+from gc_registry.device.models import Device
 from gc_registry.storage.allocation.abstract import StorageAllocator
 from gc_registry.storage.models import StorageRecord
 from gc_registry.storage.schemas import StorageEfficiency
@@ -12,6 +13,10 @@ class FIFOStorageAllocator(StorageAllocator):
     It allocates energy from the oldest available storage record to the newest demand record.
     """
 
+    def __init__(self, device: Device, storage_efficiency: StorageEfficiency):
+        self.storage_efficiency = storage_efficiency
+        self.device = device
+
     @property
     def method(self) -> str:
         return "FIFO"
@@ -19,10 +24,9 @@ class FIFOStorageAllocator(StorageAllocator):
     def allocate(
         self,
         storage_charge_records: list[StorageRecord],
-        storage_efficiency: StorageEfficiency,
+        zero_remaining: float = 0.0001,
     ):
         charge_queue: deque = deque()
-        self.allocations = []
 
         for record_orm in storage_charge_records:
             record = record_orm.model_dump()
@@ -41,14 +45,14 @@ class FIFOStorageAllocator(StorageAllocator):
                 sdr_id = record_id
                 sdr_energy = energy_wh
                 gross_energy_needed = (
-                    sdr_energy / storage_efficiency.storage_efficiency_factor
+                    sdr_energy / self.storage_efficiency.storage_efficiency_factor
                 )
 
-                while gross_energy_needed > 0.001 and charge_queue:
+                while gross_energy_needed > zero_remaining and charge_queue:
                     scr_id, scr_start, scr_available = charge_queue[0]
                     allocated = min(gross_energy_needed, scr_available)
                     sdr_proportion = round(
-                        (allocated * storage_efficiency.storage_efficiency_factor)
+                        (allocated * self.storage_efficiency.storage_efficiency_factor)
                         / sdr_energy,
                         6,
                     )
@@ -62,14 +66,14 @@ class FIFOStorageAllocator(StorageAllocator):
                         "sdgc_allocation_id": None,
                     }
 
-                    allocation.update(storage_efficiency.model_dump())
+                    allocation.update(self.storage_efficiency.model_dump())
 
-                    self.allocations.append(allocation)
+                    self.raw_allocations.append(allocation)
 
                     gross_energy_needed -= allocated
                     remaining = scr_available - allocated
 
-                    if remaining > 0.001:
+                    if remaining > zero_remaining:
                         charge_queue[0] = (scr_id, scr_start, remaining)
                     else:
                         charge_queue.popleft()

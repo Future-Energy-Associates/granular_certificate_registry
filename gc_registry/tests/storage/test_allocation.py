@@ -6,6 +6,7 @@ import pytest
 # Assuming these are available in your codebase
 # from your_module import StorageRecord, FIFOStorageAllocator
 # Define the StorageRecord Pydantic model
+from gc_registry.account.models import Account
 from gc_registry.storage.allocation.fifo import FIFOStorageAllocator
 from gc_registry.storage.models import StorageRecord
 from gc_registry.storage.schemas import StorageEfficiency
@@ -50,13 +51,27 @@ def storage_efficiency() -> StorageEfficiency:
 
 
 def test_fifo_allocation(
-    storage_records: list[StorageRecord], storage_efficiency: StorageEfficiency
+    storage_records: list[StorageRecord],
+    storage_efficiency: StorageEfficiency,
+    device_factory,
+    fake_db_account: Account,
 ):
-    allocator = FIFOStorageAllocator()
-    allocator.allocate(storage_records, storage_efficiency)
+    storage_device = device_factory(
+        account=fake_db_account,
+        device_kwargs={
+            "device_name": "Test Storage Device",
+            "local_device_identifier": "TEST-123",
+            "capacity": 60,
+            "is_storage": True,
+        },
+    )
+    allocator = FIFOStorageAllocator(
+        device=storage_device, storage_efficiency=storage_efficiency
+    )
+    allocator.allocate(storage_records)
 
     # validate the allocations
-    allocator.validate_records()
+    allocator.validate_records(storage_records)
 
     assert len(allocator.allocations) > 0, "No allocations were made."
 
@@ -66,12 +81,12 @@ def test_fifo_allocation(
 
     # Check that the sum of allocated energy matches the total energy in the records
     allocated_discharged_energy = sum(
-        allocation["sdr_proportion"]
-        * storage_records[allocation["sdr_allocation_id"]].flow_energy
+        allocation.sdr_proportion
+        * storage_records[allocation.sdr_allocation_id].flow_energy
         for allocation in allocator.allocations
     )
     allocated_charge_energy = sum(
-        storage_records[allocation["scr_allocation_id"]].flow_energy
+        storage_records[allocation.scr_allocation_id].flow_energy
         for allocation in allocator.allocations
     )
 
