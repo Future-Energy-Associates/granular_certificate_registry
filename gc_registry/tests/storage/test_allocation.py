@@ -7,6 +7,10 @@ import pytest
 # from your_module import StorageRecord, FIFOStorageAllocator
 # Define the StorageRecord Pydantic model
 from gc_registry.account.models import Account
+from gc_registry.core.models.base import (
+    DeviceTechnologyType,
+    EnergySourceType,
+)
 from gc_registry.storage.allocation.fifo import FIFOStorageAllocator
 from gc_registry.storage.models import StorageRecord
 from gc_registry.storage.schemas import StorageEfficiency
@@ -60,8 +64,11 @@ def test_fifo_allocation(
         account=fake_db_account,
         device_kwargs={
             "device_name": "Test Storage Device",
+            "energy_source": EnergySourceType.battery_storage,
+            "technology_type": DeviceTechnologyType.battery_storage,
             "local_device_identifier": "TEST-123",
             "capacity": 60,
+            "peak_demand": 60,
             "is_storage": True,
         },
     )
@@ -75,9 +82,9 @@ def test_fifo_allocation(
 
     assert len(allocator.allocations) > 0, "No allocations were made."
 
-    pd.DataFrame(allocator.allocations).to_csv(
-        Path(__file__).parent / "fifo_allocations.csv", index=False
-    )
+    pd.DataFrame(
+        [allocation.model_dump() for allocation in allocator.allocations]
+    ).to_csv(Path(__file__).parent / "fifo_allocations.csv", index=False)
 
     # Check that the sum of allocated energy matches the total energy in the records
     allocated_discharged_energy = sum(

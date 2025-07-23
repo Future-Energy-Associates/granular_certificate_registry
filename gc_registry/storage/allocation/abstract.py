@@ -27,12 +27,12 @@ class StorageAllocator(ABC):
     def __init__(self, device: Device, storage_efficiency: StorageEfficiency):
         self.raw_allocations: list[dict[str, Any]] = []
         self.allocations: list[AllocatedStorageRecord] = []
-        self.efficiency = storage_efficiency
+        self.storage_efficiency = storage_efficiency
         self.device = device
 
     @property
     @abstractmethod
-    def method(self) -> str:
+    def allocation_methodology(self) -> str:
         """Returns the name of the allocation method (e.g., FIFO, LIFO)."""
         pass
 
@@ -86,11 +86,12 @@ class StorageAllocator(ABC):
 
             if (
                 exported_energy
-                > self.device.capacity * self.efficiency.storage_efficiency_factor
+                > self.device.capacity
+                * self.storage_efficiency.storage_efficiency_factor
             ):
                 err = (
                     f"Exported energy {exported_energy} between SCR {scr.id} and SDR {sdr.id} "
-                    f"exceeds device capacity {self.device.capacity} * efficiency factor {self.efficiency.storage_efficiency_factor}."
+                    f"exceeds device capacity {self.device.capacity} * efficiency factor {self.storage_efficiency.storage_efficiency_factor}."
                 )
                 logger.error(err)
                 return False

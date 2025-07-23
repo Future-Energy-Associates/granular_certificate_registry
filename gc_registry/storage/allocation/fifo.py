@@ -16,9 +16,11 @@ class FIFOStorageAllocator(StorageAllocator):
     def __init__(self, device: Device, storage_efficiency: StorageEfficiency):
         self.storage_efficiency = storage_efficiency
         self.device = device
+        self.raw_allocations = []
+        self.allocations = []
 
     @property
-    def method(self) -> str:
+    def allocation_methodology(self) -> str:
         return "FIFO"
 
     def allocate(
@@ -61,7 +63,7 @@ class FIFOStorageAllocator(StorageAllocator):
                         "scr_allocation_id": scr_id,
                         "sdr_allocation_id": sdr_id,
                         "sdr_proportion": sdr_proportion,
-                        "scr_allocation_methodology": self.method,
+                        "scr_allocation_methodology": self.allocation_methodology,
                         "gc_allocation_id": None,
                         "sdgc_allocation_id": None,
                     }
