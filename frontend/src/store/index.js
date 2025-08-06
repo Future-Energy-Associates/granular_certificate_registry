@@ -4,6 +4,7 @@ import certificateReducer from "./certificate/certificateSlice";
 import accountReducer from "./account/accountSlice";
 import userReducer from "./user/userSlice";
 import errorReducer from "./error/errorSlice";
+import storageReducer from "./storage/storageSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,5 +13,6 @@ export const store = configureStore({
     account: accountReducer, // Account state
     user: userReducer, // User state
     error: errorReducer, // Error state
+    storage: storageReducer, // Storage state
   },
 });
