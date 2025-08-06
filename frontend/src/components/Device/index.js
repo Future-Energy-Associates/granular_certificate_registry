@@ -253,7 +253,7 @@ const Device = () => {
       <Layout>
         <FilterTable
           summary={<Summary />}
-          tableName="Device management"
+          tableName="Device Management"
           columns={columns}
           filterComponents={filterComponents}
           tableActionBtns={btnList}
