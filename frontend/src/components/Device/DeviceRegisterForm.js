@@ -122,11 +122,19 @@ const DeviceRegisterDialog = forwardRef((props, ref) => {
         </Form.Item>
 
         <Form.Item
-          label="Device Capacity"
-          name="capacity"
-          rules={[{ required: true, message: "Please input device capacity" }]}
+          label="Device Power Capacity"
+          name="power_mw"
+          rules={[{ required: true, message: "Please input device power capacity in MW" }]}
         >
           <Input suffix="MW" placeholder="Ex: 80" />
+        </Form.Item>
+
+        <Form.Item
+          label="Device Energy Capacity"
+          name="energy_mwh"
+          rules={[{ required: false, message: "Please input device energy capacity in MWh, if relevant" }]}
+        >
+          <Input suffix="MWh" placeholder="Ex: 80" />
         </Form.Item>
 
         <Form.Item

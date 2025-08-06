@@ -125,13 +125,20 @@ const Device = () => {
 
   const columns = [
     {
-      title: <span style={{ color: "#80868B" }}>Device name & ID</span>,
+      title: <span style={{ color: "#80868B" }}>Device ID</span>,
+      dataIndex: "id",
+      key: "id",
+      render: (text) => <span style={{ color: "#5F6368" }}>{text}</span>,
+      sorter: (a, b) => a.id - b.id,
+    },
+    {
+      title: <span style={{ color: "#80868B" }}>Device Name</span>,
       dataIndex: "device_name",
       key: "device_name",
       sorter: (a, b) => a.device_name.localeCompare(b.device_name),
     },
     {
-      title: <span style={{ color: "#80868B" }}>Technology type</span>,
+      title: <span style={{ color: "#80868B" }}>Technology Type</span>,
       dataIndex: "technology_type",
       key: "technology_type",
       render: (type) => {
@@ -144,7 +151,7 @@ const Device = () => {
       },
     },
     {
-      title: <span style={{ color: "#80868B" }}>Production start date</span>,
+      title: <span style={{ color: "#80868B" }}>Production Start Date</span>,
       dataIndex: "operational_date",
       key: "operational_date",
       render: (date) => (date ? dayjs(date).format("YYYY-MM-DD") : "-"),
@@ -154,11 +161,18 @@ const Device = () => {
       },
     },
     {
-      title: <span style={{ color: "#80868B" }}>Device capacity (MW)</span>,
-      dataIndex: "capacity",
-      key: "capacity",
+      title: <span style={{ color: "#80868B" }}>Device Power Capacity (MW)</span>,
+      dataIndex: "power_mw",
+      key: "power_mw",
       render: (text) => <span style={{ color: "#5F6368" }}>{text}</span>,
-      sorter: (a, b) => a.capacity - b.capacity,
+      sorter: (a, b) => a.power_mw - b.power_mw,
+    },
+    {
+      title: <span style={{ color: "#80868B" }}>Device Energy Capacity (MWh)</span>,
+      dataIndex: "energy_mwh",
+      key: "energy_mwh",
+      render: (text) => <span style={{ color: "#5F6368" }}>{text}</span>,
+      sorter: (a, b) => a.energy_mwh - b.energy_mwh,
     },
     {
       title: <span style={{ color: "#80868B" }}>Location</span>,
