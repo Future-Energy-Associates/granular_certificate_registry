@@ -236,6 +236,12 @@ async def get_storage_records_by_device_id_route(
     storage_records = get_storage_records_by_device_id(device_id, read_session)
 
     # Check that the user has access to the devices associated with the storage records
+    if not storage_records:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No storage records found for the specified device ID.",
+        )
+
     device_ids = {record.device_id for record in storage_records}
 
     validate_access_to_devices(device_ids, current_user, read_session)
