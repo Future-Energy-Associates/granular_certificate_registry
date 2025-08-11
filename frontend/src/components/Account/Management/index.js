@@ -12,7 +12,7 @@ import {
   Divider,
 } from "antd";
 import { UploadOutlined, UserOutlined } from "@ant-design/icons";
-import sampleAvatar from "../../../assets/images/sample-avatar.jpeg";
+import sampleAvatar from "../../../assets/images/gcos_avatar.png";
 import { useUser } from "../../../context/UserContext";
 
 const { Content } = Layout;

@@ -12,7 +12,7 @@ import { TransferIcon } from "../../assets/icon/TransferIcon";
 import { StorageIcon } from "../../assets/icon/StorageIcon";
 import "../../assets/styles/sidemenu.css";
 import { useNavigate, useLocation } from "react-router-dom";
-import sampleAvatar from "../../assets/images/sample-avatar.jpeg";
+import sampleAvatar from "../../assets/images/gcos_avatar.png";
 import Cookies from "js-cookie";
 import { useUser } from "../../context/UserContext";
 
