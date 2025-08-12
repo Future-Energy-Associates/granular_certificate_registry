@@ -1,7 +1,9 @@
+import json
 import uuid
 from typing import Generator
 
 from esdbclient import EventStoreDBClient, NewEvent, StreamState
+from esdbclient.exceptions import NotFound
 from fastapi import Depends
 
 from gc_registry.core.models.base import Event, EventTypes
@@ -96,6 +98,31 @@ def batch_create_events(
         current_version=StreamState.ANY,
         events=esdb_events,
     )
+
+
+def retrieve_all_events_for_entity(
+    entity_id: int,
+    entity_name: str,
+    stream_name: str = "events",
+    esdb_client: EventStoreDBClient = Depends(get_esdb_client),
+):
+    """Retrieve all events for an entity from the ESDB events stream."""
+    try:
+        event_stream = esdb_client.read_stream(stream_name=stream_name)
+    except NotFound:
+        raise ValueError(f"Stream {stream_name} not found")
+
+    entity_events = []
+    for event in event_stream:
+        event_data = json.loads(event.data)
+        if (
+            event_data["entity_id"] == entity_id
+            and event_data["entity_name"] == entity_name
+        ):
+            event_data["type"] = event.type
+            entity_events.append(event_data)
+
+    return entity_events
 
 
 def reset_eventstore():
