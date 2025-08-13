@@ -281,7 +281,7 @@ const AccountManagement = () => {
                 <Input placeholder="My integration key" style={{ width: 280 }} />
               </Form.Item>
               <Form.Item name="expiresDays" label="Expires (days)">
-                <InputNumber min={1} max={365} placeholder="default" />
+                <InputNumber min={1} max={1096} placeholder="365" />
               </Form.Item>
               <Form.Item>
                 <Button type="primary" htmlType="submit" loading={creatingKey}>
