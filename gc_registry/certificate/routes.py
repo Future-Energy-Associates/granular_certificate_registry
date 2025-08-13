@@ -15,7 +15,6 @@ from gc_registry.certificate.models import (
 from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleBase,
-    GranularCertificateBundleLineage,
     GranularCertificateBundleRead,
     GranularCertificateBundleReadFull,
     GranularCertificateCancel,
@@ -27,7 +26,6 @@ from gc_registry.certificate.schemas import (
     IssuanceMetaDataBase,
 )
 from gc_registry.core.database import db, events
-from gc_registry.core.database.events import retrieve_all_events_for_entity
 from gc_registry.core.models.base import CertificateActionType, UserRoles
 from gc_registry.core.services import create_bundle_hash
 from gc_registry.device.models import Device
@@ -627,7 +625,7 @@ def get_certificate_bundle_lineage(
     )
 
     lineage = services.get_certificate_bundle_lineage(
-        current_certificate_bundle, read_session, esdb_client
+        current_certificate_bundle, esdb_client
     )
 
     if format == "timeline":

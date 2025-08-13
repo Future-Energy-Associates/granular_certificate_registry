@@ -1398,13 +1398,12 @@ def import_gc_bundles(
 
 def get_certificate_bundle_lineage(
     current_bundle: GranularCertificateBundle,
-    read_session: Session,
     esdb_client: EventStoreDBClient,
 ) -> GranularCertificateBundleLineage:
     """Get the lineage of a given certificate bundle by ID."""
 
     event_stream = events.retrieve_all_events_for_entity(
-        entity_id=current_bundle.id,
+        entity_id=current_bundle.id,  # type: ignore
         entity_name="GranularCertificateBundle",
         stream_name="events",
         esdb_client=esdb_client,
@@ -1423,7 +1422,7 @@ def get_certificate_bundle_lineage(
     ]
 
     lineage = GranularCertificateBundleLineage(
-        bundle_id=current_bundle.id,
+        bundle_id=current_bundle.id,  # type: ignore
         issuance_id=current_bundle.issuance_id,
         timeline=timeline,
         current_state=current_bundle.model_dump(),
