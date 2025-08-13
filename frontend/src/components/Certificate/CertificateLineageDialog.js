@@ -1,7 +1,19 @@
 import React, { useMemo } from "react";
-import { Modal, Timeline, Typography, Tag } from "antd";
+import { Modal, Timeline, Typography, Tag, Button } from "antd";
 
 const { Text } = Typography;
+
+const normalizeDiffs = (diffs) => {
+  if (Array.isArray(diffs)) return diffs;
+  if (diffs && typeof diffs === "object") {
+    return Object.entries(diffs).map(([field, v]) => ({
+      field,
+      before: v?.before,
+      after: v?.after,
+    }));
+  }
+  return [];
+};
 
 const statusColor = (status) => {
   switch (status) {
@@ -24,18 +36,6 @@ const statusColor = (status) => {
     default:
       return "blue";
   }
-};
-
-const normalizeDiffs = (diffs) => {
-    if (Array.isArray(diffs)) return diffs;
-    if (diffs && typeof diffs == "object") {
-        return Object.entries(diffs).map(([field, v]) => ({
-            field,
-            before: v?.before,
-            after: v?.after,
-        }));
-    }
-    return [];
 };
 
 const classify = (e) => {
@@ -110,6 +110,59 @@ const CertificateLineageDialog = ({ open, onClose, lineage }) => {
 
   if (!lineage) return null;
 
+  // Support both raw lineage and formatted timeline payloads
+  const bundleId = lineage.bundle_id ?? lineage.bundle?.bundle_id;
+  const issuanceId = lineage.issuance_id ?? lineage.bundle?.issuance_id;
+
+  const buildLineageExport = (lineageObj) => {
+    const sorted = [...(lineageObj?.timeline || [])].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
+    const eventsExport = sorted.map((e, idx) => ({
+      index: idx,
+      timestamp: e.timestamp,
+      event_type: e.event_type,
+      entity_id: e.entity_id,
+      parent_entity_id: e.parent_entity_id ?? null,
+      label: classify(e).label,
+      kind: classify(e).kind || "update",
+      diffs: Array.isArray(e.diffs) ? e.diffs : normalizeDiffs(e.diffs),
+      attributes_before: e.attributes_before || {},
+      attributes_after: e.attributes_after || {},
+    }));
+    return {
+      version: "1.0.0",
+      exported_at: new Date().toISOString(),
+      bundle: {
+        bundle_id: bundleId,
+        issuance_id: issuanceId,
+        lineage_path: lineageObj.lineage_path || [],
+        created_at: lineageObj.created_at || null,
+        last_updated_at: lineageObj.last_updated_at || null,
+        current_state: lineageObj.current_state || {},
+      },
+      events: eventsExport,
+      graph: {
+        nodes: Array.from(
+          new Set(eventsExport.flatMap((e) => [e.entity_id, e.parent_entity_id].filter(Boolean)))
+        ).map((id) => ({ id })),
+        edges: eventsExport
+          .filter((e) => e.parent_entity_id != null)
+          .map((e) => ({ from: e.parent_entity_id, to: e.entity_id, type: "split" })),
+      },
+    };
+  };
+
+  const downloadJSON = (obj, filename) => {
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Modal
       title="Certificate Lineage"
@@ -123,15 +176,28 @@ const CertificateLineageDialog = ({ open, onClose, lineage }) => {
           <Text type="secondary" style={{ marginRight: 16 }}>
             Bundle ID:
           </Text>
-          <Text strong>{lineage.bundle_id}</Text>
+          <Text strong>{bundleId}</Text>
         </div>
         <div style={{ marginBottom: 12 }}>
           <Text type="secondary" style={{ marginRight: 16 }}>
             Issuance ID:
           </Text>
-          <Text strong>{lineage.issuance_id}</Text>
+        <Text strong>{issuanceId}</Text>
         </div>
         <Timeline items={events} />
+      </div>
+      <div style={{ padding: 16 }}>
+        <Button
+          type="primary"
+          onClick={() =>
+            downloadJSON(
+              buildLineageExport(lineage),
+              `lineage_${issuanceId || bundleId || "bundle"}.json`
+            )
+          }
+        >
+          Download Lineage
+        </Button>
       </div>
     </Modal>
   );
