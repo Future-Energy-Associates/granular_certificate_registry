@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from esdbclient import EventStoreDBClient
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from sqlmodel import Session
 
@@ -15,6 +15,7 @@ from gc_registry.certificate.models import (
 from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleBase,
+    GranularCertificateBundleLineage,
     GranularCertificateBundleRead,
     GranularCertificateBundleReadFull,
     GranularCertificateCancel,
@@ -26,6 +27,7 @@ from gc_registry.certificate.schemas import (
     IssuanceMetaDataBase,
 )
 from gc_registry.core.database import db, events
+from gc_registry.core.database.events import retrieve_all_events_for_entity
 from gc_registry.core.models.base import CertificateActionType, UserRoles
 from gc_registry.core.services import create_bundle_hash
 from gc_registry.device.models import Device
@@ -600,3 +602,40 @@ def certificate_bundle_reserve(
     )
 
     return db_certificate_action
+
+
+@router.get(
+    "/lineage/{id}",
+    status_code=200,
+)
+def get_certificate_bundle_lineage(
+    id: int,
+    format: str = Query(default="timeline"),
+    current_user: User = Depends(get_current_user),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+):
+    """Get the lineage of a given certificate bundle by ID."""
+    validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
+
+    # Validate access against the bundle's account
+    current_certificate_bundle = GranularCertificateBundle.by_id(id, read_session)
+    if not current_certificate_bundle:
+        raise HTTPException(status_code=404, detail="Certificate bundle not found")
+    validate_user_access(
+        current_user, current_certificate_bundle.account_id, read_session
+    )
+
+    lineage = services.get_certificate_bundle_lineage(
+        current_certificate_bundle, read_session, esdb_client
+    )
+
+    if format == "timeline":
+        return services.format_lineage_for_timeline(lineage)
+    elif format == "raw":
+        return lineage
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid format: {format}. Valid formats are: timeline, raw",
+        )
