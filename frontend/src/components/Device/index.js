@@ -161,7 +161,7 @@ const Device = () => {
       },
     },
     {
-      title: <span style={{ color: "#80868B" }}>Device Power Capacity (MW)</span>,
+      title: <span style={{ color: "#80868B" }}>Device Power (MW)</span>,
       dataIndex: "power_mw",
       key: "power_mw",
       render: (text) => <span style={{ color: "#5F6368" }}>{text}</span>,
