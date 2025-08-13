@@ -25,11 +25,13 @@ import {
   getCertificateDetails,
   downloadCertificates,
   downloadSelectedCertificate,
+  getCertificateLineage,
 } from "../../store/certificate/certificateThunk";
 
 import CertificateActionDialog from "./CertificateActionDialog";
 import CertificateDetailDialog from "./CertificateDetailDialog";
 import CertificateImportDialog from "./CertificateImportDialog";
+import CertificateLineageDialog from "./CertificateLineageDialog";
 import Summary from "./Summary";
 
 import StatusTag from "../Common/StatusTag";
@@ -53,6 +55,9 @@ const Certificate = () => {
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedCertificateData, setSelectedCertificateData] = useState(null);
+
+  const [isLineageModalOpen, setIsLineageModalOpen] = useState(false);
+  const [selectedLineageData, setSelectedLineageData] = useState(null);
 
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [selectedRecords, setSelectedRecords] = useState([]);
@@ -88,6 +93,8 @@ const Certificate = () => {
     device_id: null,
     energy_source: null,
     certificate_bundle_status: "active",
+    certificate_period_start: null,
+    certificate_period_end: null,
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -186,6 +193,18 @@ const Certificate = () => {
     }
   };
 
+  const handleGetCertificateLineage = async (certificateId) => {
+    try {
+      const response = await dispatch(
+        getCertificateLineage(certificateId)
+      ).unwrap();
+      setSelectedLineageData(response);
+      setIsLineageModalOpen(true);
+    } catch (error) {
+      message.error(error?.message || "Failed to fetch certificate lineage");
+    }
+  };
+
   const handleClearFilter = async () => {
     setFilters(defaultFilters);
     fetchCertificatesData(defaultFilters);
@@ -203,6 +222,14 @@ const Certificate = () => {
   };
 
   const handleDateChange = (dates) => {
+    if (!dates || dates.length === 0) {
+      setFilters((prev) => ({
+        ...prev,
+        certificate_period_start: null,
+        certificate_period_end: null,
+      }));
+      return;
+    }
     setFilters((prev) => ({
       ...prev,
       certificate_period_start: dates[0],
@@ -384,11 +411,14 @@ const Certificate = () => {
     </Select>,
     /* Date range Filter */
     <RangePicker
-      value={[filters.certificate_period_start, filters.certificate_period_end]}
+      value={[
+        filters.certificate_period_start || null,
+        filters.certificate_period_end || null,
+      ]}
       onChange={(dates) => handleDateChange(dates)}
-      allowClear={true} // Change to true to allow clearing
+      allowClear={true}
       format="YYYY-MM-DD"
-      placeholder={["Start Date", "End Date"]} // Add placeholder text
+      placeholder={["Start Date", "End Date"]}
     />,
     <Select
       // mode="multiple"
@@ -500,13 +530,19 @@ const Certificate = () => {
       title: "",
       render: (_, record) => {
         return (
-          <Button
+          <><Button
             style={{ color: "#043DDC", fontWeight: "600" }}
             type="link"
             onClick={() => handleGetCertificateDetail(record.id)}
           >
             Details
-          </Button>
+          </Button><Button
+            style={{ color: "#043DDC", fontWeight: "600" }}
+            type="link"
+            onClick={() => handleGetCertificateLineage(record.id)}
+          >
+              Lineage
+            </Button></>
         );
       },
     },
@@ -559,6 +595,11 @@ const Certificate = () => {
         open={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         certificateData={selectedCertificateData}
+      />
+      <CertificateLineageDialog
+        open={isLineageModalOpen}
+        onClose={() => setIsLineageModalOpen(false)}
+        lineage={selectedLineageData}
       />
     </>
   );
