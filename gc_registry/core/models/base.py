@@ -91,6 +91,11 @@ class EventTypes(str, Enum):
 class Event(BaseModel):
     entity_id: int | uuid.UUID
     entity_name: str
+    parent_entity_id: int | uuid.UUID | None = Field(
+        default=None,
+        description="""If an entity is a child of another entity, this is the id of the parent entity, e.g. when a GC bundle is split into child bundles.
+        This is used to track the parent-child relationship between entities.""",
+    )
     attributes_before: dict | None = Field(sa_column=Column(JSON))
     attributes_after: dict | None = Field(sa_column=Column(JSON))
     timestamp: datetime.datetime = Field(default_factory=utc_datetime_now)  # type: ignore

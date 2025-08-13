@@ -71,6 +71,7 @@ class ActiveRecord(SQLModel):
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
+        **kwargs,
     ) -> list[SQLModel]:
         if isinstance(source, (SQLModel, BaseModel)):
             obj = [cls.model_validate(source)]
@@ -87,6 +88,7 @@ class ActiveRecord(SQLModel):
             write_session,
             read_session,
             esdb_client,
+            **kwargs,
         )
 
         return created_entities
