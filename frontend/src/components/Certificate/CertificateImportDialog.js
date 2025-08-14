@@ -183,170 +183,177 @@ const CertificateImportDialog = forwardRef((props, ref) => {
         width={600}
       >
         <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          <Space direction="vertical" size={4}>
-            <Text strong>Import Certificate Data</Text>
-            <Text type="secondary">
-              Certificate data can be imported via CSV file. Please download the CSV
-              template below for details of the format to upload the data in:
-            </Text>
-            <Button
-              type="link"
-              icon={<DownloadOutlined />}
-              onClick={handleDownloadTemplate}
-              style={{ color: "#043DDC", fontWeight: 600, paddingLeft: 0 }}
-            >
-              Download CSV template
-            </Button>
-          </Space>
+         <Space direction="vertical" size={4}>
+           <Text strong>Import Certificate Data</Text>
+           <Text type="secondary">
+             Certificate data can be imported via CSV file. Please download the CSV
+             template below for details of the format to upload the data in:
+           </Text>
+           <Button
+             type="link"
+             icon={<DownloadOutlined />}
+             onClick={handleDownloadTemplate}
+             style={{ color: "#043DDC", fontWeight: 600, paddingLeft: 0 }}
+           >
+             Download CSV template
+           </Button>
+         </Space>
 
-          <Upload.Dragger {...uploadProps}>
-            <p className="ant-upload-drag-icon">
-              {uploading ? <LoadingOutlined /> : <UploadOutlined />}
-            </p>
-            <p className="ant-upload-text">
-              Click or drag CSV file to this area to upload
-            </p>
-            <p className="ant-upload-hint">
-              Support for single CSV file upload only
-            </p>
-          </Upload.Dragger>
+         <Upload.Dragger {...uploadProps}>
+           <p className="ant-upload-drag-icon">
+             {uploading ? <LoadingOutlined /> : <UploadOutlined />}
+           </p>
+           <p className="ant-upload-text">
+             Click or drag CSV file to this area to upload
+           </p>
+           <p className="ant-upload-hint">
+             Support for single CSV file upload only
+           </p>
+         </Upload.Dragger>
 
-          {fileList.length > 0 && (
-            <Form form={form} layout="vertical">
-              <Text strong>Device Information</Text>
-              <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                Provide device details for the imported certificates:
-              </Text>
-              
-              <Form.Item
-                name="device_name"
-                label="Device Name"
-                rules={[{ required: true, message: "Please enter device name" }]}
-              >
-                <Input placeholder="e.g., Solar Farm 1" />
-              </Form.Item>
+         {fileList.length > 0 && (
+           <Form form={form} layout="vertical">
+             <Text strong>Device Information</Text>
+             <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+               Provide device details for the imported certificates:
+             </Text>
 
-              <Form.Item
-                name="local_device_identifier"
-                label="Local Device Identifier"
-                rules={[{ required: true, message: "Please enter device identifier" }]}
-              >
-                <Input placeholder="e.g., SF001" />
-              </Form.Item>
+             {/* Existing device selector */}
+             <Form.Item
+               name="existing_device"
+               label="Use Existing Device (optional)"
+             >
+               <Select
+                 placeholder="Select an existing device"
+                 showSearch
+                 allowClear
+                 optionFilterProp="label"
+                 onChange={(deviceId) => {
+                   const devices = currentAccount?.detail?.devices || [];
+                   const device = devices.find((d) => d.id === deviceId);
+                   if (!device) {
+                     form.setFieldsValue({
+                       device_name: undefined,
+                       local_device_identifier: undefined,
+                       grid: undefined,
+                       energy_source: undefined,
+                       technology_type: undefined,
+                       operational_date: undefined,
+                       capacity: undefined,
+                       location: undefined,
+                       peak_demand: undefined,
+                       is_storage: undefined,
+                     });
+                     return;
+                   }
+                   form.setFieldsValue({
+                     device_name: device.device_name,
+                     local_device_identifier: device.local_device_identifier,
+                     grid: device.grid,
+                     energy_source: device.energy_source,
+                     technology_type: device.technology_type,
+                     operational_date: (device.operational_date || '').slice(0, 10),
+                     capacity: device.power_mw,
+                     location: device.location,
+                     peak_demand: device.peak_demand,
+                     is_storage: device.is_storage,
+                   });
+                 }}
+                 options={(currentAccount?.detail?.devices || []).map((d) => ({
+                   value: d.id,
+                   label: `${d.device_name}${d.local_device_identifier ? ` (${d.local_device_identifier})` : ''}`,
+                 }))}
+               />
+             </Form.Item>
+             
+             <Form.Item
+               name="device_name"
+               label="Device Name"
+               rules={[{ required: true, message: "Please enter device name" }]}
+             >
+               <Input placeholder="e.g., Solar Farm 1" />
+             </Form.Item>
 
-              <Form.Item
-                name="grid"
-                label="Grid"
-                rules={[{ required: true, message: "Please enter grid" }]}
-              >
-                <Input placeholder="e.g., ERCOT" />
-              </Form.Item>
+             <Form.Item
+               name="local_device_identifier"
+               label="Local Device Identifier"
+               rules={[{ required: true, message: "Please enter device identifier" }]}
+             >
+               <Input placeholder="e.g., SF001" />
+             </Form.Item>
 
-              <Form.Item
-                name="energy_source"
-                label="Energy Source"
-                rules={[{ required: true, message: "Please select energy source" }]}
-              >
-                <Select placeholder="Select energy source">
-                  {Object.entries(ENERGY_SOURCE).map(([key, value]) => (
-                    <Option key={key} value={key.toLowerCase()}>
-                      {value}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+             <Form.Item
+               name="grid"
+               label="Grid"
+               rules={[{ required: true, message: "Please enter grid" }]}
+             >
+               <Input placeholder="e.g., ERCOT" />
+             </Form.Item>
 
-              <Form.Item
-                name="technology_type"
-                label="Technology Type"
-                rules={[{ required: true, message: "Please select technology type" }]}
-              >
-                <Select placeholder="Select technology type">
-                  {Object.entries(DEVICE_TECHNOLOGY_TYPE).map(([key, value]) => (
-                    <Option key={key} value={key.toLowerCase()}>
-                      {value}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+             <Form.Item
+               name="energy_source"
+               label="Energy Source"
+               rules={[{ required: true, message: "Please select energy source" }]}
+             >
+               <Select placeholder="Select energy source">
+                 {Object.entries(ENERGY_SOURCE).map(([key, value]) => (
+                   <Option key={key} value={key.toLowerCase()}>
+                     {value}
+                   </Option>
+                 ))}
+               </Select>
+             </Form.Item>
 
-              <Form.Item
-                name="operational_date"
-                label="Operational Date"
-                rules={[{ required: true, message: "Please enter operational date" }]}
-              >
-                <Input placeholder="YYYY-MM-DD" />
-              </Form.Item>
+             <Form.Item
+               name="technology_type"
+               label="Technology Type"
+               rules={[{ required: true, message: "Please select technology type" }]}
+             >
+               <Select placeholder="Select technology type">
+                 {Object.entries(DEVICE_TECHNOLOGY_TYPE).map(([key, value]) => (
+                   <Option key={key} value={key.toLowerCase()}>
+                     {value}
+                   </Option>
+                 ))}
+               </Select>
+             </Form.Item>
 
-              <Form.Item
-                name="power_mw"
-                label="Device Power (MW)"
-                initialValue={0}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please enter maximum device power, if applicable"
-                  },
-                  {
-                    type: "number",
-                    min: 0,
-                    message: "Device power cannot be negative"
-                  }
-                ]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder="e.g., 50.0" min={0} />
-              </Form.Item>
+             <Form.Item
+               name="operational_date"
+               label="Operational Date"
+               rules={[{ required: true, message: "Please enter operational date" }]}
+             >
+               <Input placeholder="YYYY-MM-DD" />
+             </Form.Item>
 
-              <Form.Item
-                name="energy_mwh"
-                label="Device Energy (MWh)"
-                initialValue={0}
-                rules={[
-                  {
-                    required: false,
-                    message: "Please enter device energy storage capacity, if applicable"
-                  },
-                  {
-                    type: "number",
-                    min: 0,
-                    message: "Device energy storage capacity cannot be negative"
-                  }
-                ]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder="e.g., 50.0" min={0} />
-              </Form.Item>
+             <Form.Item
+               name="capacity"
+               label="Capacity (MW)"
+               rules={[{ required: true, message: "Please enter capacity" }]}
+             >
+               <Input type="number" placeholder="e.g., 50.0" />
+             </Form.Item>
 
-              <Form.Item
-                name="location"
-                label="Location"
-                rules={[{ required: true, message: "Please enter location" }]}
-              >
-                <Input placeholder="e.g., Texas, USA" />
-              </Form.Item>
+             <Form.Item
+               name="location"
+               label="Location"
+               rules={[{ required: true, message: "Please enter location" }]}
+             >
+               <Input placeholder="e.g., Texas, USA" />
+             </Form.Item>
 
-              <Form.Item
-                name="peak_demand"
-                label="Peak Demand (MW)"
-                initialValue={0}
-                rules={[
-                  {
-                    required: false,
-                    message: "Please enter peak demand, if applicable"
-                  },
-                  {
-                    type: "number",
-                    min: 0,
-                    message: "Peak demand cannot be negative"
-                  }
-                ]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder="e.g., 50.0" min={0} />
-              </Form.Item>
-            </Form>
-          )}
-        </Space>
-      </Modal>
-    </>
+             <Form.Item
+               name="peak_demand"
+               label="Peak Demand (MW)"
+               rules={[{ required: true, message: "Please enter peak demand" }]}
+             >
+               <Input type="number" placeholder="e.g., 50.0" />
+             </Form.Item>
+           </Form>
+         )}
+       </Space>
+     </Modal>
+   </>
   );
 });
 
