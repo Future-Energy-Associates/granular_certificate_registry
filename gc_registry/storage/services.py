@@ -255,7 +255,6 @@ def issue_sdgcs_against_allocated_records(
         if cancelled_gc_bundle:
             cancelled_gc_bundle_attrs = cancelled_gc_bundle.model_dump()
             for attr in [
-                "id",
                 "status",
                 "certificate_bundle_id_range_start",
                 "certificate_bundle_id_range_end",
@@ -296,10 +295,17 @@ def issue_sdgcs_against_allocated_records(
         certificate_bundle_id_range_start=max_certificate_bundle_id + 1,
     )
 
-    # Create the SDGCs
-    issued_sdgcs = GranularCertificateBundle.create(
-        mapped_sdgcs, write_session, read_session, esdb_client
-    )
+    # Create the SDGCs one by one to preserve parent ID for lineage
+    issued_sdgcs = []
+    for sdgc in mapped_sdgcs:
+        issued_sdgc = GranularCertificateBundle.create(
+            sdgc,
+            write_session,
+            read_session,
+            esdb_client,
+            parent_entity_id=f"S-{sdgc['cancelled_gc_id']}",
+        )
+        issued_sdgcs.append(issued_sdgc)
 
     if not issued_sdgcs:
         raise ValueError("No SDGCs were created. Please check the input data.")
@@ -385,6 +391,9 @@ def map_allocation_to_certificates(
         )
 
         transformed["hash"] = create_bundle_hash(transformed, nonce="")
+
+        # Temporarily add ID of cancelled GC for lineage tracking
+        transformed["cancelled_gc_id"] = sdgc["id"]
 
         mapped_data.append(transformed)
 

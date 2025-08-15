@@ -1465,10 +1465,19 @@ def format_lineage_for_timeline(
 
         if entry.event_type == EventTypes.CREATE:
             if entry.parent_entity_id is not None:
-                label = f"Split: child #{entry.entity_id:,} from #{entry.parent_entity_id:,} "
-                icon = "split"
-                color = "purple"
-                kind = "split_child_created"
+                if isinstance(
+                    entry.parent_entity_id, str
+                ) and entry.parent_entity_id.startswith("S-"):
+                    entry.parent_entity_id = entry.parent_entity_id.split("-")[1]
+                    label = f"Time-shifted: child #{entry.entity_id:,} from #{entry.parent_entity_id:,} "
+                    icon = "time_shift"
+                    color = "blue"
+                    kind = "time_shifted"
+                else:
+                    label = f"Split: child #{entry.entity_id:,} from #{entry.parent_entity_id:,} "
+                    icon = "split"
+                    color = "purple"
+                    kind = "split_child_created"
             else:
                 label = f"Bundle created #{entry.entity_id}"
                 icon = "create"

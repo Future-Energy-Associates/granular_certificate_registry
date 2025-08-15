@@ -46,10 +46,17 @@ const classify = (e) => {
 
   if (e.event_type === "CREATE") {
     if (e.parent_entity_id != null) {
-      return {
-        label: `Split: child #${e.entity_id} from #${e.parent_entity_id}`,
-        color: "purple",
-      };
+      if (e.parent_entity_id.startsWith("S-")) {
+        return {
+          label: `Time-shifted: child #${e.entity_id} from #${e.parent_entity_id}`,
+          color: "blue",
+        };
+      } else {
+        return {
+          label: `Split: child #${e.entity_id} from #${e.parent_entity_id}`,
+          color: "purple",
+        };
+      }
     }
     return { label: `Bundle created #${e.entity_id}`, color: "green" };
   }
@@ -148,7 +155,11 @@ const CertificateLineageDialog = ({ open, onClose, lineage }) => {
         ).map((id) => ({ id })),
         edges: eventsExport
           .filter((e) => e.parent_entity_id != null)
-          .map((e) => ({ from: e.parent_entity_id, to: e.entity_id, type: "split" })),
+            .map((e) => ({
+            from: e.parent_entity_id,
+            to: e.entity_id,
+            type: e.parent_entity_id.startsWith("S-") ? "time_shift" : "split",
+          })),
       },
     };
   };
