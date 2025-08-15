@@ -253,6 +253,11 @@ def issue_sdgcs_against_allocated_records(
     # Update a copy of the retrieved GC Bundles with the storage-specific attributes to pass through to the SDGC
     sdgcs_to_issue = []
     for allocated_storage_record in allocated_storage_records:
+        if allocated_storage_record.id is None:
+            raise ValueError(
+                f"Allocated storage record ID is None for allocated storage record {allocated_storage_record}"
+            )
+
         cancelled_gc_bundle = next(
             (
                 bundle
@@ -358,7 +363,7 @@ def issue_sdgcs_against_allocated_records(
     write_session.add_all(allocated_storage_records)
     write_session.commit()
 
-    return issued_sdgcs_cast
+    return issued_sdgcs
 
 
 def map_allocation_to_certificates(
