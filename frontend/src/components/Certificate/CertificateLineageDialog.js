@@ -46,9 +46,9 @@ const classify = (e) => {
 
   if (e.event_type === "CREATE") {
     if (e.parent_entity_id != null) {
-      if (e.parent_entity_id.startsWith("S-")) {
+      if (e.kind === "time_shifted") {
         return {
-          label: `Time-shifted: child #${e.entity_id} from #${e.parent_entity_id}`,
+          label: `Time-shifted: #${e.entity_id} from #${e.parent_entity_id}`,
           color: "blue",
         };
       } else {
@@ -158,7 +158,7 @@ const CertificateLineageDialog = ({ open, onClose, lineage }) => {
             .map((e) => ({
             from: e.parent_entity_id,
             to: e.entity_id,
-            type: e.parent_entity_id.startsWith("S-") ? "time_shift" : "split",
+            type: e.kind === "time_shifted" ? "time_shift" : "split",
           })),
       },
     };

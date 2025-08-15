@@ -1468,8 +1468,8 @@ def format_lineage_for_timeline(
                 if isinstance(
                     entry.parent_entity_id, str
                 ) and entry.parent_entity_id.startswith("S-"):
-                    entry.parent_entity_id = entry.parent_entity_id.split("-")[1]
-                    label = f"Time-shifted: child #{entry.entity_id:,} from #{entry.parent_entity_id:,} "
+                    entry.parent_entity_id = int(entry.parent_entity_id.split("-")[1])
+                    label = f"Time-shifted: #{entry.entity_id:,} from #{entry.parent_entity_id:,} "
                     icon = "time_shift"
                     color = "blue"
                     kind = "time_shifted"

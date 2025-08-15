@@ -127,9 +127,13 @@ def retrieve_all_events_for_entity(
             entity_events.append(event_data)
 
             if event_data.get("parent_entity_id") is not None:
+                if event_data["parent_entity_id"].startswith("S-"):
+                    parent_entity_id = int(event_data["parent_entity_id"].split("-")[1])
+                else:
+                    parent_entity_id = int(event_data["parent_entity_id"])
                 entity_events.extend(
                     retrieve_all_events_for_entity(
-                        entity_id=event_data["parent_entity_id"],
+                        entity_id=parent_entity_id,
                         entity_name=entity_name,
                         stream_name=stream_name,
                         esdb_client=esdb_client,

@@ -241,6 +241,15 @@ def issue_sdgcs_against_allocated_records(
         allocated_storage_records, charge_records, cancelled_gc_bundles
     )
 
+    # Get SDRs for the specified allocation records
+    sdr_ids = [record.sdr_allocation_id for record in allocated_storage_records]
+    sdr_records = read_session.exec(
+        select(StorageRecord).where(StorageRecord.id.in_(sdr_ids))  # type: ignore[union-attr]
+    ).all()
+    sdr_records_df = pd.DataFrame(
+        [sdr_record.model_dump() for sdr_record in sdr_records]
+    )
+
     # Update a copy of the retrieved GC Bundles with the storage-specific attributes to pass through to the SDGC
     sdgcs_to_issue = []
     for allocated_storage_record in allocated_storage_records:
@@ -252,29 +261,45 @@ def issue_sdgcs_against_allocated_records(
             ),
             None,
         )
+
         if cancelled_gc_bundle:
             cancelled_gc_bundle_attrs = cancelled_gc_bundle.model_dump()
             for attr in [
-                "status",
+                "certificate_bundle_status",
                 "certificate_bundle_id_range_start",
                 "certificate_bundle_id_range_end",
+                "production_starting_interval",
+                "production_ending_interval",
+                "bundle_quantity",
             ]:
                 cancelled_gc_bundle_attrs.pop(attr)
             cancelled_gc_bundle_attrs["is_storage"] = True
-            cancelled_gc_bundle_attrs["allocated_storage_record_id"] = (
+            cancelled_gc_bundle_attrs["allocated_storage_record_id"] = int(
                 allocated_storage_record.id
             )
             cancelled_gc_bundle_attrs["storage_efficiency_factor"] = (
                 allocated_storage_record.storage_efficiency_factor
             )
+            cancelled_gc_bundle_attrs["bundle_quantity"] = (
+                allocated_storage_record.sdr_proportion
+                * (
+                    sdr_records_df.loc[
+                        sdr_records_df["id"]
+                        == allocated_storage_record.sdr_allocation_id
+                    ]["flow_energy"].iloc[0]
+                )
+            )
+            cancelled_gc_bundle_attrs["production_starting_interval"] = (
+                sdr_records_df.loc[
+                    sdr_records_df["id"] == allocated_storage_record.sdr_allocation_id
+                ]["flow_start_datetime"].iloc[0]
+            )
+            cancelled_gc_bundle_attrs["production_ending_interval"] = (
+                sdr_records_df.loc[
+                    sdr_records_df["id"] == allocated_storage_record.sdr_allocation_id
+                ]["flow_end_datetime"].iloc[0]
+            )
             sdgcs_to_issue.append(cancelled_gc_bundle_attrs)
-
-    # Get SDRs for the specified allocation records
-    sdr_ids = [record.sdr_allocation_id for record in allocated_storage_records]
-    sdr_records = read_session.exec(
-        select(StorageRecord).where(StorageRecord.id.in_(sdr_ids))  # type: ignore[union-attr]
-    ).all()
-    sdr_records_df = pd.DataFrame(sdr_records)
 
     # Get the max certificate bundle ID for the specified device
     if not device.id:
@@ -305,7 +330,7 @@ def issue_sdgcs_against_allocated_records(
             esdb_client,
             parent_entity_id=f"S-{sdgc['cancelled_gc_id']}",
         )
-        issued_sdgcs.append(issued_sdgc)
+        issued_sdgcs.extend(issued_sdgc)
 
     if not issued_sdgcs:
         raise ValueError("No SDGCs were created. Please check the input data.")
@@ -333,7 +358,7 @@ def issue_sdgcs_against_allocated_records(
     write_session.add_all(allocated_storage_records)
     write_session.commit()
 
-    return issued_sdgcs
+    return issued_sdgcs_cast
 
 
 def map_allocation_to_certificates(
