@@ -7,7 +7,7 @@ from sqlmodel import Session
 
 from gc_registry.core.models.base import UserRoles
 from gc_registry.device.models import Device
-from gc_registry.storage.models import AllocatedStorageRecord
+from gc_registry.storage.models import AllocatedStorageRecord, StorageRecord
 
 
 def test_submit_storage_records_success(
@@ -279,10 +279,94 @@ def test_unauthorized_user_role_access_denied(
     )
 
     print(response.text)
-    assert response.status_code == 403
+    assert response.status_code == 401
     assert response.json() == {
-        "status_code": 403,
-        "error_message": "User must be an Admin, Production or Storage Validator to perform this action.",
+        "status_code": 401,
+        "error_message": f"User does not have the required role: production_user, was: {unauthorized_role}",
         "details": {},
         "error_type": "http_error",
     }
+
+
+def test_get_storage_records_by_id_success(
+    api_client: TestClient,
+    token_storage_validator: str,
+    fake_db_storage_records: list[StorageRecord],
+):
+    """Test retrieval of storage records by ID."""
+    storage_record_ids = [record.id for record in fake_db_storage_records]
+
+    response = api_client.get(
+        "/storage/storage_records",
+        params={"storage_record_ids": storage_record_ids},
+        headers={"Authorization": f"Bearer {token_storage_validator}"},
+    )
+
+    assert response.status_code == 200
+    response_data = response.json()
+    assert len(response_data) == len(storage_record_ids)
+    for record in response_data:
+        assert record["id"] in storage_record_ids
+
+
+def test_get_storage_records_by_id_invalid_ids(
+    api_client: TestClient,
+    token_storage_validator: str,
+    fake_db_storage_records: list[StorageRecord],
+):
+    """Test retrieval of storage records by ID with invalid IDs."""
+    invalid_ids = [500, 510, 520]
+
+    response = api_client.get(
+        "/storage/storage_records",
+        params={"storage_record_ids": invalid_ids},
+        headers={"Authorization": f"Bearer {token_storage_validator}"},
+    )
+
+    assert response.status_code == 404
+    response_data = response.json()
+    assert (
+        "No storage records found for the specified IDs"
+        in response_data["error_message"]
+    )
+
+
+def test_get_allocation_records_by_id_success(
+    api_client: TestClient,
+    token_storage_validator: str,
+    fake_db_allocated_storage_records: list[AllocatedStorageRecord],
+):
+    """Test retrieval of allocation records by ID."""
+    allocation_record_ids = [record.id for record in fake_db_allocated_storage_records]
+
+    response = api_client.get(
+        "/storage/allocated_storage_records_by_id",
+        params={"allocated_storage_record_ids": allocation_record_ids},
+        headers={"Authorization": f"Bearer {token_storage_validator}"},
+    )
+
+    assert response.status_code == 200
+    response_data = response.json()
+    assert len(response_data) == len(allocation_record_ids)
+
+
+def test_get_allocation_records_by_id_invalid_ids(
+    api_client: TestClient,
+    token_storage_validator: str,
+    fake_db_allocated_storage_records: list[AllocatedStorageRecord],
+):
+    """Test retrieval of allocation records by ID with invalid IDs."""
+    invalid_ids = [500, 510, 520]
+
+    response = api_client.get(
+        "/storage/allocated_storage_records_by_id",
+        params={"allocated_storage_record_ids": invalid_ids},
+        headers={"Authorization": f"Bearer {token_storage_validator}"},
+    )
+
+    assert response.status_code == 404
+    response_data = response.json()
+    assert (
+        "No allocated storage records found for the specified IDs"
+        in response_data["error_message"]
+    )

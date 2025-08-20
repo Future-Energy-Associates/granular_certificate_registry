@@ -39,7 +39,7 @@ def get_account_summary(account: Account, read_session: Session) -> dict:
 
     device_capacity_by_type = {
         device_type: sum(
-            [d.capacity for d in account.devices if d.technology_type == device_type]
+            [d.power_mw for d in account.devices if d.technology_type == device_type]
         )
         for device_type in {d.technology_type for d in account.devices}
     }

@@ -53,9 +53,11 @@ from gc_registry.device.services import (
 from gc_registry.logging_config import logger
 from gc_registry.storage.schemas import AllocatedStorageRecordUpdate
 from gc_registry.storage.services import (
+    issue_sdgcs_against_allocated_records,
+)
+from gc_registry.storage.utils import (
     get_allocated_storage_records_for_storage_record_id,
     get_storage_record_by_device_id_and_interval,
-    issue_sdgcs_against_allocated_records,
 )
 
 

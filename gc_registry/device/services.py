@@ -33,7 +33,10 @@ def get_certificate_devices_by_account_id(
     stmt: SelectOfScalar = (
         select(Device)
         .join(GranularCertificateBundle)
-        .where(GranularCertificateBundle.account_id == account_id)
+        .where(
+            GranularCertificateBundle.device_id == Device.id,
+            GranularCertificateBundle.account_id == account_id,
+        )
         .distinct()
     )
     devices = db_session.exec(stmt).all()
@@ -42,7 +45,7 @@ def get_certificate_devices_by_account_id(
 
 
 def get_device_capacity_by_id(db_session: Session, device_id: int) -> float | None:
-    stmt: SelectOfScalar = select(Device.capacity).where(Device.id == device_id)
+    stmt: SelectOfScalar = select(Device.power_mw).where(Device.id == device_id)
     device_capacity = db_session.exec(stmt).first()
     if device_capacity:
         return float(device_capacity)
@@ -79,7 +82,7 @@ def device_mw_capacity_to_wh_max(
 
 
 def map_device_to_certificate_read(device: Device) -> dict:
-    mapped_columns = ["id", "technology_type", "capacity", "location"]
+    mapped_columns = ["id", "technology_type", "power_mw", "location", "energy_mwh"]
 
     device_dict = device.model_dump().copy()
     device_dict_original = device_dict.copy()

@@ -2,9 +2,14 @@ import pandas as pd
 from sqlmodel import Session, desc, select
 from sqlmodel.sql.expression import SelectOfScalar
 
+from gc_registry.account.services import get_accounts_by_user_id
 from gc_registry.certificate.models import GranularCertificateBundle
+from gc_registry.core.models.base import UserRoles
+from gc_registry.device.services import get_devices_by_account_id
 from gc_registry.settings import settings
 from gc_registry.storage.models import AllocatedStorageRecord, StorageRecord
+from gc_registry.storage.utils import get_storage_records_by_device_id
+from gc_registry.user.models import User
 
 
 def get_latest_storage_record_by_device_id(
@@ -39,7 +44,9 @@ def validate_storage_records(
     # 3 Validate the timestamp columns can be parsed
     # 4 Validate that it is a continuous time series and does not contain gaps or duplicates
     # 5 Validate that the time-series follows the previous time-series aalready stored in the database
-    # 6 Validate that the values are within expected ranges relattive to the device
+    # 6 Validate that the values are within expected ranges relative to the device
+    # 7 Validate that there are no duplicate device_id/timestamp combinations alreading in the database
+
     Args:
         measurement_df (pd.DataFrame): The DataFrame containing storage records.
         read_session (Session): The SQLAlchemy session for reading from the database.
@@ -101,6 +108,19 @@ def validate_storage_records(
                 False,
                 "Measurement DataFrame does not follow the previous time series.",
             )
+
+    # Check that time stamps for this device are not already in the database
+    existing_records = get_storage_records_by_device_id(
+        device_id,
+        read_session,
+        start_datetime=measurement_df["flow_start_datetime"].min(),
+        end_datetime=measurement_df["flow_start_datetime"].max(),
+    )
+    if existing_records:
+        return (
+            False,
+            "Measurement DataFrame contains timestamps that already exist in the database.",
+        )
 
     measurement_df["flow_start_datetime"] = measurement_df[
         "flow_start_datetime"
@@ -204,3 +224,31 @@ def validate_allocated_records_against_gc_bundles(
             )
 
     return
+
+
+def validate_access_to_devices(
+    device_ids: list[int] | set[int],
+    current_user: User,
+    read_session: Session,
+):
+    """Validate that the user has access to the devices associated with the allocated storage records."""
+
+    if isinstance(device_ids, list):
+        device_ids = set(device_ids)
+
+    user_accounts = get_accounts_by_user_id(current_user.id, read_session)
+    if not user_accounts:
+        raise ValueError("User does not have any associated accounts.")
+
+    if current_user.role in [UserRoles.ADMIN, UserRoles.PRODUCTION_USER]:
+        user_devices = []
+        for account in user_accounts:
+            account_devices = get_devices_by_account_id(account.id, read_session)
+            user_devices.extend(account_devices)
+
+        user_device_ids = {device.id for device in user_devices}
+        if any(device_id not in user_device_ids for device_id in device_ids):
+            invalid_devices = device_ids - user_device_ids
+            raise PermissionError(
+                f"User does not have permission to access devices with IDs {invalid_devices}."
+            )

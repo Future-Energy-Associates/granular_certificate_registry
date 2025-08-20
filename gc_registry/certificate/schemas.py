@@ -219,6 +219,10 @@ class GranularCertificateBundleReadFull(BaseModel):
     the queue.
     """
 
+    id: int = Field(
+        description="A unique ID assigned to this GC Bundle.",
+    )
+
     ### Mutable Attributes ###
     certificate_bundle_status: CertificateStatus = Field(
         description="""One of: Active, Cancelled, Claimed, Expired, Withdrawn, Locked, Reserved."""
@@ -281,8 +285,12 @@ class GranularCertificateBundleReadFull(BaseModel):
     device_production_start_date: datetime.datetime = Field(
         description="The date on which the production Device began generating energy.",
     )
-    device_capacity: int = Field(
-        description="The maximum capacity of the production Device in Watts (W).",
+    device_power_mw: float = Field(
+        description="The maximum capacity of the production Device in Megawatts (MW).",
+    )
+    device_energy_mwh: float | None = Field(
+        default=0,
+        description="The energy storage capacity of the production Device in MegawattHours (MWh).",
     )
     device_location: str = Field(
         description="The GPS coordinates of the production or Storage Device responsible for releasing the energy represented by the GC Bundle.",

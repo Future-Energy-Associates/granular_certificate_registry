@@ -35,5 +35,8 @@ RUN apt update && apt install -y \
  COPY ./README.md ./README.md
  COPY ./Makefile ./Makefile
  COPY ./alembic.ini ./alembic.ini
+
+# Now install the project itself to make scripts available
+RUN poetry install --only-root
  
  CMD ["uvicorn", "gc_registry.main:app", "--host", "0.0.0.0", "--port", "8080"]

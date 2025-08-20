@@ -118,7 +118,7 @@ def validate_imported_granular_certificate_bundle(
         raw_granular_certificate_bundle
     )
 
-    device_max_watts_hours = device_mw_capacity_to_wh_max(import_device.capacity, hours)
+    device_max_watts_hours = device_mw_capacity_to_wh_max(import_device.power_mw, hours)
 
     # Validate the bundle quantity is equal to the difference between the bundle ID range
     # and less than the device max watts hours

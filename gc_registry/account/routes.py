@@ -50,7 +50,14 @@ def create_account(
     validate_account(account_base, read_session)
 
     # By default, create the account as linked to the current user
-    account_base.user_ids = account_base.user_ids + [current_user.id]
+    account_base.user_ids = list(set(account_base.user_ids + [current_user.id]))
+
+    # Check that account name does not already exist
+    if Account.by_name(account_base.account_name, read_session):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Account name {account_base.account_name} already exists",
+        )
 
     accounts = Account.create(account_base, write_session, read_session, esdb_client)
     if not accounts:

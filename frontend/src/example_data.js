@@ -33,13 +33,13 @@ const certificates = [
           { id: 1, 
             name: 'FEA Account', 
             certificates: certificates,
-            devices: [{ id: 'DEV-001', name: 'Wind Turbine #1', capacity: 100 },
-                      { id: 'DEV-002', name: 'Wind Turbine #2', capacity: 200} ] 
+            devices: [{ id: 'DEV-001', name: 'Wind Turbine #1', power_mw: 100 },
+                      { id: 'DEV-002', name: 'Wind Turbine #2', power_mw: 200} ] 
           },
           { id: 2,
             name: 'Google Account', 
             certificates: [], 
-            devices: [{ id: 'DEV-003', name: 'Solar Farm #1', capacity: 150 } ] 
+            devices: [{ id: 'DEV-003', name: 'Solar Farm #1', power_mw: 150 } ] 
           },
         ],
       },
@@ -50,12 +50,12 @@ const certificates = [
           { id: 3, 
             name: 'FEA Overseas Account',
             certificates: [], 
-            devices: [ { id: 'DEV-001', name: 'Hydro Dam #1', capacity: 250 } ] 
+            devices: [ { id: 'DEV-001', name: 'Hydro Dam #1', power_mw: 250 } ] 
           },
           { id: 4, 
             name: 'Statcraft Account', 
             certificates: [], 
-            devices: [ { id: 'DEV-002', name: 'Hydro Dam #2', capacity: 500} ] 
+            devices: [ { id: 'DEV-002', name: 'Hydro Dam #2', power_mw: 500} ] 
           }
         ],
       },
@@ -66,13 +66,13 @@ const certificates = [
           { id: 1, 
             name: 'FEA Account', 
             certificates: [],
-            devices: [{ id: 'DEV-001', name: 'Wind Turbine #1', capacity: 100 },
-                      { id: 'DEV-002', name: 'Wind Turbine #2', capacity: 200} ] 
+            devices: [{ id: 'DEV-001', name: 'Wind Turbine #1', power_mw: 100 },
+                      { id: 'DEV-002', name: 'Wind Turbine #2', power_mw: 200} ] 
           },
           { id: 2,
             name: 'Google Account', 
             certificates: [], 
-            devices: [{ id: 'DEV-003', name: 'Solar Farm #1', capacity: 150 } ] 
+            devices: [{ id: 'DEV-003', name: 'Solar Farm #1', power_mw: 150 } ] 
           },
         ],
       },
@@ -83,12 +83,12 @@ const certificates = [
           { id: 3, 
             name: 'FEA Overseas Account',
             certificates: [], 
-            devices: [ { id: 'DEV-001', name: 'Hydro Dam #1', capacity: 250 } ] 
+            devices: [ { id: 'DEV-001', name: 'Hydro Dam #1', power_mw: 250 } ] 
           },
           { id: 4, 
             name: 'Statcraft Account', 
             certificates: [], 
-            devices: [ { id: 'DEV-002', name: 'Hydro Dam #2', capacity: 500} ] 
+            devices: [ { id: 'DEV-002', name: 'Hydro Dam #2', power_mw: 500} ] 
           },
         ],
       },

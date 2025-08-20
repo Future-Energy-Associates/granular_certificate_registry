@@ -46,7 +46,8 @@ class DeviceUpdate(SQLModel):
     energy_source: str | None = None
     technology_type: DeviceTechnologyType | None = None
     operational_date: datetime.datetime | None = None
-    capacity: float | None = None
+    power_mw: float | None = None
+    energy_mwh: float | None = None
     peak_demand: float | None = None
     location: str | None = None
     account_id: int | None = None

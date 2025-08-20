@@ -155,9 +155,11 @@ class StorageRecordSubmissionResponse(BaseModel):
     total_discharge_energy: float
     total_energy: float
     total_records: int
+    record_ids: list[int | None]
     message: str
 
 
 class AllocatedStorageRecordSubmissionResponse(BaseModel):
     total_records: int
+    record_ids: list[int | None]
     message: str

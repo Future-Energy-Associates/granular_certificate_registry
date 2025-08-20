@@ -3,7 +3,7 @@ from typing import Any, Hashable, cast
 
 import pandas as pd
 from esdbclient import EventStoreDBClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from gc_registry.account.models import Account, AccountWhitelistLink
 from gc_registry.authentication.services import get_password_hash
@@ -53,6 +53,48 @@ def create_generic_import_account(
     return cast(Account, account_create[0])
 
 
+def seed_admin():
+    """Seed the database with an initial admin user and import account.
+
+    After a database reset, it can be useful to only seed the admin user.
+    If a full set of users, accounts, devices, and GC bundles are required,
+    use the seed_data function.
+    """
+    _ = db.get_db_name_to_client()
+    write_session = db.get_write_session()
+    read_session = db.get_read_session()
+    esdb_client = events.get_esdb_client()
+
+    # Check if the admin user already exists
+    admin_user = read_session.exec(
+        select(User).where(User.email == "admin_user@usermail.com")
+    ).first()
+    if admin_user:
+        logger.info("Admin user already exists, skipping user creation...")
+    else:
+        admin_user_dict = {
+            "email": "admin_user@usermail.com",
+            "name": "Admin",
+            "hashed_password": get_password_hash("admin"),
+            "role": UserRoles.ADMIN,
+        }
+        _admin_user = User.create(
+            admin_user_dict, write_session, read_session, esdb_client
+        )[0]
+
+    # Create a generic import account
+    _import_account = create_generic_import_account(
+        write_session, read_session, esdb_client
+    )
+
+    logger.info("Seeding admin user and import account complete!")
+
+    write_session.close()
+    read_session.close()
+
+    return
+
+
 def seed_data():
     _ = db.get_db_name_to_client()
     write_session = db.get_write_session()
@@ -75,16 +117,22 @@ def seed_data():
 
     device_capacities = client.get_device_capacities(bmu_ids)
 
-    # Create an inital Admin user
-    admin_user_dict = {
-        "email": "admin_user@usermail.com",
-        "name": "Admin",
-        "hashed_password": get_password_hash("admin"),
-        "role": UserRoles.ADMIN,
-    }
-    admin_user = User.create(admin_user_dict, write_session, read_session, esdb_client)[
-        0
-    ]
+    # Check if the admin user already exists
+    admin_user = read_session.exec(
+        select(User).where(User.email == "admin_user@usermail.com")
+    ).first()
+    if admin_user:
+        logger.info("Admin user already exists, skipping user creation...")
+    else:
+        admin_user_dict = {
+            "email": "admin_user@usermail.com",
+            "name": "Admin",
+            "hashed_password": get_password_hash("admin"),
+            "role": UserRoles.ADMIN,
+        }
+        admin_user = User.create(
+            admin_user_dict, write_session, read_session, esdb_client
+        )[0]
 
     production_user_dict = {
         "email": "production_user@usermail.com",
@@ -174,7 +222,7 @@ def seed_data():
             "energy_source": EnergySourceType.wind,
             "technology_type": DeviceTechnologyType.wind_turbine,
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
-            "capacity": device_capacities.get(bmu_id, 99999),
+            "power_mw": device_capacities.get(bmu_id, 99999),
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": account.id,
@@ -314,7 +362,7 @@ def seed_all_generators_from_elexon(
             ),
             "technology_type": bmu_dict["psrType"],
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
-            "capacity": bmu_dict["installedCapacity"] * WATTS_IN_MEGAWATT,
+            "power_mw": bmu_dict["installedCapacity"] * WATTS_IN_MEGAWATT,
             "location": "Some Location",
             "account_id": account.id,
             "is_storage": False,

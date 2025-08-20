@@ -167,7 +167,7 @@ class TestCertificateServices:
         # This will fail because the bundle_quantity is greater than the device max watts hours
 
         granular_certificate_bundle_dict["bundle_quantity"] = (
-            1e6 * fake_db_wind_device.capacity * hours
+            1e6 * fake_db_wind_device.power_mw * hours
         ) * 1.5
         granular_certificate_bundle_dict["certificate_bundle_id_range_end"] = (
             granular_certificate_bundle_dict["certificate_bundle_id_range_start"]
@@ -186,7 +186,7 @@ class TestCertificateServices:
         )
 
         granular_certificate_bundle_dict["bundle_quantity"] = (
-            fake_db_wind_device.capacity * hours
+            fake_db_wind_device.power_mw * hours
         ) - 1
         granular_certificate_bundle_dict["certificate_bundle_id_range_end"] = (
             granular_certificate_bundle_dict["certificate_bundle_id_range_start"]
@@ -225,7 +225,7 @@ class TestCertificateServices:
             "energy_source": EnergySourceType.wind,
             "technology_type": DeviceTechnologyType.wind_turbine,
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
-            "capacity": device_capacities[local_device_identifier],
+            "power_mw": device_capacities[local_device_identifier],
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": fake_db_account.id,
@@ -645,7 +645,7 @@ class TestCertificateServices:
             "energy_source": EnergySourceType.wind,
             "technology_type": DeviceTechnologyType.wind_turbine,
             "operational_date": str(datetime.datetime(2015, 1, 1, 0, 0, 0)),
-            "capacity": device_capacities[local_device_identifier] * W_IN_MW,
+            "power_mw": device_capacities[local_device_identifier] * W_IN_MW,
             "peak_demand": 100,
             "location": "Some Location",
             "account_id": fake_db_account.id,

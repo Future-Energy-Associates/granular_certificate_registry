@@ -34,10 +34,10 @@ const FilterTable = ({
   handleApplyFilter,
   handleClearFilter,
   isShowSelection = true,
+  selectedRowKeys = [],
+  selectedRecords = [],
 }) => {
   const dispatch = useDispatch();
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [selectedRecords, setSelectedRecords] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   const pageSize = 10;
@@ -54,8 +54,12 @@ const FilterTable = ({
 
   const rowSelection = {
     selectedRowKeys,
-    onChange: (selectedKeys, selectedRows) =>
-      onSelectChange(selectedKeys, selectedRows),
+    onChange: (selectedKeys, selectedRows) => {
+      // Directly call the parent callback, don't use an intermediate function
+      if (onRowsSelected) {
+        onRowsSelected(selectedKeys, selectedRows);
+      }
+    },
   };
 
   const isEmpty = (obj) => {
@@ -78,12 +82,6 @@ const FilterTable = ({
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-  };
-
-  const onSelectChange = (newSelectedRowKeys, newSelectedRows) => {
-    setSelectedRowKeys(newSelectedRowKeys);
-    setSelectedRecords(newSelectedRows);
-    onRowsSelected(newSelectedRowKeys, newSelectedRows);
   };
 
   return (

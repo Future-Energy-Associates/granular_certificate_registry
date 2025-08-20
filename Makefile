@@ -122,6 +122,10 @@ db.test.migrations:
 	make db.reset && \
 	docker compose run --rm gc_registry alembic downgrade base
 
+.PHONY: db.seed.admin
+db.seed.admin:
+	docker compose run --rm gc_registry poetry run seed-db-admin
+
 .PHONY: db.seed
 db.seed:
 	docker compose run --rm gc_registry poetry run seed-db
