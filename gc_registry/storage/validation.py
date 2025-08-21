@@ -132,7 +132,7 @@ def validate_storage_records(
     return True, None
 
 
-def validate_allocated_records(
+def validate_allocation_record(
     allocation_record: pd.Series, sdr: pd.Series, scr: pd.Series
 ):
     if sdr["is_charging"] or not scr["is_charging"]:
