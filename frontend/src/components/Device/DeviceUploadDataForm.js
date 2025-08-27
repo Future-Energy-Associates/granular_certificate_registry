@@ -60,8 +60,7 @@ const DeviceUploadDialog = forwardRef((props, ref) => {
     try {
       const formData = new FormData();
       formData.append("file", fileList[0]);
-      formData.append("deviceID", deviceInfo?.deviceID);
-      formData.append("accountID", deviceInfo?.accountID);
+      formData.append("device_id", deviceInfo?.deviceID);
 
       const response = await submitMeterReadingsAPI(formData);
 
