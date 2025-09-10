@@ -5,6 +5,7 @@ import { useAccount } from "../../context/AccountContext.js";
 import {
   transferCertificates,
   cancelCertificates,
+  exportCertificates,
 } from "../../store/certificate/certificateThunk.js";
 
 const { Option } = Select;
@@ -42,7 +43,8 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
             />
           </div>
         );
-        return;
+      case "export":
+        return null; // No additional fields needed for export
       default:
         return (
           <div style={{ marginTop: "24px", marginBottom: "48px" }}>
@@ -74,7 +76,6 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
             )}
           </div>
         );
-        return;
     }
   };
 
@@ -86,7 +87,7 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
 
   const handleOk = async () => {
     // Check if destination account is selected for transfer action
-    if (props.dialogAction !== "cancel" && !selectedAccount) {
+    if (props.dialogAction !== "cancel" && props.dialogAction !== "export" && !selectedAccount) {
       setAccountError(true);
       return;
     }
@@ -153,6 +154,10 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
           apiBody = { ...apiBody, beneficiary: beneficiary };
           await dispatch(cancelCertificates(apiBody)).unwrap();
           break;
+        case "export":
+          apiBody = { ...apiBody };
+          await dispatch(exportCertificates(apiBody)).unwrap();
+          break;
         default:
           apiBody = { ...apiBody, target_id: selectedAccount };
           await dispatch(transferCertificates(apiBody)).unwrap();
@@ -192,6 +197,8 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
       title={
         props.dialogAction === "transfer"
           ? `Transferring - ${props.selectedRowKeys.length} certificates`
+          : props.dialogAction === "export"
+          ? `Exporting - ${props.selectedRowKeys.length} certificates`
           : `Canceling - ${props.selectedRowKeys.length} certificates`
       }
       open={visible}
@@ -200,12 +207,14 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
       okText={
         props.dialogAction === "transfer"
           ? "Transfer Certificates"
+          : props.dialogAction === "export"
+          ? "Export Certificates"
           : "Cancel Certificates"
       }
       cancelText="Cancel"
       okButtonProps={{
         style:
-          props.dialogAction === "cancel"
+          props.dialogAction === "cancel" || props.dialogAction === "export"
             ? {
                 backgroundColor: "#F04438",
               }

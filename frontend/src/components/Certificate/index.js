@@ -11,7 +11,8 @@ import {
   LaptopOutlined,
   ThunderboltOutlined,
   ClockCircleOutlined,
-  UploadOutlined
+  UploadOutlined,
+  SendOutlined
 } from "@ant-design/icons";
 
 import "../../assets/styles/pagination.css";
@@ -324,13 +325,13 @@ const Certificate = () => {
         handle: () => openDialog("cancel"),
       },
       {
-        icon: <DownloadOutlined />,
+        icon: <SendOutlined />,
         btnType: "primary",
-        type: "reserve",
-        disabled: true,
+        type: "export",
+        disabled: false,
         style: { height: "40px" },
-        name: "Reserve",
-        handle: () => openDialog("reserve"),
+        name: "Export",
+        handle: () => openDialog("export"),
       },
       {
         icon: <SwapOutlined />,
