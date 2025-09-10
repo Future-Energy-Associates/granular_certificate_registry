@@ -19,6 +19,7 @@ from gc_registry.certificate.schemas import (
     GranularCertificateBundleReadFull,
     GranularCertificateCancel,
     GranularCertificateCancelStorage,
+    GranularCertificateExport,
     GranularCertificateImportResponse,
     GranularCertificateQuery,
     GranularCertificateQueryRead,
@@ -580,7 +581,7 @@ def certificate_bundle_withdraw(
 @router.post(
     "/reserve",
     response_model=GranularCertificateActionRead,
-    status_code=202,
+    status_code=200,
 )
 def certificate_bundle_reserve(
     certificate_bundle_action: GranularCertificateAction,
