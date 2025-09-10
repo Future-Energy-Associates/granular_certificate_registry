@@ -533,6 +533,7 @@ const Certificate = () => {
       <CertificateActionDialog
         dialogAction={dialogAction}
         selectedRowKeys={selectedRowKeys}
+        selectedRecords={selectedRecords} // Add this line
         ref={dialogRef}
         totalProduction={totalProduction}
         selectedDevices={selectedDevices}

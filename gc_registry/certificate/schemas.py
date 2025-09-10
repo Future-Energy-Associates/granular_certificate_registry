@@ -751,6 +751,10 @@ class ActionResult(BaseModel):
         default=None,
         description="Additional details about the action result, if applicable.",
     )
+    certificate_ids: list[int] | None = Field(
+        default=None,
+        description="The IDs of the GC Bundles that were affected or created by this action.",
+    )
 
 
 class GranularCertificateActionRead(GranularCertificateActionBase):

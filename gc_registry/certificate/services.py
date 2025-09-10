@@ -1241,7 +1241,7 @@ def export_certificates(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
-) -> ActionResult | None:
+) -> ActionResult:
     """Export certificates matched to the given filter parameters.
 
     Locked, reserved, withdrawn, claimed, or exported GCs cannot be exported.
@@ -1296,10 +1296,14 @@ def export_certificates(
         )
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 
+    # Collect the IDs of exported certificates
+    exported_certificate_ids = [cert.id for cert in certificates_bundles_to_export]
+
     return ActionResult(
         action_type=CertificateActionType.EXPORT,
         action_result=ActionOutcome.SUCCESS,
         details=f"Exported {len(certificates_bundles_to_export)} certificates.",
+        certificate_ids=exported_certificate_ids,
     )
 
 

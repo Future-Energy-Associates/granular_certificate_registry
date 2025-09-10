@@ -6,7 +6,9 @@ import {
   transferCertificates,
   cancelCertificates,
   exportCertificates,
+  downloadSelectedCertificate,
 } from "../../store/certificate/certificateThunk.js";
+import { downloadCertificatesAsCSV } from "../../utils";
 
 const { Option } = Select;
 
@@ -85,6 +87,27 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
     props.updateCertificateActionDialog(null);
   };
 
+  const handleDownloadExportedCertificates = async (exportedCertificateIds) => {
+    try {
+      message.loading("Downloading exported certificates...", 0);
+
+      // Download the individual certificate details using the returned IDs
+      const certificatePromises = exportedCertificateIds.map((certificateId) =>
+        dispatch(downloadSelectedCertificate(certificateId)).unwrap()
+      );
+
+      const certificatesData = await Promise.all(certificatePromises);
+
+      message.destroy();
+      downloadCertificatesAsCSV(certificatesData, "gc_bundles_exported.csv");
+      message.success(`Exported certificate bundles (${certificatesData.length}) downloaded successfully`);
+    } catch (error) {
+      message.destroy();
+      console.error("Download error:", error);
+      message.error("Failed to download exported certificate bundles");
+    }
+  };
+
   const handleOk = async () => {
     // Check if destination account is selected for transfer action
     if (props.dialogAction !== "cancel" && props.dialogAction !== "export" && !selectedAccount) {
@@ -156,7 +179,12 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
           break;
         case "export":
           apiBody = { ...apiBody };
-          await dispatch(exportCertificates(apiBody)).unwrap();
+          const exportResponse = await dispatch(exportCertificates(apiBody)).unwrap();
+          // Extract the certificate IDs from the response
+          const exportedCertificateIds = exportResponse.action_result?.certificate_ids || [];
+          if (exportedCertificateIds.length > 0) {
+            await handleDownloadExportedCertificates(exportedCertificateIds);
+          }
           break;
         default:
           apiBody = { ...apiBody, target_id: selectedAccount };
