@@ -328,7 +328,7 @@ const Certificate = () => {
         icon: <SendOutlined />,
         btnType: "primary",
         type: "export",
-        disabled: false,
+        disabled: !isCertificatesSelected,
         style: { height: "40px" },
         name: "Export",
         handle: () => openDialog("export"),
