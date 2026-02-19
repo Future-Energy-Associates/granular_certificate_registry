@@ -1319,7 +1319,7 @@ def import_gc_bundles(
         metadata_mapping[metadata_key] = metadata_id
 
     # Now create the GC bundles with the correct metadata_id
-    gc_bundles_data = []
+    gc_bundles_data: list[dict[Hashable, Any]] = []
 
     # Retrieve existing bundles for the import device once for validation
     if import_device.id is None:
