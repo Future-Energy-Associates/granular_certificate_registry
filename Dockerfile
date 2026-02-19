@@ -38,5 +38,5 @@ RUN apt update && apt install -y \
 
 # Now install the project itself to make scripts available
 RUN poetry install --only-root
-
-CMD ["uvicorn", "gc_registry.main:app", "--host", "0.0.0.0", "--port", "8080"]
+ 
+ CMD ["uvicorn", "gc_registry.main:app", "--host", "0.0.0.0", "--port", "8000"]

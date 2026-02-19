@@ -158,7 +158,7 @@ class CSRFMiddleware:
 origins = [
     "http://localhost:9000",
     "http://127.0.0.1:9000",
-    "http://localhost:8000",
+    "http://localhost:8080",
     "https://frontend-dot-rich-store-445612-c6.ew.r.appspot.com",  # app engine
     "https://api-dot-rich-store-445612-c6.ew.r.appspot.com",  # app engine
     "https://frontend-640576971908.us-east1.run.app",  # cloud run
