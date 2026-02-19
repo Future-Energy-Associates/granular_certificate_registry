@@ -274,7 +274,7 @@ async def create_storage_allocation(
         contents = await file.read()
         csv_file = io.StringIO(contents.decode("utf-8"))
 
-        # Convert to DataFrame and replace NaN values with None
+        # Convert to DataFrame
         allocated_storage_records_df = pd.read_csv(csv_file, keep_default_na=False)
         allocated_storage_records_df["device_id"] = device_id
 
