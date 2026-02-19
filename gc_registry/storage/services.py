@@ -162,13 +162,18 @@ def create_allocated_storage_records_from_submitted_data(
     if "gc_allocation_id" in allocated_storage_records_df.columns:
         allocated_storage_records_df["gc_allocation_id"] = allocated_storage_records_df[
             "gc_allocation_id"
-        ].where(pd.notna(allocated_storage_records_df["gc_allocation_id"]), None)
+        ].where(
+            pd.notna(allocated_storage_records_df["gc_allocation_id"]), cast(Any, None)
+        )
 
     if "sdgc_allocation_id" in allocated_storage_records_df.columns:
         allocated_storage_records_df["sdgc_allocation_id"] = (
             allocated_storage_records_df[
                 "sdgc_allocation_id"
-            ].where(pd.notna(allocated_storage_records_df["sdgc_allocation_id"]), None)
+            ].where(
+                pd.notna(allocated_storage_records_df["sdgc_allocation_id"]),
+                cast(Any, None),
+            )
         )
 
     # Create the allocated storage records
