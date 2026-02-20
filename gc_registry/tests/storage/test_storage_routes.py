@@ -297,7 +297,7 @@ def test_get_storage_records_by_id_success(
     storage_record_ids = [record.id for record in fake_db_storage_records]
 
     response = api_client.get(
-        "/storage/storage_records",
+        "/storage/storage_records_by_id",
         params={"storage_record_ids": storage_record_ids},
         headers={"Authorization": f"Bearer {token_storage_validator}"},
     )
@@ -318,7 +318,7 @@ def test_get_storage_records_by_id_invalid_ids(
     invalid_ids = [500, 510, 520]
 
     response = api_client.get(
-        "/storage/storage_records",
+        "/storage/storage_records_by_id",
         params={"storage_record_ids": invalid_ids},
         headers={"Authorization": f"Bearer {token_storage_validator}"},
     )

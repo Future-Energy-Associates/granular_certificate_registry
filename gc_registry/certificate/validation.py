@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Hashable
 
 from fluent_validator import validate  # type: ignore
 from sqlmodel import Session
@@ -90,7 +90,7 @@ def validate_granular_certificate_bundle(
 
 
 def validate_imported_granular_certificate_bundle(
-    raw_granular_certificate_bundle: dict[str, Any],
+    raw_granular_certificate_bundle: dict[str, Any] | dict[Hashable,Any],
     existing_bundles: list[GranularCertificateBundle],
     import_device: Device,
     hours: float = settings.CERTIFICATE_GRANULARITY_HOURS,

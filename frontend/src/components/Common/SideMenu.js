@@ -9,9 +9,10 @@ import {
 import { DeviceIcon } from "../../assets/icon/DeviceIcon";
 import { CertificateIcon } from "../../assets/icon/CertificateIcon";
 import { TransferIcon } from "../../assets/icon/TransferIcon";
+import { StorageIcon } from "../../assets/icon/StorageIcon";
 import "../../assets/styles/sidemenu.css";
 import { useNavigate, useLocation } from "react-router-dom";
-import sampleAvatar from "../../assets/images/sample-avatar.jpeg";
+import sampleAvatar from "../../assets/images/gcos_avatar.png";
 import Cookies from "js-cookie";
 import { useUser } from "../../context/UserContext";
 
@@ -54,9 +55,17 @@ const SideMenu = () => {
       {
         key: "devices",
         icon: <DeviceIcon width={20} height={20} />,
-        label: "Device management",
+        label: "Device Management",
         onClick: () => navigate("/devices"),
         style: generateMenuStyle("/devices", isShowDevices),
+        className: "custom-menu-item",
+      },
+      {
+        key: "storage",
+        icon: <StorageIcon width={20} height={20} />,
+        label: "Storage Management",
+        onClick: () => navigate("/storage"),
+        style: generateMenuStyle("/storage", isShowDevices),
         className: "custom-menu-item",
       },
       {
