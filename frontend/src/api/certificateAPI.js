@@ -40,5 +40,5 @@ export const downloadSelectedCertificateAPI = (certificateId) => {
 };
 
 export const getCertificateLineageAPI = (certificateId, format = "timeline") => {
-  return baseAPI.get(`/certificate/lineage/${certificateId}?format=${format}`);
+  return baseAPI.get(`/certificate/${certificateId}/lineage?format=${format}`);
 };

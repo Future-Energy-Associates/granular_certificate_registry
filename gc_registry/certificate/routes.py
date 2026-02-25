@@ -603,7 +603,7 @@ def certificate_bundle_reserve(
 
 
 @router.get(
-    "/lineage/{id}",
+    "/{id}/lineage",
     status_code=200,
 )
 def get_certificate_bundle_lineage(
