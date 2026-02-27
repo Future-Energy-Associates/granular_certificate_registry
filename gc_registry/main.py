@@ -29,7 +29,7 @@ from .core.error_handling import (
 )
 from .core.models.base import LoggingLevelRequest
 from .device.routes import router as device_router
-from .logging_config import logger, set_logger_and_children_level
+from .logging_config import log_context, logger, set_logger_and_children_level
 from .measurement.routes import router as measurements_router
 from .settings import settings
 from .storage.routes import router as storage_router
@@ -184,6 +184,30 @@ app.add_middleware(
 )
 
 app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
+
+
+# Logging context middleware - injects request-level context into all logs
+@app.middleware("http")
+async def logging_context_middleware(request: Request, call_next: Callable):
+    """Middleware that automatically injects request context into all log calls.
+
+    This provides baseline context (path, method, request_id) for every log entry
+    within a request. Additional context can be added manually using log_context()
+    in individual routes for business-specific information.
+    """
+    context = {
+        "path": request.url.path,
+        "method": request.method,
+    }
+
+    # Add request ID if present (useful for distributed tracing)
+    request_id = request.headers.get("X-Request-ID")
+    if request_id:
+        context["request_id"] = request_id
+
+    with log_context(**context):
+        response = await call_next(request)
+        return response
 
 
 # Register exception handlers
