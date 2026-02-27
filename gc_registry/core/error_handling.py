@@ -180,7 +180,7 @@ def format_validation_error(
                 "invalid_value": display_value,
                 "message": err["msg"],
                 "type": err["type"],
-                "ctx": ctx if ctx else None,
+                "ctx": ctx if ctx else {},
             }
         )
 
@@ -239,14 +239,15 @@ async def http_exception_handler(
     Returns:
         JSONResponse with structured error details.
     """
+    # Don't include request context in the response details for HTTP errors
+    # to maintain backward compatibility with existing API consumers
     error_response = ErrorResponse(
         status_code=exc.status_code,
         message=str(exc.detail),
-        request=request,
         error_type="http_error",
     )
 
-    # Log with structured context
+    # Log with structured context (request info goes to logs, not response)
     with log_context(
         error_type="http_error",
         path=request.url.path,
