@@ -17,7 +17,7 @@ from gc_registry.core.database import db, events
 from gc_registry.core.models.base import UserRoles
 from gc_registry.device.meter_data.manual_submission import ManualSubmissionMeterClient
 from gc_registry.device.models import Device
-from gc_registry.logging_config import logger
+from gc_registry.logging_config import log_context, logger
 from gc_registry.measurement.models import MeasurementReport
 from gc_registry.measurement.schemas import (
     MeasurementReportBase,
@@ -81,90 +81,108 @@ async def submit_readings(
     Returns:
         models.MeasurementSubmissionResponse: A summary of the readings submitted.
     """
-    validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
+    with log_context(
+        operation="submit_readings",
+        device_id=device_id,
+        user_id=current_user.id,
+        filename=file.filename,
+    ):
+        validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
 
-    # Read the uploaded file
-    contents = await file.read()
-    csv_file = io.StringIO(contents.decode("utf-8"))
+        # Read the uploaded file
+        contents = await file.read()
+        csv_file = io.StringIO(contents.decode("utf-8"))
 
-    # Convert to DataFrame
-    measurement_df = pd.read_csv(csv_file)
-    measurement_df["device_id"] = device_id
+        # Convert to DataFrame
+        measurement_df = pd.read_csv(csv_file)
+        measurement_df["device_id"] = device_id
+        logger.info("Meter readings CSV parsed", extra={"row_count": len(measurement_df)})
 
-    passed, measurement_df, message = validate_readings(measurement_df)
-    if not passed:
-        raise HTTPException(
-            status_code=400,
-            detail=message,
+        passed, measurement_df, message = validate_readings(measurement_df)
+        if not passed:
+            logger.warning("Meter readings validation failed", extra={"reason": message})
+            raise HTTPException(
+                status_code=400,
+                detail=message,
+            )
+
+        # Check that the device ID is associated with an account that the user has access to
+        device = Device.by_id(device_id, read_session)
+
+        logger.info("Device lookup completed", extra={"device_found": device is not None})
+
+        if not device:
+            raise HTTPException(
+                status_code=404, detail=f"Device with ID {device_id} not found."
+            )
+
+        validate_user_access(current_user, device.account_id, read_session)
+
+        readings = MeasurementReport.create(
+            measurement_df.to_dict(orient="records"),
+            write_session,
+            read_session,
+            esdb_client,
         )
 
-    # Check that the device ID is associated with an account that the user has access to
-    device = Device.by_id(device_id, read_session)
+        if not readings:
+            raise HTTPException(
+                status_code=500, detail="Could not create measurement reports."
+            )
 
-    logger.info(f"Device: {device}")
-
-    if not device:
-        raise HTTPException(
-            status_code=404, detail=f"Device with ID {device_id} not found."
+        logger.info(
+            "Measurement reports created", extra={"report_count": len(readings)}
         )
 
-    validate_user_access(current_user, device.account_id, read_session)
+        # issue GCs against these readings
+        meter_data_client = ManualSubmissionMeterClient()
 
-    readings = MeasurementReport.create(
-        measurement_df.to_dict(orient="records"),
-        write_session,
-        read_session,
-        esdb_client,
-    )
+        # if no issuance metadata is in the database, create a default entry and link
+        # issuance to that. This is where the values passed by the user will be attached
+        # following an upstream process on the front end.
 
-    if not readings:
-        raise HTTPException(
-            status_code=500, detail="Could not create measurement reports."
-        )
+        # TODO: Implement issuance metadata creation process linked to device
+        issuance_metadata = get_latest_issuance_metadata(read_session)
 
-    # issue GCs against these readings
-    meter_data_client = ManualSubmissionMeterClient()
+        if not issuance_metadata:
+            raise HTTPException(
+                status_code=404, detail="Could not find issuance metadata."
+            )
 
-    # if no issuance metadata is in the database, create a default entry and link
-    # issuance to that. This is where the values passed by the user will be attached
-    # following an upstream process on the front end.
+        try:
+            measurement_response = MeasurementSubmissionResponse(
+                message="Readings submitted successfully.",
+                total_device_usage=measurement_df["interval_usage"].astype(int).sum(),
+                first_reading_datetime=pd.to_datetime(
+                    measurement_df["interval_start_datetime"].min(), utc=True
+                ),
+                last_reading_datetime=pd.to_datetime(
+                    measurement_df["interval_start_datetime"].max(), utc=True
+                ),
+            )
+            issue_certificates_by_device_in_date_range(
+                device=device,
+                from_datetime=pd.to_datetime(
+                    measurement_df["interval_start_datetime"].min(), utc=True
+                ),
+                to_datetime=pd.to_datetime(
+                    measurement_df["interval_end_datetime"].max(), utc=True
+                ),
+                write_session=write_session,
+                read_session=read_session,
+                esdb_client=esdb_client,
+                issuance_metadata_id=issuance_metadata.id,
+                meter_data_client=meter_data_client,
+            )
+            logger.info(
+                "Meter readings submitted and GCs issued",
+                extra={"total_usage": measurement_response.total_device_usage},
+            )
+        except Exception as e:
+            logger.error("Error issuing GCs", extra={"error": str(e)})
+            raise HTTPException(status_code=400, detail=f"Error issuing GCs: {str(e)}")
 
-    # TODO: Implement issuance metadata creation process linked to device
-    issuance_metadata = get_latest_issuance_metadata(read_session)
-
-    if not issuance_metadata:
-        raise HTTPException(status_code=404, detail="Could not find issuance metadata.")
-
-    try:
-        measurement_response = MeasurementSubmissionResponse(
-            message="Readings submitted successfully.",
-            total_device_usage=measurement_df["interval_usage"].astype(int).sum(),
-            first_reading_datetime=pd.to_datetime(
-                measurement_df["interval_start_datetime"].min(), utc=True
-            ),
-            last_reading_datetime=pd.to_datetime(
-                measurement_df["interval_start_datetime"].max(), utc=True
-            ),
-        )
-        issue_certificates_by_device_in_date_range(
-            device=device,
-            from_datetime=pd.to_datetime(
-                measurement_df["interval_start_datetime"].min(), utc=True
-            ),
-            to_datetime=pd.to_datetime(
-                measurement_df["interval_end_datetime"].max(), utc=True
-            ),
-            write_session=write_session,
-            read_session=read_session,
-            esdb_client=esdb_client,
-            issuance_metadata_id=issuance_metadata.id,
-            meter_data_client=meter_data_client,
-        )
-    except Exception as e:
-        logger.error(f"Error issuing GCs: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error issuing GCs: {str(e)}")
-
-    return measurement_response
+        return measurement_response
 
 
 @router.post("/create", response_model=MeasurementReportRead)

@@ -33,7 +33,7 @@ from gc_registry.device.services import (
     get_device_by_local_identifier,
     map_device_to_certificate_read,
 )
-from gc_registry.logging_config import logger
+from gc_registry.logging_config import log_context, logger
 from gc_registry.user.models import User
 from gc_registry.user.validation import validate_user_access, validate_user_role
 from gc_registry.utils import parse_import_file
@@ -202,35 +202,53 @@ async def import_certificate_bundle(
     Returns:
         GranularCertificateImportResponse: Information on the imported GC bundles and issuance metadata.
     """
-    validate_user_role(current_user, required_role=UserRoles.STORAGE_VALIDATOR)
+    with log_context(
+        operation="import_certificate_bundle",
+        account_id=account_id,
+        user_id=current_user.id,
+        filename=file.filename,
+    ):
+        validate_user_role(current_user, required_role=UserRoles.STORAGE_VALIDATOR)
 
-    account = get_account_by_id(int(account_id), read_session)
-    if not account:
-        raise HTTPException(
-            status_code=404, detail=f"Account with ID {account_id} not found."
-        )
-    validate_user_access(current_user, account.id, read_session)
+        account = get_account_by_id(int(account_id), read_session)
+        if not account:
+            raise HTTPException(
+                status_code=404, detail=f"Account with ID {account_id} not found."
+            )
+        validate_user_access(current_user, account.id, read_session)
 
-    try:
-        # Read the uploaded file
-        contents = await file.read()
-        content_str = contents.decode("utf-8")
+        try:
+            # Read the uploaded file
+            contents = await file.read()
+            content_str = contents.decode("utf-8")
 
-        # Parse the file into a pandas DataFrame
-        gc_df = parse_import_file(file.filename, content_str)
+            # Parse the file into a pandas DataFrame
+            gc_df = parse_import_file(file.filename, content_str)
+            logger.info("Import file parsed", extra={"row_count": len(gc_df)})
 
-        gc_bundles = services.import_gc_bundles(
-            account_id, gc_df, device_json, write_session, read_session, esdb_client
-        )
+            gc_bundles = services.import_gc_bundles(
+                account_id, gc_df, device_json, write_session, read_session, esdb_client
+            )
 
-        return GranularCertificateImportResponse(
-            message="Certificate bundles imported successfully.",
-            number_of_imported_certificate_bundles=len(gc_bundles),
-            total_imported_energy=sum(bundle.bundle_quantity for bundle in gc_bundles),
-        )
+            logger.info(
+                "Certificate bundles imported successfully",
+                extra={
+                    "bundle_count": len(gc_bundles),
+                    "total_energy": sum(bundle.bundle_quantity for bundle in gc_bundles),
+                },
+            )
 
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+            return GranularCertificateImportResponse(
+                message="Certificate bundles imported successfully.",
+                number_of_imported_certificate_bundles=len(gc_bundles),
+                total_imported_energy=sum(
+                    bundle.bundle_quantity for bundle in gc_bundles
+                ),
+            )
+
+        except Exception as e:
+            logger.error("Certificate import failed", extra={"error": str(e)})
+            raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
@@ -246,17 +264,27 @@ def certificate_bundle_transfer(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Transfer a fixed number of certificates matched to the given filter parameters to the specified target Account."""
-    validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
-    validate_user_access(current_user, certificate_transfer.source_id, read_session)
+    with log_context(
+        operation="certificate_transfer",
+        source_id=certificate_transfer.source_id,
+        target_id=certificate_transfer.target_id,
+        user_id=current_user.id,
+        bundle_count=len(certificate_transfer.granular_certificate_bundle_ids),
+    ):
+        validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
+        validate_user_access(current_user, certificate_transfer.source_id, read_session)
 
-    try:
-        db_certificate_action = services.process_certificate_bundle_action(
-            certificate_transfer, write_session, read_session, esdb_client
-        )
+        try:
+            logger.info("Processing certificate transfer")
+            db_certificate_action = services.process_certificate_bundle_action(
+                certificate_transfer, write_session, read_session, esdb_client
+            )
+            logger.info("Certificate transfer completed successfully")
 
-        return db_certificate_action
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+            return db_certificate_action
+        except Exception as e:
+            logger.error("Certificate transfer failed", extra={"error": str(e)})
+            raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
@@ -414,22 +442,34 @@ def certificate_bundle_cancellation(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
     """Cancel a fixed number of certificates matched to the given filter parameters within the specified Account."""
-    validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
-    validate_user_access(current_user, certificate_cancel.source_id, read_session)
+    with log_context(
+        operation="certificate_cancellation",
+        source_id=certificate_cancel.source_id,
+        user_id=current_user.id,
+        bundle_count=len(certificate_cancel.granular_certificate_bundle_ids),
+    ):
+        validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
+        validate_user_access(current_user, certificate_cancel.source_id, read_session)
 
-    try:
-        # If no beneficiary is specified, default to the account holder
-        if certificate_cancel.beneficiary is None:
-            user_name = User.by_id(certificate_cancel.user_id, read_session).name
-            certificate_cancel.beneficiary = f"{user_name}"
+        try:
+            # If no beneficiary is specified, default to the account holder
+            if certificate_cancel.beneficiary is None:
+                user_name = User.by_id(certificate_cancel.user_id, read_session).name
+                certificate_cancel.beneficiary = f"{user_name}"
 
-        certificate_action_read = services.process_certificate_bundle_action(
-            certificate_cancel, write_session, read_session, esdb_client
-        )
+            logger.info(
+                "Processing certificate cancellation",
+                extra={"beneficiary": certificate_cancel.beneficiary},
+            )
+            certificate_action_read = services.process_certificate_bundle_action(
+                certificate_cancel, write_session, read_session, esdb_client
+            )
+            logger.info("Certificate cancellation completed successfully")
 
-        return certificate_action_read
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+            return certificate_action_read
+        except Exception as e:
+            logger.error("Certificate cancellation failed", extra={"error": str(e)})
+            raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
