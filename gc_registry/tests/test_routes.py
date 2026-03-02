@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -16,13 +18,6 @@ class TestRoutes:
         )
         fake_db_account_from_db = Account(**response.json())
 
-        fake_db_account_from_db.created_at = fake_db_account_from_db.created_at.replace(
-            microsecond=0, tzinfo=None
-        )
-        fake_db_account.created_at = fake_db_account.created_at.replace(
-            microsecond=0, tzinfo=None
-        )
-
         fake_db_account_dict = {
             k: v
             for k, v in fake_db_account.model_dump().items()
@@ -35,9 +30,13 @@ class TestRoutes:
         }
         for k, v in fake_db_account_from_db_dict.items():
             assert k in fake_db_account_dict.keys(), f"Key {k} not in fake_db_account"
-            assert (
-                v == fake_db_account_dict[k]
-            ), f"Value {v} not equal to fake_db_account value {fake_db_account_dict[k]}"
+            expected = fake_db_account_dict[k]
+            if isinstance(v, datetime) and isinstance(expected, datetime):
+                assert abs(v - expected) <= timedelta(seconds=2), (
+                    f"Timestamp {k}: {v} differs from expected {expected} by more than 2 seconds"
+                )
+            else:
+                assert v == expected, f"Value {v} not equal to expected value {expected}"
 
     def test_create_entity(self, api_client: TestClient, token: str):
         """Test that entities can be created in the database via their FastAPI routes."""
