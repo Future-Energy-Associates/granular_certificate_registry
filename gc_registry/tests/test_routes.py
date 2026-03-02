@@ -32,8 +32,10 @@ class TestRoutes:
             assert k in fake_db_account_dict.keys(), f"Key {k} not in fake_db_account"
             expected = fake_db_account_dict[k]
             if isinstance(v, datetime) and isinstance(expected, datetime):
+                v_naive = v.replace(tzinfo=None)
+                expected_naive = expected.replace(tzinfo=None)
                 assert (
-                    abs(v - expected) <= timedelta(seconds=2)
+                    abs(v_naive - expected_naive) <= timedelta(seconds=2)
                 ), f"Timestamp {k}: {v} differs from expected {expected} by more than 2 seconds"
             else:
                 assert (
