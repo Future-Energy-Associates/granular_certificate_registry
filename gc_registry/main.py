@@ -8,6 +8,7 @@ from typing import AsyncGenerator, Callable
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_redoc_html
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPBearer
 from fastapi.templating import Jinja2Templates
@@ -109,9 +110,19 @@ app = FastAPI(
         "email": "connor@futureenergy.associates",
     },
     docs_url="/docs",
+    redoc_url=None,
     dependencies=[Depends(get_db_name_to_client)],
     lifespan=lifespan,
 )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - ReDoc",
+        redoc_js_url="https://unpkg.com/redoc@2/bundles/redoc.standalone.js",
+    )
 
 
 class CSRFMiddleware:
