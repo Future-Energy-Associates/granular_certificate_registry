@@ -32,11 +32,13 @@ class TestRoutes:
             assert k in fake_db_account_dict.keys(), f"Key {k} not in fake_db_account"
             expected = fake_db_account_dict[k]
             if isinstance(v, datetime) and isinstance(expected, datetime):
-                assert abs(v - expected) <= timedelta(seconds=2), (
-                    f"Timestamp {k}: {v} differs from expected {expected} by more than 2 seconds"
-                )
+                assert (
+                    abs(v - expected) <= timedelta(seconds=2)
+                ), f"Timestamp {k}: {v} differs from expected {expected} by more than 2 seconds"
             else:
-                assert v == expected, f"Value {v} not equal to expected value {expected}"
+                assert (
+                    v == expected
+                ), f"Value {v} not equal to expected value {expected}"
 
     def test_create_entity(self, api_client: TestClient, token: str):
         """Test that entities can be created in the database via their FastAPI routes."""

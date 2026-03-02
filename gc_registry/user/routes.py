@@ -59,10 +59,16 @@ def create_user(
                 detail=f"User with email {user_base.email} already exists.",
             )
 
-        user = User.create(user_base, write_session, read_session, esdb_client)
-
-        logger.info("User created successfully", extra={"new_user_id": user[0].id if user else None})
-
+        users: list[User] = cast(
+            list[User], User.create(user_base, write_session, read_session, esdb_client)
+        )
+        if not users:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Could not create user please contact support.",
+            )
+        user: User = users[0]
+        logger.info("User created successfully", extra={"new_user_id": user.id})
         return user
 
 
@@ -137,7 +143,9 @@ def update_user(
             )
         user = User.by_id(user_id, write_session)
 
-        updated_user = user.update(user_update, write_session, read_session, esdb_client)
+        updated_user = user.update(
+            user_update, write_session, read_session, esdb_client
+        )
         logger.info("User updated successfully")
         return updated_user
 
@@ -182,7 +190,9 @@ def change_role(
 
         user = User.by_id(user_id, write_session)
         role_update = UserUpdate(role=role)
-        updated_user = user.update(role_update, write_session, read_session, esdb_client)
+        updated_user = user.update(
+            role_update, write_session, read_session, esdb_client
+        )
         logger.info("User role changed successfully")
         return updated_user
 
@@ -247,7 +257,9 @@ def create_test_account(
             "account_name": webinar_signup.organisation,
             "user_ids": [user.id],
         }
-        _account = Account.create(account_dict, write_session, read_session, esdb_client)
+        _account = Account.create(
+            account_dict, write_session, read_session, esdb_client
+        )
         if _account is not None:
             account: Account = cast(Account, _account[0])
 

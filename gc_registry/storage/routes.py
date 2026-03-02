@@ -145,7 +145,9 @@ async def submit_storage_records(
         df["device_id"] = device_id
 
         device = get_device_by_id(read_session, device_id)
-        logger.info("Device lookup completed", extra={"device_found": device is not None})
+        logger.info(
+            "Device lookup completed", extra={"device_found": device is not None}
+        )
 
         if not device:
             raise HTTPException(
@@ -161,7 +163,9 @@ async def submit_storage_records(
 
         passed, message = validate_storage_records(df, read_session, device_id)
         if not passed:
-            logger.warning("Storage record validation failed", extra={"reason": message})
+            logger.warning(
+                "Storage record validation failed", extra={"reason": message}
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid measurement data: {message}",
@@ -179,10 +183,14 @@ async def submit_storage_records(
 
         logger.info(
             "Storage records created successfully",
-            extra={"total_records": storage_submission_response.get("total_records", 0)},
+            extra={
+                "total_records": storage_submission_response.get("total_records", 0)
+            },
         )
 
-        return StorageRecordSubmissionResponse.model_validate(storage_submission_response)
+        return StorageRecordSubmissionResponse.model_validate(
+            storage_submission_response
+        )
 
 
 @router.get(
@@ -392,7 +400,9 @@ def issue_SDGCs(
             ).all()
 
             # Assert allocation records for a single device have been submitted
-            device_ids = list({record.device_id for record in allocated_storage_records})
+            device_ids = list(
+                {record.device_id for record in allocated_storage_records}
+            )
             if len(device_ids) != 1:
                 raise HTTPException(
                     status_code=400,

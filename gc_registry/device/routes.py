@@ -78,7 +78,9 @@ def update_device(
 
         validate_user_access(current_user, device.account_id, read_session)
 
-        updated_device = device.update(device_update, write_session, read_session, esdb_client)
+        updated_device = device.update(
+            device_update, write_session, read_session, esdb_client
+        )
         logger.info("Device updated successfully")
         return updated_device
 

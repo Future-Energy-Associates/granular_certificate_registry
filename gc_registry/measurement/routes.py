@@ -96,11 +96,15 @@ async def submit_readings(
         # Convert to DataFrame
         measurement_df = pd.read_csv(csv_file)
         measurement_df["device_id"] = device_id
-        logger.info("Meter readings CSV parsed", extra={"row_count": len(measurement_df)})
+        logger.info(
+            "Meter readings CSV parsed", extra={"row_count": len(measurement_df)}
+        )
 
         passed, measurement_df, message = validate_readings(measurement_df)
         if not passed:
-            logger.warning("Meter readings validation failed", extra={"reason": message})
+            logger.warning(
+                "Meter readings validation failed", extra={"reason": message}
+            )
             raise HTTPException(
                 status_code=400,
                 detail=message,
@@ -109,7 +113,9 @@ async def submit_readings(
         # Check that the device ID is associated with an account that the user has access to
         device = Device.by_id(device_id, read_session)
 
-        logger.info("Device lookup completed", extra={"device_found": device is not None})
+        logger.info(
+            "Device lookup completed", extra={"device_found": device is not None}
+        )
 
         if not device:
             raise HTTPException(

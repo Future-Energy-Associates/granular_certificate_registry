@@ -234,7 +234,9 @@ async def import_certificate_bundle(
                 "Certificate bundles imported successfully",
                 extra={
                     "bundle_count": len(gc_bundles),
-                    "total_energy": sum(bundle.bundle_quantity for bundle in gc_bundles),
+                    "total_energy": sum(
+                        bundle.bundle_quantity for bundle in gc_bundles
+                    ),
                 },
             )
 

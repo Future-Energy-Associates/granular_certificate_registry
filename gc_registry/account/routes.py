@@ -64,7 +64,9 @@ def create_account(
                 detail=f"Account name {account_base.account_name} already exists",
             )
 
-        accounts = Account.create(account_base, write_session, read_session, esdb_client)
+        accounts = Account.create(
+            account_base, write_session, read_session, esdb_client
+        )
         if not accounts:
             raise HTTPException(status_code=500, detail="Could not create Account")
 
@@ -122,7 +124,9 @@ def update_account(
             )
 
         if account.is_deleted:
-            raise HTTPException(status_code=400, detail="Cannot update deleted accounts.")
+            raise HTTPException(
+                status_code=400, detail="Cannot update deleted accounts."
+            )
 
         if account_update.user_ids is not None:
             services.update_account_user_links(
