@@ -12,7 +12,6 @@ from fastapi.openapi.docs import get_redoc_html
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPBearer
 from fastapi.templating import Jinja2Templates
-from markdown import markdown
 from pyinstrument import Profiler
 from pyinstrument.renderers.html import HTMLRenderer
 from pyinstrument.renderers.speedscope import SpeedscopeRenderer
@@ -41,10 +40,19 @@ STATIC_DIR_FP = Path(__file__).parent / "static"
 csrf_bearer = HTTPBearer()
 
 descriptions = {}
-for desc in ["api", "certificate", "storage"]:
+for desc in [
+    "api",
+    "certificate",
+    "storage",
+    "user",
+    "account",
+    "device",
+    "measurement",
+    "authentication",
+]:
     static_dir = STATIC_DIR_FP / "descriptions" / f"{desc}.md"
     with open(static_dir, "r") as file:
-        descriptions[desc] = markdown(file.read())
+        descriptions[desc] = file.read()
 
 tags_metadata = [
     {
@@ -56,17 +64,24 @@ tags_metadata = [
         "description": descriptions["storage"],
     },
     {
+        "name": "Measurements",
+        "description": descriptions["measurement"],
+    },
+    {
         "name": "Users",
-        "description": "Individuals affiliated with an Organisation that can manage zero or more Accounts.",
+        "description": descriptions["user"],
     },
     {
         "name": "Accounts",
-        "description": """Accounts receive GC Bundles issued from zero or more Devices, and can transfer them to other Accounts.
-                        Can be managed by one or more Users with sufficient access privileges.""",
+        "description": descriptions["account"],
     },
     {
         "name": "Devices",
-        "description": "Production or consumption units against which GC Bundles can be either issued or cancelled.",
+        "description": descriptions["device"],
+    },
+    {
+        "name": "Authentication",
+        "description": descriptions["authentication"],
     },
 ]
 
