@@ -1,28 +1,36 @@
-The Storage Charge Record (SCR) is a record of the energy charged into a Storage Device from the grid or directly from another energy source.
-All charging events must be recorded in an SCR following verification of metering reports from the storage unit.
-Once recorded, an SCR can be allocated to a cancelled GC bundle issued in the same time period as the charging interval,
-retaining the attributes of the GCs representing the energy charged. The Registry must ensure that a
-process is in place to verify that the energy charged into the Storage Device is not double-counted or mismatched to the wrong
-number of cancelled GC Bundles, and that the cancelled GC Bundles were issued within the charging interval indicated in the SCR.
-<br>\n
-A suggested approach to applying this requirement is to enforce a one-to-one relationship between SCRs and the cancelled GC Bundles,
-allowing the full set of GC Bundle attributes to be referenced from the SCR and the subsequent SDR/SD-GC Bundle as a
-single dependent chain without needing any aggregation or weighting algorithms. A disadvantage of this approach is that only a single
-contiguous range of GC Bundle IDs can be allocated to each SCR, which in practice may lead to a large number of SCRs created due to
-multiple non-contiguous GC Bundles being allocated in the same charging interval. More details can be found in the White Paper.
-<br>\n
-The Storage Discharge Record (SDR) is a record of the energy discharged by a Storage Device into the grid.
-It is issued following the verification of a cancelled GC Bundle, a matching allocated SCR, and the proper allocation
-of Storage Losses incurred during the charge interval. It is recommended that the methodology with which Storage Device
-operators are permitted to allocate SDRs to SCRs, whether LIFO, FIFO, a weighted average, or operator's discretion, is
-fixed such that operators cannot change the methodology in a way that would allow them to manipulate the allocation of SDRs.
-<br>\n
-To comply with the Standard, the Registry must provide a process to view the attributes of the underlying GC Bundles that
-have been cancelled leading to the issuance of the SCR allocated to this SDR, by following the chain of one-to-one foreign
-keys from the SDR to the SCR, and from the SCR to the cancelled GC Bundles.
-<br>\n
-The method for calulating the storage loss is not mandated, but the Registry must ensure that the method used is transparent and
-clearly documented for auditing purposes. The method proposed in this API Specification followed the suggested methodology in the
-EnergyTag Standard, which is to calculate the storage losses as the difference between the total input and output energy
-of the Storage Device over a specified interval period (which shall not exceed 6 months for the initial efficiency factor
-calculated from the start-up date of the Storage Device), implicitly including parasitic losses.
+The Storage Record captures energy charged into or discharged from a Storage Device as
+verified from metering reports. Each record specifies the Device, the flow direction
+(charge or discharge), the time interval, and the energy quantity in Watt-hours.
+Storage Records are submitted as a CSV file via the registry, and the registry validates
+the data against the specified Storage Device before persisting the records.
+
+Once charge and discharge records have been submitted and validated, they can be
+paired into Allocated Storage Records by a Storage Validator. An Allocated Storage
+Record links a Storage Charge Record (SCR) to a Storage Discharge Record (SDR) at a
+specified proportion, along with the allocation methodology (e.g. FIFO, LIFO, weighted
+average, or operator's discretion), the efficiency factor, and the methodology used to
+calculate storage losses. It is recommended that the allocation methodology is fixed
+such that operators cannot change it in a way that would allow manipulation of the
+allocation. Each Allocated Storage Record may also reference the cancelled GC Bundle
+that corresponds to the energy charged, and the SD-GC Bundle issued against the
+discharged energy.
+
+A Storage Discharge GC (SD-GC) Bundle is issued following the verification of a
+cancelled GC Bundle, a matching Allocated Storage Record, and the proper application
+of storage losses. The SD-GC Bundle is issued to the Account of the Storage Device
+and retains the attributes of the underlying cancelled GC Bundles. These bundles
+can be queried using the same GC Bundle query endpoints as regular GC Bundles, with
+the additional option to filter by storage ID and discharging start datetime.
+
+To comply with the Standard, the Registry must provide a process to view the attributes
+of the underlying GC Bundles that have been cancelled leading to the issuance of the
+Allocated Storage Record, by following the chain of foreign keys from the SD-GC
+through the Allocated Storage Record to the original cancelled GC Bundles.
+
+The method for calculating storage losses is not mandated, but the Registry must
+ensure that the method used is transparent and clearly documented for auditing purposes.
+The method proposed in this API Specification follows the suggested methodology in the
+EnergyTag Standard, which is to calculate the storage losses as the difference between
+the total input and output energy of the Storage Device over a specified interval period
+(which shall not exceed 6 months for the initial efficiency factor calculated from the
+start-up date of the Storage Device), implicitly including parasitic losses.
