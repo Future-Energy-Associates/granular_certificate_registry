@@ -548,3 +548,36 @@ def get_allocated_storage_records(
     )
 
     return allocated_storage_records
+
+
+@router.post(
+    "/allocated_storage_records/allocate",
+    response_model=AllocatedStorageRecordSubmissionResponse,
+    status_code=200,
+)
+def allocate_storage_records(
+    device_id: int | None = None,
+    date_from: datetime.date | None = None,
+    date_to: datetime.date | None = None,
+    current_user: User = Depends(get_current_user),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+):
+    """Perform an automated allocation of storage records for the specified device and date range.
+
+    If no device ID is provided, the allocation will be performed for all devices.
+    If no date range is provided, the allocation will be performed for all non-allocated storage records.
+
+    Returns:
+        AllocatedStorageRecordSubmissionResponse: The response containing the total number of allocated
+        storage records and the list of allocated storage record IDs.
+    """
+    with log_context(
+        operation="allocate_storage_records",
+        device_id=device_id,
+        date_from=date_from,
+        date_to=date_to,
+        user_id=current_user.id,
+    ):
+        pass
