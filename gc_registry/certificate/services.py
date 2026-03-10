@@ -605,7 +605,8 @@ def apply_bundle_quantity_or_percentage(
     | GranularCertificateReserve
     | GranularCertificateClaim
     | GranularCertificateWithdraw
-    | GranularCertificateLock,
+    | GranularCertificateLock
+    | GranularCertificateExport,
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
@@ -1310,7 +1311,7 @@ def export_certificates(
         certificate.update(certificate_update, write_session, read_session, esdb_client)
 
     # Collect the IDs of exported certificates
-    exported_certificate_ids = [cert.id for cert in certificates_bundles_to_export]
+    exported_certificate_ids = [cert.id for cert in certificates_bundles_to_export if cert.id is not None]
 
     return ActionResult(
         action_type=CertificateActionType.EXPORT,
