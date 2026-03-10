@@ -1,6 +1,7 @@
 import datetime
 from enum import Enum
 from functools import partial
+from typing import Any
 
 from fastapi import HTTPException
 from pydantic import BaseModel, model_validator
@@ -12,6 +13,7 @@ from gc_registry.core.models.base import (
     CertificateStatus,
     EnergyCarrierType,
     EnergySourceType,
+    EventTypes,
 )
 
 utc_datetime_now = partial(datetime.datetime.now, datetime.timezone.utc)
@@ -748,3 +750,89 @@ class GranularCertificateImportResponse(BaseModel):
         default=None,
         description="The result of the action that was performed, including the action type, outcome, and any details.",
     )
+
+
+class AttributeDiff(BaseModel):
+    """Field-level change in a GC bundle event."""
+
+    field: str
+    before: Any | None = None
+    after: Any | None = None
+
+
+class LineageTimelineEntry(BaseModel):
+    """Normalized view of a single event affecting a GC bundle."""
+
+    event_type: EventTypes
+    timestamp: datetime.datetime
+    entity_id: int | str
+    parent_entity_id: int | str | None = None
+    attributes_before: dict | None = None
+    attributes_after: dict | None = None
+    diffs: list[AttributeDiff] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def compute_diffs(cls, values):
+        before = values.attributes_before or {}
+        after = values.attributes_after or {}
+        fields = set(mutable_gc_attributes) | set(before.keys()) | set(after.keys())
+        diffs: list[AttributeDiff] = []
+        for f in fields:
+            b = before.get(f)
+            a = after.get(f)
+            if b != a:
+                diffs.append(AttributeDiff(field=f, before=b, after=a))
+        values.diffs = diffs
+        return values
+
+
+class GranularCertificateBundleLineage(BaseModel):
+    """Lineage of a GC bundle from creation through updates/deletes.
+    issuance_id remains constant across splits; ids change per child bundle.
+    """
+
+    bundle_id: int
+    entity_name: str = Field(default="GranularCertificateBundle")
+    issuance_id: str | None = None
+    lineage_path: list[int | str] = Field(
+        default_factory=list,
+        description="Parent-to-child path of entity IDs leading to this bundle.",
+    )
+    timeline: list[LineageTimelineEntry] = Field(default_factory=list)
+    created_at: datetime.datetime | None = None
+    last_updated_at: datetime.datetime | None = None
+    current_state: dict | None = Field(
+        default=None,
+        description="Snapshot of latest known attributes for this bundle (this bundle_id only).",
+    )
+
+    @model_validator(mode="after")
+    def derive_metadata(cls, values):
+        events = sorted(values.timeline, key=lambda e: e.timestamp)
+        if not events:
+            return values
+
+        # Timestamps
+        values.created_at = events[0].timestamp
+        values.last_updated_at = events[-1].timestamp
+
+        # Build lineage_path from parent links
+        parent_of: dict[int | str, int | str | None] = {
+            e.entity_id: e.parent_entity_id for e in events
+        }
+        path: list[int | str] = []
+        curr: int | str | None = values.bundle_id
+        while curr is not None:
+            path.append(curr)
+            curr = parent_of.get(curr)
+        values.lineage_path = list(reversed(path))
+
+        # Compute current_state using only this bundle_id’s events
+        state: dict = {}
+        for e in events:
+            if e.entity_id == values.bundle_id and e.attributes_after:
+                state.update(e.attributes_after)
+        if state:
+            values.current_state = state
+
+        return values

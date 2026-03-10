@@ -38,3 +38,7 @@ export const downloadCertificatesAPI = (queryData) => {
 export const downloadSelectedCertificateAPI = (certificateId) => {
   return baseAPI.get(`/certificate/${certificateId}`);
 };
+
+export const getCertificateLineageAPI = (certificateId, format = "timeline") => {
+  return baseAPI.get(`/certificate/${certificateId}/lineage?format=${format}`);
+};
