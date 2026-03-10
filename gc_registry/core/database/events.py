@@ -1,7 +1,9 @@
+import json
 import uuid
 from typing import Generator
 
 from esdbclient import EventStoreDBClient, NewEvent, StreamState
+from esdbclient.exceptions import NotFound
 from fastapi import Depends
 
 from gc_registry.core.models.base import Event, EventTypes
@@ -29,6 +31,7 @@ def create_event(
     attributes_before: dict | None = None,
     attributes_after: dict | None = None,
     esdb_client: EventStoreDBClient = Depends(get_esdb_client),
+    **kwargs,
 ):
     """Create a single event and append it to the ESDB events stream."""
 
@@ -37,6 +40,7 @@ def create_event(
         entity_name=entity_name,
         attributes_before=attributes_before,
         attributes_after=attributes_after,
+        parent_entity_id=kwargs.get("parent_entity_id"),
     )
 
     esdb_event = NewEvent(
@@ -59,6 +63,7 @@ def batch_create_events(
     attributes_before: list[dict | None] | None = None,
     attributes_after: list[dict | None] | None = None,
     esdb_client: EventStoreDBClient = Depends(get_esdb_client),
+    **kwargs,
 ):
     """Create a batch of events and append them to the ESDB events stream.
 
@@ -74,6 +79,7 @@ def batch_create_events(
         Event(
             entity_id=entity_id,
             entity_name=entity_name,
+            parent_entity_id=kwargs.get("parent_entity_id"),
             attributes_before=attributes_before,
             attributes_after=attributes_after,
         )
@@ -96,6 +102,45 @@ def batch_create_events(
         current_version=StreamState.ANY,
         events=esdb_events,
     )
+
+
+def retrieve_all_events_for_entity(
+    entity_id: int,
+    entity_name: str,
+    stream_name: str = "events",
+    esdb_client: EventStoreDBClient = Depends(get_esdb_client),
+):
+    """Retrieve all events for an entity from the ESDB events stream."""
+    try:
+        event_stream = esdb_client.get_stream(stream_name=stream_name)
+    except NotFound:
+        raise ValueError(f"Stream {stream_name} not found")
+
+    entity_events = []
+    for event in event_stream:
+        event_data = json.loads(event.data)
+        if (
+            event_data["entity_id"] == entity_id
+            and event_data["entity_name"] == entity_name
+        ):
+            event_data["type"] = event.type
+            entity_events.append(event_data)
+
+            if event_data.get("parent_entity_id") is not None:
+                if str(event_data["parent_entity_id"]).startswith("S-"):
+                    parent_entity_id = int(event_data["parent_entity_id"].split("-")[1])
+                else:
+                    parent_entity_id = int(event_data["parent_entity_id"])
+                entity_events.extend(
+                    retrieve_all_events_for_entity(
+                        entity_id=parent_entity_id,
+                        entity_name=entity_name,
+                        stream_name=stream_name,
+                        esdb_client=esdb_client,
+                    )
+                )
+
+    return entity_events
 
 
 def reset_eventstore():

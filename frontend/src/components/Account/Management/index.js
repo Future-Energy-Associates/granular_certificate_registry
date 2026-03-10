@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Layout,
   Form,
@@ -10,10 +10,19 @@ import {
   Upload,
   Typography,
   Divider,
+  Button,
+  Table,
+  Tag,
+  Space,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  message,
 } from "antd";
 import { UploadOutlined, UserOutlined } from "@ant-design/icons";
-import sampleAvatar from "../../../assets/images/sample-avatar.jpeg";
+import sampleAvatar from "../../../assets/images/gcos_avatar.png";
 import { useUser } from "../../../context/UserContext";
+import { createApiKeyAPI, listApiKeysAPI, deactivateApiKeyAPI } from "../../../api/authAPI";
 
 const { Content } = Layout;
 const { Text } = Typography;
@@ -22,8 +31,14 @@ const { Option } = Select;
 const AccountManagement = () => {
   const { userData } = useUser();
   const [form] = Form.useForm();
+  const [apiForm] = Form.useForm();
 
-  // Helper to format user role (example)
+  const [apiKeys, setApiKeys] = useState([]);
+  const [loadingKeys, setLoadingKeys] = useState(false);
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [createdKeyInfo, setCreatedKeyInfo] = useState(null); // { id, name, key, expires, created_at }
+
   const formatUserRole = (userRole) => {
     switch (userRole) {
       case "TRADING":
@@ -32,6 +47,18 @@ const AccountManagement = () => {
         return "Audit User";
       default:
         return "Admin";
+    }
+  };
+
+  const fetchApiKeys = async () => {
+    try {
+      setLoadingKeys(true);
+      const resp = await listApiKeysAPI();
+      setApiKeys(resp?.data || []);
+    } catch (err) {
+      message.error("Failed to load API keys");
+    } finally {
+      setLoadingKeys(false);
     }
   };
 
@@ -50,6 +77,83 @@ const AccountManagement = () => {
       });
     }
   }, [userData, form]);
+
+  useEffect(() => {
+    fetchApiKeys();
+  }, []);
+
+  const onCreateApiKey = async (values) => {
+    try {
+      setCreatingKey(true);
+      const payload = {
+        name: values.apiKeyName,
+        expires_days: values.expiresDays ?? null,
+      };
+      const resp = await createApiKeyAPI(payload);
+      const data = resp?.data;
+      setCreatedKeyInfo(data);
+      setShowKeyModal(true);
+      apiForm.resetFields();
+      await fetchApiKeys();
+      message.success("API key created");
+    } catch (err) {
+      const msg = err?.message || "Failed to create API key";
+      message.error(msg);
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const onDeactivate = async (id) => {
+    try {
+      await deactivateApiKeyAPI(id);
+      message.success("API key deactivated");
+      await fetchApiKeys();
+    } catch (err) {
+      message.error("Failed to deactivate API key");
+    }
+  };
+
+  const columns = [
+    { title: "Name", dataIndex: "name", key: "name" },
+    {
+      title: "Created",
+      dataIndex: "created_at",
+      key: "created_at",
+      render: (v) => (v ? new Date(v).toLocaleString() : "-"),
+    },
+    {
+      title: "Expires",
+      dataIndex: "expires",
+      key: "expires",
+      render: (v) => (v ? new Date(v).toLocaleString() : "-"),
+    },
+    {
+      title: "Status",
+      dataIndex: "is_active",
+      key: "is_active",
+      render: (active) =>
+        active ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) =>
+        record.is_active ? (
+          <Space>
+            <Popconfirm
+              title="Deactivate API key"
+              description="This will deactivate the API key immediately. Continue?"
+              okText="Deactivate"
+              okType="danger"
+              onConfirm={() => onDeactivate(record.id)}
+            >
+              <Button danger size="small">Deactivate</Button>
+            </Popconfirm>
+          </Space>
+        ) : null,
+    },
+  ];
 
   return (
     <Layout>
@@ -73,7 +177,7 @@ const AccountManagement = () => {
             },
           }}
           wrapperCol={{ span: 8 }}
-          colon={false} // This removes the colon after the label
+          colon={false}
         >
           <Form.Item label={<Text strong>Name</Text>} required>
             <Row gutter={16}>
@@ -81,9 +185,7 @@ const AccountManagement = () => {
                 <Form.Item
                   name="firstName"
                   noStyle
-                  rules={[
-                    { required: true, message: "Please enter your first name" },
-                  ]}
+                  rules={[{ required: true, message: "Please enter your first name" }]}
                 >
                   <Input placeholder="Olivia" />
                 </Form.Item>
@@ -92,9 +194,7 @@ const AccountManagement = () => {
                 <Form.Item
                   name="lastName"
                   noStyle
-                  rules={[
-                    { required: true, message: "Please enter your last name" },
-                  ]}
+                  rules={[{ required: true, message: "Please enter your last name" }]}
                 >
                   <Input placeholder="Olivia" />
                 </Form.Item>
@@ -109,19 +209,13 @@ const AccountManagement = () => {
             name="email"
             rules={[{ required: true, message: "Please enter your email" }]}
           >
-            <Input
-              prefix={<UserOutlined />}
-              placeholder="olivia@untitledui.com"
-            />
+            <Input prefix={<UserOutlined />} placeholder="olivia@untitledui.com" />
           </Form.Item>
           <Divider />
+
           {/* PHOTO UPLOAD */}
-          <Form.Item
-            label={<Text strong>Your photo</Text>}
-            extra="This will be displayed on your profile."
-          >
+          <Form.Item label={<Text strong>Your photo</Text>} extra="This will be displayed on your profile.">
             <Row gutter={16} align="middle">
-              {/* Avatar Preview */}
               <Col>
                 <Avatar
                   size={64}
@@ -132,7 +226,6 @@ const AccountManagement = () => {
                 />
               </Col>
 
-              {/* Upload Area (Drag and Drop) */}
               <Col flex="auto">
                 <Upload.Dragger
                   name="avatar"
@@ -148,17 +241,14 @@ const AccountManagement = () => {
                   <p className="ant-upload-drag-icon">
                     <UploadOutlined style={{ fontSize: 24 }} />
                   </p>
-                  <p className="ant-upload-text">
-                    Click to upload or drag and drop
-                  </p>
-                  <p className="ant-upload-hint">
-                    SVG, PNG, JPG, or GIF (max. 800×400px)
-                  </p>
+                  <p className="ant-upload-text">Click to upload or drag and drop</p>
+                  <p className="ant-upload-hint">SVG, PNG, JPG, or GIF (max. 800×400px)</p>
                 </Upload.Dragger>
               </Col>
             </Row>
           </Form.Item>
           <Divider />
+
           {/* ROLE SELECTION */}
           <Form.Item
             label={<Text strong>Role</Text>}
@@ -173,6 +263,63 @@ const AccountManagement = () => {
             </Select>
           </Form.Item>
         </Form>
+
+        <Divider />
+
+        {/* API KEY MANAGEMENT */}
+        <Row gutter={[16, 16]}>
+          <Col span={24}>
+            <Text strong style={{ fontSize: 16 }}>API Keys</Text>
+          </Col>
+          <Col span={24}>
+            <Form form={apiForm} layout="inline" onFinish={onCreateApiKey}>
+              <Form.Item
+                name="apiKeyName"
+                label="Name"
+                rules={[{ required: true, message: "Please enter a name for the API key" }]}
+              >
+                <Input placeholder="My integration key" style={{ width: 280 }} />
+              </Form.Item>
+              <Form.Item name="expiresDays" label="Expires (days)">
+                <InputNumber min={1} max={1096} placeholder="365" />
+              </Form.Item>
+              <Form.Item>
+                <Button type="primary" htmlType="submit" loading={creatingKey}>
+                  Request API key
+                </Button>
+              </Form.Item>
+            </Form>
+          </Col>
+
+          <Col span={24}>
+            <Table
+              rowKey="id"
+              loading={loadingKeys}
+              dataSource={apiKeys}
+              columns={columns}
+              pagination={{ pageSize: 5 }}
+            />
+          </Col>
+        </Row>
+
+        <Modal
+          open={showKeyModal}
+          onCancel={() => setShowKeyModal(false)}
+          onOk={() => setShowKeyModal(false)}
+          okText="I have copied it"
+          title="Your API key (shown only once)"
+        >
+          {createdKeyInfo ? (
+            <div>
+              <p><strong>Name:</strong> {createdKeyInfo.name}</p>
+              <p><strong>Key:</strong> <code>{createdKeyInfo.key}</code></p>
+              <p><strong>Expires:</strong> {new Date(createdKeyInfo.expires).toLocaleString()}</p>
+              <p style={{ marginTop: 8 }}>
+                Please store this key securely. It will not be displayed again.
+              </p>
+            </div>
+          ) : null}
+        </Modal>
       </Content>
     </Layout>
   );

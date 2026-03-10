@@ -26,11 +26,13 @@ import {
   getCertificateDetails,
   downloadCertificates,
   downloadSelectedCertificate,
+  getCertificateLineage,
 } from "../../store/certificate/certificateThunk";
 
 import CertificateActionDialog from "./CertificateActionDialog";
 import CertificateDetailDialog from "./CertificateDetailDialog";
 import CertificateImportDialog from "./CertificateImportDialog";
+import CertificateLineageDialog from "./CertificateLineageDialog";
 import Summary from "./Summary";
 
 import StatusTag from "../Common/StatusTag";
@@ -54,6 +56,9 @@ const Certificate = () => {
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedCertificateData, setSelectedCertificateData] = useState(null);
+
+  const [isLineageModalOpen, setIsLineageModalOpen] = useState(false);
+  const [selectedLineageData, setSelectedLineageData] = useState(null);
 
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [selectedRecords, setSelectedRecords] = useState([]);
@@ -88,7 +93,9 @@ const Certificate = () => {
   const defaultFilters = {
     device_id: null,
     energy_source: null,
-    certificate_bundle_status: CERTIFICATE_STATUS.active,
+    certificate_bundle_status: "active",
+    certificate_period_start: null,
+    certificate_period_end: null,
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -130,31 +137,33 @@ const Certificate = () => {
     setSelectedDevices(devices);
   }, [selectedRecords]);
 
-  const fetchCertificatesData = async () => {
+  const fetchCertificatesData = async (overrideFilters = null) => {
+
+    const activeFilters = overrideFilters ?? filters;
 
     const fetchBody = {
       user_id: userInfo.userID,
       source_id: currentAccount?.detail.id,
     };
     
-    if (filters.device_id !== undefined && filters.device_id !== null) {
-      fetchBody.device_id = filters.device_id;
+    if (activeFilters.device_id !== undefined && activeFilters.device_id !== null) {
+      fetchBody.device_id = activeFilters.device_id;
     }
     
-    if (filters.certificate_bundle_status !== undefined && filters.certificate_bundle_status !== null) {
-      fetchBody.certificate_bundle_status = CERTIFICATE_STATUS[filters.certificate_bundle_status];
+    if (activeFilters.certificate_bundle_status !== undefined && activeFilters.certificate_bundle_status !== null) {
+      fetchBody.certificate_bundle_status = CERTIFICATE_STATUS[activeFilters.certificate_bundle_status];
     }
     
-    if (filters.certificate_period_start !== undefined && filters.certificate_period_start !== null) {
-      fetchBody.certificate_period_start = filters.certificate_period_start.format("YYYY-MM-DD");
+    if (activeFilters.certificate_period_start !== undefined && activeFilters.certificate_period_start !== null) {
+      fetchBody.certificate_period_start = activeFilters.certificate_period_start.format("YYYY-MM-DD");
     }
     
-    if (filters.certificate_period_end !== undefined && filters.certificate_period_end !== null) {
-      fetchBody.certificate_period_end = filters.certificate_period_end.format("YYYY-MM-DD");
+    if (activeFilters.certificate_period_end !== undefined && activeFilters.certificate_period_end !== null) {
+      fetchBody.certificate_period_end = activeFilters.certificate_period_end.format("YYYY-MM-DD");
     }
     
-    if (filters.energy_source !== undefined && filters.energy_source !== null) {
-      fetchBody.energy_source = filters.energy_source;
+    if (activeFilters.energy_source !== undefined && activeFilters.energy_source !== null) {
+      fetchBody.energy_source = activeFilters.energy_source;
     }
     
     try {
@@ -185,8 +194,21 @@ const Certificate = () => {
     }
   };
 
+  const handleGetCertificateLineage = async (certificateId) => {
+    try {
+      const response = await dispatch(
+        getCertificateLineage(certificateId)
+      ).unwrap();
+      setSelectedLineageData(response);
+      setIsLineageModalOpen(true);
+    } catch (error) {
+      message.error(error?.message || "Failed to fetch certificate lineage");
+    }
+  };
+
   const handleClearFilter = async () => {
-    setFilters({});
+    setFilters(defaultFilters);
+    fetchCertificatesData(defaultFilters);
   };
 
   const getDeviceName = (deviceID) => {
@@ -201,6 +223,14 @@ const Certificate = () => {
   };
 
   const handleDateChange = (dates) => {
+    if (!dates || dates.length === 0) {
+      setFilters((prev) => ({
+        ...prev,
+        certificate_period_start: null,
+        certificate_period_end: null,
+      }));
+      return;
+    }
     setFilters((prev) => ({
       ...prev,
       certificate_period_start: dates[0],
@@ -232,51 +262,58 @@ const Certificate = () => {
 
   const isCertificatesSelected = selectedRowKeys.length > 0;
 
-  const handleDownloadCertificates = async () => {
+  const handleDownloadCertificates = useCallback(async () => {
     try {
       if (selectedRecords.length > 0) {
-        // Download selected certificates using the actual certificate IDs
         message.loading("Fetching selected certificates...", 0);
-        
-        const certificatePromises = selectedRecords.map(certificate => 
+
+        const certificatePromises = selectedRecords.map((certificate) =>
           dispatch(downloadSelectedCertificate(certificate.id)).unwrap()
         );
-        
+
         const certificatesData = await Promise.all(certificatePromises);
-        
+
         message.destroy();
         downloadCertificatesAsCSV(certificatesData, "gc_bundles_download_selected.csv");
-        message.success("Selected certificate bundles downloaded successfully");
+        message.success(`Selected certificate bundles (${selectedRecords.length}) downloaded successfully`);
       } else {
         message.loading("Fetching certificate bundles...", 0);
-        
-        // Only include filter properties that have actual values (not undefined or null)
+
         const fetchBody = {
           user_id: userInfo.userID,
           source_id: currentAccount?.detail.id,
         };
-        
-        // Only add filter properties if they have values
+
         if (filters.device_id !== undefined && filters.device_id !== null) {
           fetchBody.device_id = filters.device_id;
         }
-        
-        if (filters.certificate_bundle_status !== undefined && filters.certificate_bundle_status !== null) {
-          fetchBody.certificate_bundle_status = CERTIFICATE_STATUS[filters.certificate_bundle_status];
+
+        if (
+          filters.certificate_bundle_status !== undefined &&
+          filters.certificate_bundle_status !== null
+        ) {
+          fetchBody.certificate_bundle_status =
+            CERTIFICATE_STATUS[filters.certificate_bundle_status];
         }
-        
-        if (filters.certificate_period_start !== undefined && filters.certificate_period_start !== null) {
+
+        if (
+          filters.certificate_period_start !== undefined &&
+          filters.certificate_period_start !== null
+        ) {
           fetchBody.certificate_period_start = filters.certificate_period_start.format("YYYY-MM-DD");
         }
-        
-        if (filters.certificate_period_end !== undefined && filters.certificate_period_end !== null) {
+
+        if (
+          filters.certificate_period_end !== undefined &&
+          filters.certificate_period_end !== null
+        ) {
           fetchBody.certificate_period_end = filters.certificate_period_end.format("YYYY-MM-DD");
         }
-        
+
         if (filters.energy_source !== undefined && filters.energy_source !== null) {
           fetchBody.energy_source = filters.energy_source;
         }
-        
+
         const response = await dispatch(downloadCertificates(fetchBody)).unwrap();
 
         message.destroy();
@@ -284,11 +321,11 @@ const Certificate = () => {
         message.success(`${response.length} Certificate bundles downloaded successfully`);
       }
     } catch (error) {
-      message.destroy(); // Clear loading message
+      message.destroy();
       console.error("Download error:", error);
       message.error("Failed to download certificate bundles");
     }
-  };
+  }, [selectedRecords, selectedRowKeys, filters, currentAccount?.detail?.id, userInfo.userID, dispatch]);
 
   // Create a stable reference to the handler
   const downloadHandler = useCallback(() => {
@@ -304,7 +341,7 @@ const Certificate = () => {
         disabled: false,
         style: { height: "40px", marginRight: "16px" },
         name: selectedRowKeys.length > 0 ? "Download Selected" : "Download All",
-        handle: downloadHandler,
+        handle: handleDownloadCertificates,
       },
       {
         icon: <UploadOutlined />,
@@ -343,7 +380,7 @@ const Certificate = () => {
         handle: () => openDialog("transfer"),
       },
     ],
-    [selectedRowKeys.length, downloadHandler, isCertificatesSelected]
+    [selectedRowKeys.length, handleDownloadCertificates, isCertificatesSelected]
   );
 
   const filterComponents = [
@@ -375,16 +412,19 @@ const Certificate = () => {
     </Select>,
     /* Date range Filter */
     <RangePicker
-      value={[filters.certificate_period_start, filters.certificate_period_end]}
+      value={[
+        filters.certificate_period_start || null,
+        filters.certificate_period_end || null,
+      ]}
       onChange={(dates) => handleDateChange(dates)}
-      allowClear={true} // Change to true to allow clearing
+      allowClear={true}
       format="YYYY-MM-DD"
-      placeholder={["Start Date", "End Date"]} // Add placeholder text
+      placeholder={["Start Date", "End Date"]}
     />,
     <Select
       // mode="multiple"
       placeholder="Status"
-      value={filters.status}
+      value={filters.certificate_bundle_status}
       onChange={(value) =>
         handleFilterChange("certificate_bundle_status", value)
       }
@@ -491,13 +531,19 @@ const Certificate = () => {
       title: "",
       render: (_, record) => {
         return (
-          <Button
+          <><Button
             style={{ color: "#043DDC", fontWeight: "600" }}
             type="link"
             onClick={() => handleGetCertificateDetail(record.id)}
           >
             Details
-          </Button>
+          </Button><Button
+            style={{ color: "#043DDC", fontWeight: "600" }}
+            type="link"
+            onClick={() => handleGetCertificateLineage(record.id)}
+          >
+              Lineage
+            </Button></>
         );
       },
     },
@@ -551,6 +597,11 @@ const Certificate = () => {
         open={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         certificateData={selectedCertificateData}
+      />
+      <CertificateLineageDialog
+        open={isLineageModalOpen}
+        onClose={() => setIsLineageModalOpen(false)}
+        lineage={selectedLineageData}
       />
     </>
   );

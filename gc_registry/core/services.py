@@ -1,5 +1,5 @@
 from hashlib import sha256
-from typing import Any
+from typing import Any, Hashable
 
 from gc_registry.certificate.models import (
     GranularCertificateBundle,
@@ -11,7 +11,8 @@ from gc_registry.certificate.schemas import mutable_gc_attributes
 def create_bundle_hash(
     granular_certificate_bundle: GranularCertificateBundle
     | GranularCertificateBundleBase
-    | dict[str, Any],
+    | dict[str, Any]
+    | dict[Hashable, Any],
     nonce: str | None = "",
 ):
     """

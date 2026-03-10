@@ -42,6 +42,7 @@ from gc_registry.storage.utils import (
     get_allocated_storage_records_by_device_id,
     get_allocated_storage_records_by_id,
     get_device_ids_in_allocated_storage_records,
+    get_storage_records_by_device_id,
     get_storage_records_by_id,
 )
 from gc_registry.storage.validation import (
@@ -172,7 +173,7 @@ async def submit_storage_records(
 
 
 @router.get(
-    "/storage_records",
+    "/storage_records_by_id",
     response_model=list[StorageRecord],
     status_code=200,
 )
@@ -217,6 +218,37 @@ async def get_storage_records_by_id_route(
     return storage_records
 
 
+@router.get(
+    "/storage_records/{device_id}",
+    response_model=list[StorageRecord],
+    status_code=200,
+)
+async def get_storage_records_by_device_id_route(
+    device_id: int,
+    current_user: User = Depends(get_current_user),
+    read_session: Session = Depends(db.get_read_session),
+):
+    """Return storage records for the specified device ID."""
+    # Can be performed by both Storage Device owners and Storage Validators
+    if current_user.role != UserRoles.STORAGE_VALIDATOR:
+        validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
+
+    storage_records = get_storage_records_by_device_id(device_id, read_session)
+
+    # Check that the user has access to the devices associated with the storage records
+    if not storage_records:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No storage records found for the specified device ID.",
+        )
+
+    device_ids = {record.device_id for record in storage_records}
+
+    validate_access_to_devices(device_ids, current_user, read_session)
+
+    return storage_records
+
+
 @router.post(
     "/allocated_storage_records",
     response_model=AllocatedStorageRecordSubmissionResponse,
@@ -242,7 +274,7 @@ async def create_storage_allocation(
         contents = await file.read()
         csv_file = io.StringIO(contents.decode("utf-8"))
 
-        # Convert to DataFrame and replace NaN values with None
+        # Convert to DataFrame
         allocated_storage_records_df = pd.read_csv(csv_file, keep_default_na=False)
         allocated_storage_records_df["device_id"] = device_id
 

@@ -5,6 +5,7 @@ import {
   cancelCertificateAPI,
   exportCertificateAPI,
   getCertificateDetailsAPI,
+  getCertificateLineageAPI,
   downloadCertificatesAPI,
   downloadSelectedCertificateAPI,
 } from "../../api/certificateAPI";
@@ -110,6 +111,20 @@ export const downloadSelectedCertificate = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to download selected certificate details"
+      );
+    }
+  }
+);
+
+export const getCertificateLineage = createAsyncThunk(
+  "certificates/getLineage",
+  async (certificateId, { rejectWithValue }) => {
+    try {
+      const response = await getCertificateLineageAPI(certificateId);
+      return response?.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch certificate lineage"
       );
     }
   }

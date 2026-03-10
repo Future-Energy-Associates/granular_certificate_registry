@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from esdbclient import EventStoreDBClient
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from sqlmodel import Session
 
@@ -628,3 +628,38 @@ def certificate_bundle_export(
     )
 
     return db_certificate_action
+@router.get(
+    "/{id}/lineage",
+    status_code=200,
+)
+def get_certificate_bundle_lineage(
+    id: int,
+    format: str = Query(default="timeline"),
+    current_user: User = Depends(get_current_user),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+):
+    """Get the lineage of a given certificate bundle by ID."""
+    validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
+
+    # Validate access against the bundle's account
+    current_certificate_bundle = GranularCertificateBundle.by_id(id, read_session)
+    if not current_certificate_bundle:
+        raise HTTPException(status_code=404, detail="Certificate bundle not found")
+    validate_user_access(
+        current_user, current_certificate_bundle.account_id, read_session
+    )
+
+    lineage = services.get_certificate_bundle_lineage(
+        current_certificate_bundle, esdb_client
+    )
+
+    if format == "timeline":
+        return services.format_lineage_for_timeline(lineage)
+    elif format == "raw":
+        return lineage
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid format: {format}. Valid formats are: timeline, raw",
+        )
