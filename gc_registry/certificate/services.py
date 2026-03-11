@@ -29,6 +29,7 @@ from gc_registry.certificate.schemas import (
     GranularCertificateCancel,
     GranularCertificateCancelStorage,
     GranularCertificateClaim,
+    GranularCertificateExport,
     GranularCertificateLock,
     GranularCertificateQuery,
     GranularCertificateReserve,
@@ -566,6 +567,7 @@ def process_certificate_bundle_action(
         CertificateActionType.WITHDRAW: withdraw_certificates,
         CertificateActionType.LOCK: lock_certificates,
         CertificateActionType.RESERVE: reserve_certificates,
+        CertificateActionType.EXPORT: export_certificates,
         CertificateActionType.CANCEL_FOR_STORAGE: cancel_certificates_for_storage,
     }
 
@@ -603,7 +605,8 @@ def apply_bundle_quantity_or_percentage(
     | GranularCertificateReserve
     | GranularCertificateClaim
     | GranularCertificateWithdraw
-    | GranularCertificateLock,
+    | GranularCertificateLock
+    | GranularCertificateExport,
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
@@ -1244,6 +1247,77 @@ def reserve_certificates(
         action_type=CertificateActionType.RESERVE,
         action_result=ActionOutcome.SUCCESS,
         details=f"Reserved {len(certificates_bundles_to_reserve)} certificates.",
+    )
+
+
+def export_certificates(
+    certificate_export: GranularCertificateExport,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> ActionResult:
+    """Export certificates matched to the given filter parameters.
+
+    Locked, reserved, withdrawn, claimed, or exported GCs cannot be exported.
+
+    Args:
+        certificate_export (GranularCertificateExport): The certificate export action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    Returns:
+        ActionResult: The result of the export action
+    """
+    # Retrieve certificates to reserve
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
+        certificate_export.granular_certificate_bundle_ids, write_session
+    )
+
+    if not certificate_bundles_from_query:
+        err_msg = "No certificates found to export with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+
+    valid_statuses = [
+        CertificateStatus.ACTIVE,
+        CertificateStatus.CANCELLED,
+        CertificateStatus.CANCELLED_FOR_STORAGE,
+    ]
+    if any(
+        c.certificate_bundle_status not in valid_statuses
+        for c in certificate_bundles_from_query
+    ):
+        err_msg = f"Certificates must be in ACTIVE, CANCELLED, or CANCELLED_FOR_STORAGE \
+                    status to export, found: { {c.certificate_bundle_status for c in certificate_bundles_from_query} } \
+                    Locked, reserved, withdrawn, claimed, or exported GCs cannot be exported."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_bundles_to_export = apply_bundle_quantity_or_percentage(
+        certificate_bundles_from_query,
+        certificate_export,
+        write_session,
+        read_session,
+        esdb_client,
+    )
+
+    # Export certificates
+    for certificate in certificates_bundles_to_export:
+        certificate_update = GranularCertificateBundleUpdate(
+            certificate_bundle_status=CertificateStatus.EXPORTED
+        )
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
+
+    # Collect the IDs of exported certificates
+    exported_certificate_ids = [cert.id for cert in certificates_bundles_to_export if cert.id is not None]
+
+    return ActionResult(
+        action_type=CertificateActionType.EXPORT,
+        action_result=ActionOutcome.SUCCESS,
+        details=f"Exported {len(certificates_bundles_to_export)} certificates.",
+        certificate_ids=exported_certificate_ids,
     )
 
 

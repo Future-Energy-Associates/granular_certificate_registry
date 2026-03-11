@@ -634,6 +634,30 @@ class GranularCertificateReserve(GranularCertificateActionBase):
         return values
 
 
+class GranularCertificateExport(GranularCertificateActionBase):
+    action_type: CertificateActionType = Field(
+        default=CertificateActionType.EXPORT,
+        const=True,
+    )
+
+    @model_validator(mode="after")
+    def ensure_action_type_is_not_set(cls, values):
+        if values.action_type != CertificateActionType.EXPORT:
+            raise ValueError("`action_type` cannot be set explicitly.")
+        return values
+
+    @model_validator(mode="after")
+    def ensure_quantity_or_percentage(cls, values):
+        if (
+            values.certificate_quantity is not None
+            and values.certificate_bundle_percentage is not None
+        ):
+            raise ValueError(
+                "Can only pass one of `certificate_quantity` or `certificate_bundle_percentage`."
+            )
+        return values
+
+
 class GranularCertificateClaim(GranularCertificateActionBase):
     action_type: CertificateActionType = Field(
         default=CertificateActionType.CLAIM,
@@ -728,6 +752,10 @@ class ActionResult(BaseModel):
     details: str | None = Field(
         default=None,
         description="Additional details about the action result, if applicable.",
+    )
+    certificate_ids: list[int] | None = Field(
+        default=None,
+        description="The IDs of the GC Bundles that were affected or created by this action.",
     )
 
 

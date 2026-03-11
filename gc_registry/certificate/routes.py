@@ -19,6 +19,7 @@ from gc_registry.certificate.schemas import (
     GranularCertificateBundleReadFull,
     GranularCertificateCancel,
     GranularCertificateCancelStorage,
+    GranularCertificateExport,
     GranularCertificateImportResponse,
     GranularCertificateQuery,
     GranularCertificateQueryRead,
@@ -622,7 +623,7 @@ def certificate_bundle_withdraw(
 @router.post(
     "/reserve",
     response_model=GranularCertificateActionRead,
-    status_code=202,
+    status_code=200,
 )
 def certificate_bundle_reserve(
     certificate_bundle_action: GranularCertificateAction,
@@ -644,8 +645,33 @@ def certificate_bundle_reserve(
     return db_certificate_action
 
 
+@router.post(
+    "/export",
+    response_model=GranularCertificateActionRead,
+    status_code=200,
+)
+def certificate_bundle_export(
+    certificate_export: GranularCertificateExport,
+    current_user: User = Depends(get_current_user),
+    write_session: Session = Depends(db.get_write_session),
+    read_session: Session = Depends(db.get_read_session),
+    esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
+):
+    """Export a fixed number of certificates from the specified Account matching the provided search criteria.
+
+    These GC bundles become marked as EXPORTED and are no longer eligible for transfer or cancellation.
+    Locked, reserved, withdrawn, claimed, or exported GCs cannot be exported.
+    """
+    validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
+    validate_user_access(current_user, certificate_export.source_id, read_session)
+    certificate_export.action_type = CertificateActionType.EXPORT
+    db_certificate_action = services.process_certificate_bundle_action(
+        certificate_export, write_session, read_session, esdb_client
+    )
+
+    return db_certificate_action
 @router.get(
-    "/lineage/{id}",
+    "/{id}/lineage",
     status_code=200,
 )
 def get_certificate_bundle_lineage(

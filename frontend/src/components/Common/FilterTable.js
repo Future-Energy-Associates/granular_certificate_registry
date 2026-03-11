@@ -39,8 +39,28 @@ const FilterTable = ({
 }) => {
   const dispatch = useDispatch();
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Internal state to manage cross-page selections
+  const [allSelectedRowKeys, setAllSelectedRowKeys] = useState(new Set(selectedRowKeys));
+  const [allSelectedRecords, setAllSelectedRecords] = useState(new Map());
 
   const pageSize = 10;
+
+  // Initialize selected records map when selectedRecords prop changes
+  useEffect(() => {
+    if (selectedRecords && selectedRecords.length > 0) {
+      const recordsMap = new Map();
+      selectedRecords.forEach(record => {
+        recordsMap.set(record.id, record);
+      });
+      setAllSelectedRecords(recordsMap);
+    }
+  }, [selectedRecords]);
+
+  // Sync internal state with external selectedRowKeys
+  useEffect(() => {
+    setAllSelectedRowKeys(new Set(selectedRowKeys));
+  }, [selectedRowKeys]);
 
   // useEffect(() => {
   //   if (fetchTableData) fetchTableData();
@@ -52,13 +72,100 @@ const FilterTable = ({
 
   const totalPages = Math.ceil(dataSource?.length / pageSize);
 
+  // Get current page data
+  const currentPageData = dataSource?.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // Filter selected keys to only include those visible on current page
+  const currentPageSelectedKeys = currentPageData
+    ?.filter(record => allSelectedRowKeys.has(record.id))
+    ?.map(record => record.id) || [];
+
+  // Handler to clear all selections across all pages
+  const handleClearAllSelections = () => {
+    setAllSelectedRowKeys(new Set());
+    setAllSelectedRecords(new Map());
+    
+    // Call parent callback with empty arrays
+    if (onRowsSelected) {
+      onRowsSelected([], []);
+    }
+  };
+
+  // Handler to select/deselect all rows on current page
+  const handleToggleCurrentPageSelection = () => {
+    const currentPageIds = currentPageData?.map(record => record.id) || [];
+    const allCurrentPageSelected = currentPageIds.every(id => allSelectedRowKeys.has(id));
+    
+    const newSelectedKeys = new Set(allSelectedRowKeys);
+    const newSelectedRecords = new Map(allSelectedRecords);
+    
+    if (allCurrentPageSelected) {
+      // Deselect all on current page
+      currentPageIds.forEach(id => {
+        newSelectedKeys.delete(id);
+        newSelectedRecords.delete(id);
+      });
+    } else {
+      // Select all on current page
+      currentPageData?.forEach(record => {
+        newSelectedKeys.add(record.id);
+        newSelectedRecords.set(record.id, record);
+      });
+    }
+    
+    setAllSelectedRowKeys(newSelectedKeys);
+    setAllSelectedRecords(newSelectedRecords);
+    
+    // Call parent callback
+    if (onRowsSelected) {
+      const allSelectedKeysArray = Array.from(newSelectedKeys);
+      const allSelectedRecordsArray = Array.from(newSelectedRecords.values());
+      onRowsSelected(allSelectedKeysArray, allSelectedRecordsArray);
+    }
+  };
+
   const rowSelection = {
-    selectedRowKeys,
+    selectedRowKeys: currentPageSelectedKeys,
     onChange: (selectedKeys, selectedRows) => {
-      // Directly call the parent callback, don't use an intermediate function
+      // Create new sets/maps to avoid mutation
+      const newSelectedKeys = new Set(allSelectedRowKeys);
+      const newSelectedRecords = new Map(allSelectedRecords);
+      
+      // Get current page row IDs
+      const currentPageIds = new Set(currentPageData?.map(record => record.id) || []);
+      
+      // Remove all current page selections first
+      currentPageIds.forEach(id => {
+        newSelectedKeys.delete(id);
+        newSelectedRecords.delete(id);
+      });
+      
+      // Add new selections from current page
+      selectedKeys.forEach(key => {
+        newSelectedKeys.add(key);
+      });
+      
+      selectedRows.forEach(row => {
+        newSelectedRecords.set(row.id, row);
+      });
+      
+      // Update internal state
+      setAllSelectedRowKeys(newSelectedKeys);
+      setAllSelectedRecords(newSelectedRecords);
+      
+      // Call parent callback with all selected data
       if (onRowsSelected) {
-        onRowsSelected(selectedKeys, selectedRows);
+        const allSelectedKeysArray = Array.from(newSelectedKeys);
+        const allSelectedRecordsArray = Array.from(newSelectedRecords.values());
+        onRowsSelected(allSelectedKeysArray, allSelectedRecordsArray);
       }
+    },
+    onSelectAll: (selected, selectedRows, changeRows) => {
+      // Override the default select all behavior to work with our cross-page logic
+      handleToggleCurrentPageSelection();
     },
   };
 
@@ -103,15 +210,50 @@ const FilterTable = ({
           {tableName}
         </Text>
         <Space>
-          <Text
-            style={{
-              color: "#202124",
-              fontWeight: "500",
-              display: selectedRowKeys.length < 1 ? "none" : "inline",
-            }}
-          >
-            ({selectedRowKeys.length} selected)
-          </Text>
+
+          {/* Clear All Selections Button - only show when there are selections */}
+          {allSelectedRowKeys.size > 0 && (
+            <Button
+              type="text"
+              onClick={handleClearAllSelections}
+              style={{
+                color: "#ff4d4f",
+                fontWeight: "500",
+                fontSize: "12px",
+              }}
+              size="small"
+            >
+              Clear All
+            </Button>
+          )}
+
+          {/* Select/Deselect Current Page Button */}
+          {isShowSelection && currentPageData && currentPageData.length > 0 && (
+            <><Button
+              type="text"
+              onClick={handleToggleCurrentPageSelection}
+              style={{
+                color: "#043DDC",
+                fontWeight: "500",
+                fontSize: "12px",
+              }}
+              size="small"
+            >
+              {currentPageData.every(record => allSelectedRowKeys.has(record.id))
+                ? "Deselect Page"
+                : "Select Page"}
+            </Button>
+            
+           <Text
+              style={{
+                color: "#202124",
+                fontWeight: "500",
+                display: allSelectedRowKeys.size < 1 ? "none" : "inline",
+              }}
+            >
+                ({allSelectedRowKeys.size} selected)
+            </Text></>
+          )}
 
           {tableActionBtns &&
             tableActionBtns.map((action, index) => {
@@ -173,10 +315,7 @@ const FilterTable = ({
         }}
         rowSelection={isShowSelection && rowSelection}
         columns={columns}
-        dataSource={dataSource?.slice(
-          (currentPage - 1) * pageSize,
-          currentPage * pageSize
-        )}
+        dataSource={currentPageData}
         rowKey="id"
         pagination={false}
       />
