@@ -5,7 +5,10 @@ import { useAccount } from "../../context/AccountContext.js";
 import {
   transferCertificates,
   cancelCertificates,
+  exportCertificates,
+  downloadSelectedCertificate,
 } from "../../store/certificate/certificateThunk.js";
+import { downloadCertificatesAsCSV } from "../../utils";
 
 const { Option } = Select;
 
@@ -42,7 +45,8 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
             />
           </div>
         );
-        return;
+      case "export":
+        return null; // No additional fields needed for export
       default:
         return (
           <div style={{ marginTop: "24px", marginBottom: "48px" }}>
@@ -74,7 +78,6 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
             )}
           </div>
         );
-        return;
     }
   };
 
@@ -84,9 +87,30 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
     props.updateCertificateActionDialog(null);
   };
 
+  const handleDownloadExportedCertificates = async (exportedCertificateIds) => {
+    try {
+      message.loading("Downloading exported certificates...", 0);
+
+      // Download the individual certificate details using the returned IDs
+      const certificatePromises = exportedCertificateIds.map((certificateId) =>
+        dispatch(downloadSelectedCertificate(certificateId)).unwrap()
+      );
+
+      const certificatesData = await Promise.all(certificatePromises);
+
+      message.destroy();
+      downloadCertificatesAsCSV(certificatesData, "gc_bundles_exported.csv");
+      message.success(`Exported certificate bundles (${certificatesData.length}) downloaded successfully`);
+    } catch (error) {
+      message.destroy();
+      console.error("Download error:", error);
+      message.error("Failed to download exported certificate bundles");
+    }
+  };
+
   const handleOk = async () => {
     // Check if destination account is selected for transfer action
-    if (props.dialogAction !== "cancel" && !selectedAccount) {
+    if (props.dialogAction !== "cancel" && props.dialogAction !== "export" && !selectedAccount) {
       setAccountError(true);
       return;
     }
@@ -153,6 +177,15 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
           apiBody = { ...apiBody, beneficiary: beneficiary };
           await dispatch(cancelCertificates(apiBody)).unwrap();
           break;
+        case "export":
+          apiBody = { ...apiBody };
+          const exportResponse = await dispatch(exportCertificates(apiBody)).unwrap();
+          // Extract the certificate IDs from the response
+          const exportedCertificateIds = exportResponse.action_result?.certificate_ids || [];
+          if (exportedCertificateIds.length > 0) {
+            await handleDownloadExportedCertificates(exportedCertificateIds);
+          }
+          break;
         default:
           apiBody = { ...apiBody, target_id: selectedAccount };
           await dispatch(transferCertificates(apiBody)).unwrap();
@@ -192,6 +225,8 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
       title={
         props.dialogAction === "transfer"
           ? `Transferring - ${props.selectedRowKeys.length} certificates`
+          : props.dialogAction === "export"
+          ? `Exporting - ${props.selectedRowKeys.length} certificates`
           : `Canceling - ${props.selectedRowKeys.length} certificates`
       }
       open={visible}
@@ -200,12 +235,14 @@ const TransferCertificatesDialog = forwardRef((props, ref) => {
       okText={
         props.dialogAction === "transfer"
           ? "Transfer Certificates"
+          : props.dialogAction === "export"
+          ? "Export Certificates"
           : "Cancel Certificates"
       }
       cancelText="Cancel"
       okButtonProps={{
         style:
-          props.dialogAction === "cancel"
+          props.dialogAction === "cancel" || props.dialogAction === "export"
             ? {
                 backgroundColor: "#F04438",
               }

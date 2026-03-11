@@ -3,6 +3,7 @@ import {
   fetchCertificatesAPI,
   transferCertificateAPI,
   cancelCertificateAPI,
+  exportCertificateAPI,
   getCertificateDetailsAPI,
   getCertificateLineageAPI,
   downloadCertificatesAPI,
@@ -46,6 +47,22 @@ export const cancelCertificates = createAsyncThunk(
   async (params, { dispatch, rejectWithValue }) => {
     try {
       const response = await cancelCertificateAPI(params);
+      return response?.data;
+    } catch (error) {
+      return rejectWithValue({
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+  }
+);
+
+export const exportCertificates = createAsyncThunk(
+  "certificates/exportCertificates",
+  async (params, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await exportCertificateAPI(params);
       return response?.data;
     } catch (error) {
       return rejectWithValue({
