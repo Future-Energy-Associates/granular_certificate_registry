@@ -65,6 +65,7 @@ class CertificateStatus(str, Enum):
     WITHDRAWN = "Withdrawn"
     LOCKED = "Locked"
     RESERVED = "Reserved"
+    EXPORTED = "Exported"
     BUNDLE_SPLIT = "Bundle Split"
     CANCELLED_FOR_STORAGE = "Cancelled for Storage"
 
@@ -79,6 +80,7 @@ class CertificateActionType(str, Enum):
     WITHDRAW = "withdraw"
     LOCK = "lock"
     RESERVE = "reserve"
+    EXPORT = "export"
     CANCEL_FOR_STORAGE = "cancel_for_storage"
 
 

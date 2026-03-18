@@ -29,5 +29,6 @@ export const CERTIFICATE_STATUS = Object.freeze({
     locked: "Locked",
     withdraw: "Withdraw",
     reserved: "Reserved",
+    exported: "Exported"
   });
 
