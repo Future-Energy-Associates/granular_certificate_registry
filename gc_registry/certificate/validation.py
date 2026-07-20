@@ -90,7 +90,7 @@ def validate_granular_certificate_bundle(
 
 
 def validate_imported_granular_certificate_bundle(
-    raw_granular_certificate_bundle: dict[str, Any] | dict[Hashable,Any],
+    raw_granular_certificate_bundle: dict[str, Any] | dict[Hashable, Any],
     existing_bundles: list[GranularCertificateBundle],
     import_device: Device,
     hours: float = settings.CERTIFICATE_GRANULARITY_HOURS,

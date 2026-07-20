@@ -28,7 +28,7 @@ from gc_registry.certificate.services import get_certificate_bundles_by_account_
 from gc_registry.core.database import db, events
 from gc_registry.core.models.base import UserRoles
 from gc_registry.device.models import DeviceRead
-from gc_registry.logging_config import logger
+from gc_registry.logging_config import log_context, logger
 from gc_registry.user.models import User, UserAccountLink
 from gc_registry.user.validation import validate_user_access, validate_user_role
 
@@ -46,37 +46,46 @@ def create_account(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
-    validate_account(account_base, read_session)
+    with log_context(
+        operation="create_account",
+        user_id=current_user.id,
+        account_name=account_base.account_name,
+    ):
+        validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
+        validate_account(account_base, read_session)
 
-    # By default, create the account as linked to the current user
-    account_base.user_ids = list(set(account_base.user_ids + [current_user.id]))
+        # By default, create the account as linked to the current user
+        account_base.user_ids = list(set(account_base.user_ids + [current_user.id]))
 
-    # Check that account name does not already exist
-    if Account.by_name(account_base.account_name, read_session):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Account name {account_base.account_name} already exists",
+        # Check that account name does not already exist
+        if Account.by_name(account_base.account_name, read_session):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Account name {account_base.account_name} already exists",
+            )
+
+        accounts = Account.create(
+            account_base, write_session, read_session, esdb_client
+        )
+        if not accounts:
+            raise HTTPException(status_code=500, detail="Could not create Account")
+
+        account = AccountRead.model_validate(accounts[0].model_dump())
+
+        # Update link table to link the current user and list of associated users to the account
+        _user_account_link = UserAccountLink.create(
+            [
+                {"user_id": user_id, "account_id": account.id}
+                for user_id in account_base.user_ids
+            ],
+            write_session,
+            read_session,
+            esdb_client,
         )
 
-    accounts = Account.create(account_base, write_session, read_session, esdb_client)
-    if not accounts:
-        raise HTTPException(status_code=500, detail="Could not create Account")
+        logger.info("Account created successfully", extra={"account_id": account.id})
 
-    account = AccountRead.model_validate(accounts[0].model_dump())
-
-    # Update link table to link the current user and list of associated users to the account
-    _user_account_link = UserAccountLink.create(
-        [
-            {"user_id": user_id, "account_id": account.id}
-            for user_id in account_base.user_ids
-        ],
-        write_session,
-        read_session,
-        esdb_client,
-    )
-
-    return account
+        return account
 
 
 @router.get("/{account_id}", response_model=AccountRead)
@@ -100,33 +109,42 @@ def update_account(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
-    validate_user_access(current_user, account_id, read_session)
+    with log_context(
+        operation="update_account",
+        account_id=account_id,
+        user_id=current_user.id,
+    ):
+        validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
+        validate_user_access(current_user, account_id, read_session)
 
-    account = Account.by_id(account_id, write_session)
-    if not account or not account.id:
-        raise HTTPException(
-            status_code=404, detail=f"Account ID not found: {account_id}"
+        account = Account.by_id(account_id, write_session)
+        if not account or not account.id:
+            raise HTTPException(
+                status_code=404, detail=f"Account ID not found: {account_id}"
+            )
+
+        if account.is_deleted:
+            raise HTTPException(
+                status_code=400, detail="Cannot update deleted accounts."
+            )
+
+        if account_update.user_ids is not None:
+            services.update_account_user_links(
+                account.id, account_update, write_session, read_session, esdb_client
+            )
+
+        updated_account = account.update(
+            account_update, write_session, read_session, esdb_client
         )
 
-    if account.is_deleted:
-        raise HTTPException(status_code=400, detail="Cannot update deleted accounts.")
+        if not updated_account:
+            raise HTTPException(
+                status_code=400, detail=f"Error during account update: {account_id}"
+            )
 
-    if account_update.user_ids is not None:
-        services.update_account_user_links(
-            account.id, account_update, write_session, read_session, esdb_client
-        )
+        logger.info("Account updated successfully")
 
-    updated_account = account.update(
-        account_update, write_session, read_session, esdb_client
-    )
-
-    if not updated_account:
-        raise HTTPException(
-            status_code=400, detail=f"Error during account update: {account_id}"
-        )
-
-    return updated_account
+        return updated_account
 
 
 @router.patch("/update_whitelist/{account_id}", response_model=AccountRead)
@@ -138,20 +156,33 @@ def update_whitelist(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
-    validate_user_access(current_user, account_id, read_session)
+    with log_context(
+        operation="update_whitelist",
+        account_id=account_id,
+        user_id=current_user.id,
+    ):
+        validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
+        validate_user_access(current_user, account_id, read_session)
 
-    account = Account.by_id(account_id, read_session)
-    if not account:
-        raise HTTPException(
-            status_code=404, detail=f"Account ID not found: {account_id}"
+        account = Account.by_id(account_id, read_session)
+        if not account:
+            raise HTTPException(
+                status_code=404, detail=f"Account ID not found: {account_id}"
+            )
+
+        validate_and_apply_account_whitelist_update(
+            account, account_whitelist_update, write_session, read_session, esdb_client
         )
 
-    validate_and_apply_account_whitelist_update(
-        account, account_whitelist_update, write_session, read_session, esdb_client
-    )
+        logger.info(
+            "Whitelist updated",
+            extra={
+                "added": account_whitelist_update.add_to_whitelist,
+                "removed": account_whitelist_update.remove_from_whitelist,
+            },
+        )
 
-    return account
+        return account
 
 
 @router.get("/{account_id}/whitelist", response_model=list[Account])
@@ -204,18 +235,25 @@ def delete_account(
     read_session: Session = Depends(db.get_read_session),
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ):
-    validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
-    validate_user_access(current_user, account_id, read_session)
-    try:
-        account = Account.by_id(account_id, write_session)
-        accounts = account.delete(write_session, read_session, esdb_client)
-        if not accounts:
-            raise ValueError(f"Account id {account_id} not found")
-        return accounts[0]
-    except Exception:
-        raise HTTPException(
-            status_code=404, detail="Could not delete Account not found"
-        )
+    with log_context(
+        operation="delete_account",
+        account_id=account_id,
+        user_id=current_user.id,
+    ):
+        validate_user_role(current_user, required_role=UserRoles.TRADING_USER)
+        validate_user_access(current_user, account_id, read_session)
+        try:
+            account = Account.by_id(account_id, write_session)
+            accounts = account.delete(write_session, read_session, esdb_client)
+            if not accounts:
+                raise ValueError(f"Account id {account_id} not found")
+            logger.info("Account deleted successfully")
+            return accounts[0]
+        except Exception:
+            logger.warning("Failed to delete account")
+            raise HTTPException(
+                status_code=404, detail="Could not delete Account not found"
+            )
 
 
 @router.get("/list", response_model=list[AccountRead])
@@ -343,31 +381,40 @@ def list_all_account_bundles(
     Returns:
         GranularCertificateQueryRead: The certificate query response
     """
+    with log_context(
+        operation="list_account_certificates",
+        account_id=account_id,
+        user_id=current_user.id if current_user else None,
+    ):
+        if not current_user or not current_user.id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
 
-    if not current_user or not current_user.id:
-        raise HTTPException(status_code=401, detail="User not authenticated")
+        validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
+        validate_user_access(current_user, account_id, read_session)
 
-    validate_user_role(current_user, required_role=UserRoles.AUDIT_USER)
-    validate_user_access(current_user, account_id, read_session)
-
-    certificate_bundles = get_certificate_bundles_by_account_id(
-        account_id, read_session, limit
-    )
-
-    if not certificate_bundles:
-        raise HTTPException(
-            status_code=422, detail="No certificates found for this account"
+        certificate_bundles = get_certificate_bundles_by_account_id(
+            account_id, read_session, limit
         )
 
-    certificate_bundles_read = [
-        GranularCertificateBundleRead.model_validate(certificate.model_dump())
-        for certificate in certificate_bundles
-    ]
+        if not certificate_bundles:
+            raise HTTPException(
+                status_code=422, detail="No certificates found for this account"
+            )
 
-    certificate_query = GranularCertificateQueryRead(
-        granular_certificate_bundles=list(certificate_bundles_read),
-        source_id=account_id,
-        user_id=current_user.id,
-    )
+        certificate_bundles_read = [
+            GranularCertificateBundleRead.model_validate(certificate.model_dump())
+            for certificate in certificate_bundles
+        ]
 
-    return certificate_query.model_dump()
+        logger.info(
+            "Certificate bundles retrieved",
+            extra={"bundle_count": len(certificate_bundles_read)},
+        )
+
+        certificate_query = GranularCertificateQueryRead(
+            granular_certificate_bundles=list(certificate_bundles_read),
+            source_id=account_id,
+            user_id=current_user.id,
+        )
+
+        return certificate_query.model_dump()
