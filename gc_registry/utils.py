@@ -7,7 +7,7 @@ from typing import Any, Hashable, Type, TypeVar
 import pandas as pd
 from esdbclient import EventStoreDBClient
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from sqlmodel import Field, Session, SQLModel, select
 
 from gc_registry.core.database import cqrs
@@ -38,6 +38,21 @@ class ActiveRecord(SQLModel):
             session.close()
         return obj
 
+    @model_validator(mode="before")
+    @classmethod
+    def sanitise_nan_values(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        for k, v in data.items():
+            try:
+                if pd.isna(v):
+                    data[k] = None
+            except (TypeError, ValueError):
+                pass
+
+        return data
+
     @classmethod
     def all(cls, session: Session) -> list[SQLModel]:
         return session.exec(select(cls)).all()
@@ -56,6 +71,7 @@ class ActiveRecord(SQLModel):
         write_session: Session,
         read_session: Session,
         esdb_client: EventStoreDBClient,
+        **kwargs,
     ) -> list[SQLModel]:
         if isinstance(source, (SQLModel, BaseModel)):
             obj = [cls.model_validate(source)]
@@ -72,6 +88,7 @@ class ActiveRecord(SQLModel):
             write_session,
             read_session,
             esdb_client,
+            **kwargs,
         )
 
         return created_entities

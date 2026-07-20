@@ -9,11 +9,13 @@ import {
 import { DeviceIcon } from "../../assets/icon/DeviceIcon";
 import { CertificateIcon } from "../../assets/icon/CertificateIcon";
 import { TransferIcon } from "../../assets/icon/TransferIcon";
+import { StorageIcon } from "../../assets/icon/StorageIcon";
 import "../../assets/styles/sidemenu.css";
 import { useNavigate, useLocation } from "react-router-dom";
-import sampleAvatar from "../../assets/images/sample-avatar.jpeg";
+import sampleAvatar from "../../assets/images/gcos_avatar.png";
 import Cookies from "js-cookie";
 import { useUser } from "../../context/UserContext";
+import { useAccount } from "../../context/AccountContext";
 
 const { Text } = Typography;
 
@@ -24,6 +26,7 @@ const SideMenu = () => {
   const [isAccountPickerAllowed, setIsAccountPickerAllowed] = useState(false);
   const [isShowDevices, setIsShowDevices] = useState(false);
   const { userData } = useUser();
+  const { currentAccount } = useAccount();
 
   useEffect(() => {
     console.log(userData);
@@ -54,9 +57,17 @@ const SideMenu = () => {
       {
         key: "devices",
         icon: <DeviceIcon width={20} height={20} />,
-        label: "Device management",
+        label: "Device Management",
         onClick: () => navigate("/devices"),
         style: generateMenuStyle("/devices", isShowDevices),
+        className: "custom-menu-item",
+      },
+      {
+        key: "storage",
+        icon: <StorageIcon width={20} height={20} />,
+        label: "Storage Management",
+        onClick: () => navigate("/storage"),
+        style: generateMenuStyle("/storage", isShowDevices),
         className: "custom-menu-item",
       },
       {
@@ -135,6 +146,24 @@ const SideMenu = () => {
         }}
       >
         Granular <span style={{ color: "#0057FF" }}>CertOS</span>
+      </div>
+      <div style={{ padding: "0 16px", marginBottom: "16px" }}>
+        <div
+          style={{
+            background: "#F5F7FF",
+            border: "1px solid #E0E7FF",
+            borderRadius: "8px",
+            padding: "8px 12px",
+            marginBottom: "8px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "#043DDC", fontWeight: 600 }}>
+            {currentAccount?.detail?.account_name || "—"}
+          </Text>
+        </div>
       </div>
       <Menu
         mode="vertical"

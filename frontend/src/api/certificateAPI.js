@@ -13,6 +13,9 @@ export const transferCertificateAPI = (certificateData) =>
 export const cancelCertificateAPI = (certificateData) =>
   baseAPI.post("/certificate/cancel", certificateData);
 
+export const exportCertificateAPI = (certificateData) =>
+  baseAPI.post("/certificate/export", certificateData);
+
 export const getCertificateDetailsAPI = (certificateId) => {
   return baseAPI.get(`/certificate/${certificateId}`);
 };
@@ -37,4 +40,8 @@ export const downloadCertificatesAPI = (queryData) => {
 
 export const downloadSelectedCertificateAPI = (certificateId) => {
   return baseAPI.get(`/certificate/${certificateId}`);
+};
+
+export const getCertificateLineageAPI = (certificateId, format = "timeline") => {
+  return baseAPI.get(`/certificate/${certificateId}/lineage?format=${format}`);
 };

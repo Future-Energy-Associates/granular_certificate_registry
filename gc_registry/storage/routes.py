@@ -24,7 +24,7 @@ from gc_registry.core.database import db, events
 from gc_registry.core.models.base import UserRoles
 from gc_registry.device.models import Device
 from gc_registry.device.services import get_device_by_id
-from gc_registry.logging_config import logger
+from gc_registry.logging_config import log_context, logger
 from gc_registry.storage.models import (
     AllocatedStorageRecord,
     StorageRecord,
@@ -42,6 +42,7 @@ from gc_registry.storage.utils import (
     get_allocated_storage_records_by_device_id,
     get_allocated_storage_records_by_id,
     get_device_ids_in_allocated_storage_records,
+    get_storage_records_by_device_id,
     get_storage_records_by_id,
 )
 from gc_registry.storage.validation import (
@@ -115,64 +116,85 @@ async def submit_storage_records(
     esdb_client: EventStoreDBClient = Depends(events.get_esdb_client),
 ) -> StorageRecordSubmissionResponse:
     """Submit a list of Storage Records to the registry."""
+    with log_context(
+        operation="submit_storage_records",
+        device_id=device_id,
+        user_id=current_user.id,
+        filename=file.filename,
+    ):
+        # Can be performed by both Storage Device owners and Storage Validators
+        if current_user.role != UserRoles.STORAGE_VALIDATOR:
+            validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
 
-    # Can be performed by both Storage Device owners and Storage Validators
-    if current_user.role != UserRoles.STORAGE_VALIDATOR:
-        validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
+        try:
+            # Read the uploaded file
+            contents = await file.read()
+            csv_file = io.StringIO(contents.decode("utf-8"))
 
-    try:
-        # Read the uploaded file
-        contents = await file.read()
-        csv_file = io.StringIO(contents.decode("utf-8"))
+            # Convert to DataFrame
+            df = pd.read_csv(csv_file)
+            logger.info("CSV file parsed successfully", extra={"row_count": len(df)})
 
-        # Convert to DataFrame
-        df = pd.read_csv(csv_file)
+        except Exception as e:
+            logger.warning("Failed to read CSV file", extra={"error": str(e)})
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error reading CSV file: {str(e)}",
+            )
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error reading CSV file: {str(e)}",
+        df["device_id"] = device_id
+
+        device = get_device_by_id(read_session, device_id)
+        logger.info(
+            "Device lookup completed", extra={"device_found": device is not None}
         )
 
-    df["device_id"] = device_id
+        if not device:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Device with ID {device_id} not found.",
+            )
 
-    device = get_device_by_id(read_session, device_id)
-    logger.info(f"Device: {device}")
+        if not device.is_storage:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Device with ID {device_id} is not a storage device.",
+            )
 
-    if not device:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Device with ID {device_id} not found.",
+        passed, message = validate_storage_records(df, read_session, device_id)
+        if not passed:
+            logger.warning(
+                "Storage record validation failed", extra={"reason": message}
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid measurement data: {message}",
+            )
+
+        validate_user_access(current_user, device.account_id, read_session)
+
+        # Create the storage records
+        storage_submission_response = create_charge_records_from_metering_data(
+            df,
+            write_session,
+            read_session,
+            esdb_client,
         )
 
-    if not device.is_storage:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Device with ID {device_id} is not a storage device.",
+        logger.info(
+            "Storage records created successfully",
+            extra={
+                "total_records": storage_submission_response.get("total_records", 0)
+            },
         )
 
-    passed, message = validate_storage_records(df, read_session, device_id)
-    if not passed:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid measurement data: {message}",
+        return StorageRecordSubmissionResponse.model_validate(
+            storage_submission_response
         )
-
-    validate_user_access(current_user, device.account_id, read_session)
-
-    # Create the storage records
-    storage_submission_response = create_charge_records_from_metering_data(
-        df,
-        write_session,
-        read_session,
-        esdb_client,
-    )
-
-    return StorageRecordSubmissionResponse.model_validate(storage_submission_response)
 
 
 @router.get(
-    "/storage_records",
+    "/storage_records_by_id",
     response_model=list[StorageRecord],
     status_code=200,
 )
@@ -217,6 +239,37 @@ async def get_storage_records_by_id_route(
     return storage_records
 
 
+@router.get(
+    "/storage_records/{device_id}",
+    response_model=list[StorageRecord],
+    status_code=200,
+)
+async def get_storage_records_by_device_id_route(
+    device_id: int,
+    current_user: User = Depends(get_current_user),
+    read_session: Session = Depends(db.get_read_session),
+):
+    """Return storage records for the specified device ID."""
+    # Can be performed by both Storage Device owners and Storage Validators
+    if current_user.role != UserRoles.STORAGE_VALIDATOR:
+        validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
+
+    storage_records = get_storage_records_by_device_id(device_id, read_session)
+
+    # Check that the user has access to the devices associated with the storage records
+    if not storage_records:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No storage records found for the specified device ID.",
+        )
+
+    device_ids = {record.device_id for record in storage_records}
+
+    validate_access_to_devices(device_ids, current_user, read_session)
+
+    return storage_records
+
+
 @router.post(
     "/allocated_storage_records",
     response_model=AllocatedStorageRecordSubmissionResponse,
@@ -235,61 +288,81 @@ async def create_storage_allocation(
     This endpoint depends on there being existing validated Storage Charge/Discharge Records
     that have been submitted for the specified device.
     """
-    validate_user_role_for_storage_validator(current_user)
+    with log_context(
+        operation="create_storage_allocation",
+        device_id=device_id,
+        user_id=current_user.id,
+        filename=file.filename,
+    ):
+        validate_user_role_for_storage_validator(current_user)
 
-    try:
-        # Read the uploaded file
-        contents = await file.read()
-        csv_file = io.StringIO(contents.decode("utf-8"))
+        try:
+            # Read the uploaded file
+            contents = await file.read()
+            csv_file = io.StringIO(contents.decode("utf-8"))
 
-        # Convert to DataFrame and replace NaN values with None
-        allocated_storage_records_df = pd.read_csv(csv_file, keep_default_na=False)
-        allocated_storage_records_df["device_id"] = device_id
-
-        # Check that the device ID is associated with an account that the user has access to
-        device = Device.by_id(device_id, read_session)
-
-        logger.info(f"Device: {device}")
-
-        if not device:
-            raise HTTPException(
-                status_code=404, detail=f"Device with ID {device_id} not found."
+            # Convert to DataFrame
+            allocated_storage_records_df = pd.read_csv(csv_file, keep_default_na=False)
+            allocated_storage_records_df["device_id"] = device_id
+            logger.info(
+                "Allocation CSV parsed",
+                extra={"row_count": len(allocated_storage_records_df)},
             )
-        if not device.is_storage:
+
+            # Check that the device ID is associated with an account that the user has access to
+            device = Device.by_id(device_id, read_session)
+
+            logger.info(
+                "Device lookup completed", extra={"device_found": device is not None}
+            )
+
+            if not device:
+                raise HTTPException(
+                    status_code=404, detail=f"Device with ID {device_id} not found."
+                )
+            if not device.is_storage:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Device with ID {device_id} is not a storage device.",
+                )
+
+            validate_user_access(current_user, device.account_id, read_session)
+
+            # Create the allocated storage records
+            allocated_storage_records = (
+                create_allocated_storage_records_from_submitted_data(
+                    allocated_storage_records_df,
+                    write_session,
+                    read_session,
+                    esdb_client,
+                )
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error("Failed to create allocation records", extra={"error": str(e)})
+            raise HTTPException(status_code=400, detail=str(e))
+
+        if allocated_storage_records is None:
             raise HTTPException(
                 status_code=400,
-                detail=f"Device with ID {device_id} is not a storage device.",
+                detail="No valid allocated storage records were created from the submitted data.",
             )
 
-        validate_user_access(current_user, device.account_id, read_session)
-
-        # Create the allocated storage records
-        allocated_storage_records = (
-            create_allocated_storage_records_from_submitted_data(
-                allocated_storage_records_df,
-                write_session,
-                read_session,
-                esdb_client,
-            )
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    if allocated_storage_records is None:
-        raise HTTPException(
-            status_code=400,
-            detail="No valid allocated storage records were created from the submitted data.",
+        allocated_storage_records_cast = cast(
+            list[AllocatedStorageRecord], allocated_storage_records
         )
 
-    allocated_storage_records_cast = cast(
-        list[AllocatedStorageRecord], allocated_storage_records
-    )
+        logger.info(
+            "Allocation records created successfully",
+            extra={"total_records": len(allocated_storage_records_cast)},
+        )
 
-    return AllocatedStorageRecordSubmissionResponse(
-        total_records=len(allocated_storage_records_cast),
-        record_ids=[record.id for record in allocated_storage_records_cast],
-        message="Allocation records created successfully.",
-    )
+        return AllocatedStorageRecordSubmissionResponse(
+            total_records=len(allocated_storage_records_cast),
+            record_ids=[record.id for record in allocated_storage_records_cast],
+            message="Allocation records created successfully.",
+        )
 
 
 @router.post(
@@ -310,42 +383,64 @@ def issue_SDGCs(
     These bundles can be queried using the same GC Bundle query endpoint as regular GC Bundles, but with the additional option to filter
     by the storage_id and the discharging_start_datetime, which is inherited from the allocated SDR.
     """
-    if current_user.role != UserRoles.STORAGE_VALIDATOR:
-        validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
+    with log_context(
+        operation="issue_sdgcs",
+        user_id=current_user.id,
+        allocation_record_count=len(allocated_storage_record_ids),
+    ):
+        if current_user.role != UserRoles.STORAGE_VALIDATOR:
+            validate_user_role(current_user, required_role=UserRoles.PRODUCTION_USER)
 
-    try:
-        # Retrieve the allocated storage records
-        allocated_storage_records = read_session.exec(
-            select(AllocatedStorageRecord).where(
-                AllocatedStorageRecord.id.in_(allocated_storage_record_ids)  # type: ignore
+        try:
+            # Retrieve the allocated storage records
+            allocated_storage_records = read_session.exec(
+                select(AllocatedStorageRecord).where(
+                    AllocatedStorageRecord.id.in_(allocated_storage_record_ids)  # type: ignore
+                )
+            ).all()
+
+            # Assert allocation records for a single device have been submitted
+            device_ids = list(
+                {record.device_id for record in allocated_storage_records}
             )
-        ).all()
+            if len(device_ids) != 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Allocation records must be for a single device.",
+                )
+            device_id = device_ids[0]
+            device = Device.by_id(device_id, read_session)
 
-        # Assert allocation records for a single device have been submitted
-        device_ids = [record.device_id for record in allocated_storage_records]
-        if len(device_ids) != 1:
-            raise HTTPException(
-                status_code=400,
-                detail="Allocation records must be for a single device.",
+            logger.info(
+                "Issuing SDGCs",
+                extra={
+                    "device_id": device_id,
+                    "allocation_records": len(allocated_storage_records),
+                },
             )
-        device_id = device_ids[0]
-        device = Device.by_id(device_id, read_session)
 
-        # Assert the user has access to the specified device
-        validate_user_access(current_user, device.account_id, read_session)
+            # Assert the user has access to the specified device
+            validate_user_access(current_user, device.account_id, read_session)
 
-        issued_sdgcs = issue_sdgcs_against_allocated_records(
-            allocated_storage_records=allocated_storage_records,
-            device=device,
-            account_id=device.account_id,
-            write_session=write_session,
-            read_session=read_session,
-            esdb_client=esdb_client,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+            issued_sdgcs = issue_sdgcs_against_allocated_records(
+                allocated_storage_records=allocated_storage_records,
+                device=device,
+                account_id=device.account_id,
+                write_session=write_session,
+                read_session=read_session,
+                esdb_client=esdb_client,
+            )
 
-    return issued_sdgcs
+            logger.info(
+                "SDGCs issued successfully", extra={"sdgc_count": len(issued_sdgcs)}
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error("Failed to issue SDGCs", extra={"error": str(e)})
+            raise HTTPException(status_code=400, detail=str(e))
+
+        return issued_sdgcs
 
 
 @router.get(

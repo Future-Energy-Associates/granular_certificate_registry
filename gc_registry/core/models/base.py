@@ -65,6 +65,7 @@ class CertificateStatus(str, Enum):
     WITHDRAWN = "Withdrawn"
     LOCKED = "Locked"
     RESERVED = "Reserved"
+    EXPORTED = "Exported"
     BUNDLE_SPLIT = "Bundle Split"
     CANCELLED_FOR_STORAGE = "Cancelled for Storage"
 
@@ -79,6 +80,7 @@ class CertificateActionType(str, Enum):
     WITHDRAW = "withdraw"
     LOCK = "lock"
     RESERVE = "reserve"
+    EXPORT = "export"
     CANCEL_FOR_STORAGE = "cancel_for_storage"
 
 
@@ -91,6 +93,11 @@ class EventTypes(str, Enum):
 class Event(BaseModel):
     entity_id: int | uuid.UUID
     entity_name: str
+    parent_entity_id: int | uuid.UUID | str | None = Field(
+        default=None,
+        description="""If an entity is a child of another entity, this is the id of the parent entity, e.g. when a GC bundle is split into child bundles.
+        For time-shfting, the parent ID will a string prefixed with 'S-', e.g. 'S-123'""",
+    )
     attributes_before: dict | None = Field(sa_column=Column(JSON))
     attributes_after: dict | None = Field(sa_column=Column(JSON))
     timestamp: datetime.datetime = Field(default_factory=utc_datetime_now)  # type: ignore

@@ -24,23 +24,26 @@ from gc_registry.certificate.schemas import (
     GranularCertificateActionRead,
     GranularCertificateBundleBase,
     GranularCertificateBundleCreate,
+    GranularCertificateBundleLineage,
     GranularCertificateBundleRead,
     GranularCertificateCancel,
     GranularCertificateCancelStorage,
     GranularCertificateClaim,
+    GranularCertificateExport,
     GranularCertificateLock,
     GranularCertificateQuery,
     GranularCertificateReserve,
     GranularCertificateTransfer,
     GranularCertificateWithdraw,
     IssuanceMetaDataBase,
+    LineageTimelineEntry,
 )
 from gc_registry.certificate.validation import (
     validate_granular_certificate_bundle,
     validate_imported_granular_certificate_bundle,
 )
 from gc_registry.core.database import cqrs, db, events
-from gc_registry.core.models.base import CertificateActionType
+from gc_registry.core.models.base import CertificateActionType, EventTypes
 from gc_registry.core.services import create_bundle_hash
 from gc_registry.device.meter_data.abstract_meter_client import AbstractMeterDataClient
 from gc_registry.device.models import Device
@@ -145,6 +148,9 @@ def split_certificate_bundle(
         granular_certificate_bundle_child_2, granular_certificate_bundle.hash
     )
 
+    # Retain the parent bundle ID for lineage tracking
+    parent_bundle_id = granular_certificate_bundle.id
+
     # Mark the parent bundle as withdrawn and apply soft delete
     granular_certificate_bundle.certificate_bundle_status = (
         CertificateStatus.BUNDLE_SPLIT
@@ -153,10 +159,18 @@ def split_certificate_bundle(
 
     # Write the child bundles to the database
     db_granular_certificate_bundle_child_1 = GranularCertificateBundle.create(
-        granular_certificate_bundle_child_1, write_session, read_session, esdb_client
+        granular_certificate_bundle_child_1,
+        write_session,
+        read_session,
+        esdb_client,
+        parent_entity_id=parent_bundle_id,
     )
     db_granular_certificate_bundle_child_2 = GranularCertificateBundle.create(
-        granular_certificate_bundle_child_2, write_session, read_session, esdb_client
+        granular_certificate_bundle_child_2,
+        write_session,
+        read_session,
+        esdb_client,
+        parent_entity_id=parent_bundle_id,
     )
 
     return db_granular_certificate_bundle_child_1[
@@ -553,6 +567,7 @@ def process_certificate_bundle_action(
         CertificateActionType.WITHDRAW: withdraw_certificates,
         CertificateActionType.LOCK: lock_certificates,
         CertificateActionType.RESERVE: reserve_certificates,
+        CertificateActionType.EXPORT: export_certificates,
         CertificateActionType.CANCEL_FOR_STORAGE: cancel_certificates_for_storage,
     }
 
@@ -590,7 +605,8 @@ def apply_bundle_quantity_or_percentage(
     | GranularCertificateReserve
     | GranularCertificateClaim
     | GranularCertificateWithdraw
-    | GranularCertificateLock,
+    | GranularCertificateLock
+    | GranularCertificateExport,
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
@@ -1234,6 +1250,77 @@ def reserve_certificates(
     )
 
 
+def export_certificates(
+    certificate_export: GranularCertificateExport,
+    write_session: Session,
+    read_session: Session,
+    esdb_client: EventStoreDBClient,
+) -> ActionResult:
+    """Export certificates matched to the given filter parameters.
+
+    Locked, reserved, withdrawn, claimed, or exported GCs cannot be exported.
+
+    Args:
+        certificate_export (GranularCertificateExport): The certificate export action
+        write_session (Session): The database write session
+        read_session (Session): The database read session
+        esdb_client (EventStoreDBClient): The EventStoreDB client
+
+    Returns:
+        ActionResult: The result of the export action
+    """
+    # Retrieve certificates to reserve
+    certificate_bundles_from_query = get_certificate_bundles_by_id(
+        certificate_export.granular_certificate_bundle_ids, write_session
+    )
+
+    if not certificate_bundles_from_query:
+        err_msg = "No certificates found to export with given query parameters."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+
+    valid_statuses = [
+        CertificateStatus.ACTIVE,
+        CertificateStatus.CANCELLED,
+        CertificateStatus.CANCELLED_FOR_STORAGE,
+    ]
+    if any(
+        c.certificate_bundle_status not in valid_statuses
+        for c in certificate_bundles_from_query
+    ):
+        err_msg = f"Certificates must be in ACTIVE, CANCELLED, or CANCELLED_FOR_STORAGE \
+                    status to export, found: { {c.certificate_bundle_status for c in certificate_bundles_from_query} } \
+                    Locked, reserved, withdrawn, claimed, or exported GCs cannot be exported."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+
+    # Split bundles if required, but only if certificate_quantity or percentage is provided
+    certificates_bundles_to_export = apply_bundle_quantity_or_percentage(
+        certificate_bundles_from_query,
+        certificate_export,
+        write_session,
+        read_session,
+        esdb_client,
+    )
+
+    # Export certificates
+    for certificate in certificates_bundles_to_export:
+        certificate_update = GranularCertificateBundleUpdate(
+            certificate_bundle_status=CertificateStatus.EXPORTED
+        )
+        certificate.update(certificate_update, write_session, read_session, esdb_client)
+
+    # Collect the IDs of exported certificates
+    exported_certificate_ids = [cert.id for cert in certificates_bundles_to_export if cert.id is not None]
+
+    return ActionResult(
+        action_type=CertificateActionType.EXPORT,
+        action_result=ActionOutcome.SUCCESS,
+        details=f"Exported {len(certificates_bundles_to_export)} certificates.",
+        certificate_ids=exported_certificate_ids,
+    )
+
+
 def get_latest_issuance_metadata(db_session: Session) -> IssuanceMetaData | None:
     """Get the latest IssuanceMetaData based on created_at.
 
@@ -1319,7 +1406,7 @@ def import_gc_bundles(
         metadata_mapping[metadata_key] = metadata_id
 
     # Now create the GC bundles with the correct metadata_id
-    gc_bundles_data = []
+    gc_bundles_data: list[dict[Hashable, Any]] = []
 
     # Retrieve existing bundles for the import device once for validation
     if import_device.id is None:
@@ -1381,3 +1468,188 @@ def import_gc_bundles(
     ]
 
     return gc_bundles_cast
+
+
+def get_certificate_bundle_lineage(
+    current_bundle: GranularCertificateBundle,
+    esdb_client: EventStoreDBClient,
+) -> GranularCertificateBundleLineage:
+    """Get the lineage of a given certificate bundle by ID."""
+
+    event_stream = events.retrieve_all_events_for_entity(
+        entity_id=current_bundle.id,  # type: ignore
+        entity_name="GranularCertificateBundle",
+        stream_name="events",
+        esdb_client=esdb_client,
+    )
+
+    timeline = [
+        LineageTimelineEntry(
+            event_type=e["type"],
+            timestamp=e["timestamp"],
+            entity_id=e["entity_id"],
+            parent_entity_id=e.get("parent_entity_id"),
+            attributes_before=e.get("attributes_before"),
+            attributes_after=e.get("attributes_after"),
+        )
+        for e in event_stream
+    ]
+
+    lineage = GranularCertificateBundleLineage(
+        bundle_id=current_bundle.id,  # type: ignore
+        issuance_id=current_bundle.issuance_id,
+        timeline=timeline,
+        current_state=current_bundle.model_dump(),
+    )
+
+    return lineage
+
+
+def format_lineage_for_timeline(
+    lineage: GranularCertificateBundleLineage,
+) -> dict[str, Any]:
+    """Convert a GranularCertificateBundleLineage into a user-friendly timeline JSON.
+
+    The output is suitable both for API responses (easy to read JSON) and
+    frontend timeline rendering (label/icon/color per event).
+
+    Args:
+        lineage: The lineage model returned from get_certificate_bundle_lineage.
+
+    Returns:
+        dict: A structured representation with header info and timeline events.
+    """
+
+    def _iso(ts: datetime.datetime | str) -> str:
+        if isinstance(ts, str):
+            return ts
+        if ts.tzinfo is None:
+            return ts.isoformat() + "Z"
+        return ts.astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+
+    def _diffs_to_dict(diffs: list) -> dict[str, Any]:
+        return {d.field: {"before": d.before, "after": d.after} for d in diffs}
+
+    def _classify_event(entry: LineageTimelineEntry) -> dict[str, Any]:
+        label = f"{entry.event_type.title()}"
+        icon = "update"
+        color = "gray"
+        kind = "update"
+        details: dict[str, Any] = {}
+
+        if entry.event_type == EventTypes.CREATE:
+            if entry.parent_entity_id is not None:
+                if isinstance(
+                    entry.parent_entity_id, str
+                ) and entry.parent_entity_id.startswith("S-"):
+                    entry.parent_entity_id = int(entry.parent_entity_id.split("-")[1])
+                    label = f"Time-shifted: #{entry.entity_id:,} from #{entry.parent_entity_id:,} "
+                    icon = "time_shift"
+                    color = "blue"
+                    kind = "time_shifted"
+                else:
+                    label = f"Split: child #{entry.entity_id:,} from #{entry.parent_entity_id:,} "
+                    icon = "split"
+                    color = "purple"
+                    kind = "split_child_created"
+            else:
+                label = f"Bundle created #{entry.entity_id}"
+                icon = "create"
+                color = "green"
+                kind = "created"
+
+        # Soft deletes on bundles are used to indicate when a parent bundle is split into child bundles
+        elif entry.event_type == EventTypes.DELETE:
+            label = f"Bundle #{entry.entity_id:,} deleted"
+            icon = "delete"
+            color = "red"
+            kind = "deleted"
+
+        elif entry.event_type == EventTypes.UPDATE:
+            diffs = _diffs_to_dict(entry.diffs)
+
+            if "account_id" in diffs:
+                b = diffs["account_id"]["before"]
+                a = diffs["account_id"]["after"]
+                label = f"Transferred: account {b} → {a}"
+                icon = "transfer"
+                color = "blue"
+                kind = "transfer"
+                details["from_account_id"] = b
+                details["to_account_id"] = a
+
+            elif "certificate_bundle_status" in diffs:
+                new_status = diffs["certificate_bundle_status"]["after"]
+                label = f"Status: {new_status}"
+                kind = "status_change"
+
+                # Map statuses to icons/colors
+                status_icon_map = {
+                    CertificateStatus.CANCELLED: ("cancel", "red"),
+                    CertificateStatus.CANCELLED_FOR_STORAGE: ("storage", "orange"),
+                    CertificateStatus.CLAIMED: ("claim", "green"),
+                    CertificateStatus.RESERVED: ("reserve", "yellow"),
+                    CertificateStatus.LOCKED: ("lock", "gray"),
+                    CertificateStatus.WITHDRAWN: ("withdraw", "gray"),
+                    CertificateStatus.ACTIVE: ("activate", "green"),
+                    CertificateStatus.BUNDLE_SPLIT: ("split", "purple"),
+                    CertificateStatus.EXPIRED: ("expired", "gray"),
+                }
+                icon, color = status_icon_map.get(new_status, ("update", "gray"))
+
+                # Optional beneficiary present on cancellation/claim
+                if "beneficiary" in diffs:
+                    details["beneficiary"] = diffs["beneficiary"]["after"]
+
+            else:
+                # General update fallback
+                label = "Bundle updated"
+                icon = "update"
+                color = "gray"
+                kind = "update"
+
+        return {
+            "id": f"{entry.event_type}:{entry.entity_id}:{_iso(entry.timestamp)}",
+            "timestamp": _iso(entry.timestamp),
+            "entity_id": entry.entity_id,
+            "parent_entity_id": entry.parent_entity_id,
+            "event_type": entry.event_type,
+            "label": label,
+            "icon": icon,
+            "color": color,
+            "kind": kind,
+            "diffs": _diffs_to_dict(entry.diffs),
+            "raw_before": entry.attributes_before or {},
+            "raw_after": entry.attributes_after or {},
+            "details": details,
+        }
+
+    entries = sorted(lineage.timeline, key=lambda e: e.timestamp)
+
+    formatted_events = [_classify_event(e) for e in entries]
+
+    result = {
+        "bundle": {
+            "bundle_id": lineage.bundle_id,
+            "issuance_id": lineage.issuance_id,
+            "lineage_path": lineage.lineage_path,
+            "created_at": _iso(lineage.created_at) if lineage.created_at else None,
+            "last_updated_at": _iso(lineage.last_updated_at)
+            if lineage.last_updated_at
+            else None,
+            "current_state": lineage.current_state or {},
+        },
+        "timeline": formatted_events,
+        "summary": {
+            "event_count": len(formatted_events),
+            "transfers": sum(1 for e in formatted_events if e["kind"] == "transfer"),
+            "status_changes": sum(
+                1 for e in formatted_events if e["kind"] == "status_change"
+            ),
+            "splits": sum(
+                1 for e in formatted_events if e["kind"] == "split_child_created"
+            ),
+            "deleted": any(e["kind"] == "deleted" for e in formatted_events),
+        },
+    }
+    return result

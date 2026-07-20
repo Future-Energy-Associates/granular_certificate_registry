@@ -17,6 +17,7 @@ def write_to_database(
     write_session: Session,
     read_session: Session,
     esdb_client: EventStoreDBClient,
+    **kwargs,
 ) -> list[SQLModel]:
     """Write the provided entities to the read and write databases, saving an
     Event entry for each entity."""
@@ -61,6 +62,7 @@ def write_to_database(
             entity_names=[entity.__class__.__name__ for entity in entities],
             event_type=EventTypes.CREATE,
             esdb_client=esdb_client,
+            **kwargs,
         )
 
     write_session.commit()

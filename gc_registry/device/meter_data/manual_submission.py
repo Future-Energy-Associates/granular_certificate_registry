@@ -86,6 +86,10 @@ class ManualSubmissionMeterClient(AbstractMeterDataClient):
         mapped_data: list = []
 
         for data in generation_data:
+            # Skip if the interval usage is less than or equal to 0
+            if data.interval_usage <= 0:
+                continue
+
             # Get existing "certificate_bundle_id_range_end" from the last item in mapped_data
             if mapped_data:
                 certificate_bundle_id_range_start = (
