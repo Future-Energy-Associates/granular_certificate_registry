@@ -29,13 +29,32 @@ class StorageRecordBase(utils.ActiveRecord):
     )
     flow_energy: float = Field(
         description="The quantity of energy in Watt-hours (Wh) that the Storage Device has charged or discharged.",
+        ge=0.0,
     )
     validator_id: int | None = Field(
         description="An optional ID provided by the Storage Validator party to reference this Storage Charge/Discharge Record.",
     )
 
 
-class AllocatedStorageRecordBase(utils.ActiveRecord):
+class StorageEfficiency(BaseModel):
+    efficiency_factor_methodology: str = Field(
+        description="The method by which the energy storage losses of the Storage Device were calculated.",
+    )
+    efficiency_factor_interval_start: datetime.datetime = Field(
+        description="""The UTC datetime from which the Storage Device calculates its effective efficiency factor for this SCR/SDR, based on total input and
+                       output energy over the interval specified. This field describes only the method proposed in the EnergyTag Standard, and is not mandatory.""",
+    )
+    efficiency_factor_interval_end: datetime.datetime = Field(
+        description="The UTC datetime to which the Storage Device calculates its effective efficiency factor for this SCR/SDR.",
+    )
+    storage_efficiency_factor: float = Field(
+        description="The efficiency factor of the Storage Device applied to this SCR/SDR.",
+        ge=0.0,
+        le=1.0,
+    )
+
+
+class AllocatedStorageRecordBase(utils.ActiveRecord, StorageEfficiency):
     device_id: int = Field(
         description="The Device ID of the Storage Device that is being charged or discharged.",
         foreign_key="device.id",
@@ -63,21 +82,6 @@ class AllocatedStorageRecordBase(utils.ActiveRecord):
     sdgc_allocation_id: int | None = Field(
         description="The unique ID of the SD-GC Bundle that has been issued against this matched record.",
         foreign_key="granularcertificatebundle.id",
-    )
-    efficiency_factor_methodology: str = Field(
-        description="The method by which the energy storage losses of the Storage Device were calculated.",
-    )
-    efficiency_factor_interval_start: datetime.datetime = Field(
-        description="""The UTC datetime from which the Storage Device calculates its effective efficiency factor for this SCR/SDR, based on total input and
-                       output energy over the interval specified. This field describes only the method proposed in the EnergyTag Standard, and is not mandatory.""",
-    )
-    efficiency_factor_interval_end: datetime.datetime = Field(
-        description="The UTC datetime to which the Storage Device calculates its effective efficiency factor for this SCR/SDR.",
-    )
-    storage_efficiency_factor: float = Field(
-        description="The efficiency factor of the Storage Device applied to this SCR/SDR.",
-        ge=0.0,
-        le=1.0,
     )
 
 

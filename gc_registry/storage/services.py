@@ -19,7 +19,7 @@ from gc_registry.device.models import Device
 from gc_registry.settings import settings
 from gc_registry.storage.models import AllocatedStorageRecord, StorageRecord
 from gc_registry.storage.validation import (
-    validate_allocated_records,
+    validate_allocation_record,
     validate_allocated_records_against_gc_bundles,
 )
 
@@ -130,7 +130,7 @@ def create_allocated_storage_records_from_submitted_data(
             )
 
     # Iterate through allocation records in the submission and verify that each
-    # validator ID has a corresponding storage record
+    # allocated storage record has one SCR and one SDR in the data
     updated_sdr_ids = []
     updated_scr_ids = []
     for _idx, allocation_record in allocated_storage_records_df.iterrows():
@@ -149,7 +149,7 @@ def create_allocated_storage_records_from_submitted_data(
         sdr = validator_storage_records_df.loc[allocation_record["sdr_allocation_id"]]
         scr = validator_storage_records_df.loc[allocation_record["scr_allocation_id"]]
 
-        validate_allocated_records(allocation_record, sdr, scr)
+        validate_allocation_record(allocation_record, sdr, scr)
 
         # Replace the allocation validator IDs with the registry database IDs
         updated_sdr_ids.append(sdr["id"])

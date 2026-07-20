@@ -422,13 +422,34 @@ def fake_db_account_storage_validator(
 
 
 @pytest.fixture()
-def fake_db_wind_device(
-    write_session: Session, read_session: Session, fake_db_account: Account
-) -> Device:
+def device_factory(write_session: Session, read_session: Session) -> Any:
+    """Factory function to create authentication tokens for users."""
+
+    def _create_device(account: Account, device_kwargs: dict[str, Any] | None) -> Any:
+        device_dict = {
+            "grid": "fake_grid",
+            "account_id": account.id,
+            "location": "USA",
+            "operational_date": "2020-01-01",
+            "is_deleted": False,
+        }
+        if device_kwargs:
+            device_dict.update(device_kwargs)
+
+        device = Device.model_validate(device_dict)
+
+        device_read = add_entity_to_write_and_read(device, write_session, read_session)
+
+        return device_read
+
+    return _create_device
+
+
+@pytest.fixture()
+def fake_db_wind_device(device_factory: Any, fake_db_account: Account) -> Device:
     device_dict = {
         "device_name": "fake_wind_device",
         "local_device_identifier": "BMU-XYZ",
-        "grid": "fake_grid",
         "energy_source": EnergySourceType.wind,
         "technology_type": DeviceTechnologyType.wind_turbine,
         "power_mw": 3000,
@@ -437,14 +458,8 @@ def fake_db_wind_device(
         "operational_date": "2020-01-01",
         "peak_demand": 100,
         "is_storage": False,
-        "is_deleted": False,
     }
-
-    wind_device = Device.model_validate(device_dict)
-
-    device_read = add_entity_to_write_and_read(wind_device, write_session, read_session)
-
-    return device_read
+    return device_factory(fake_db_account, device_dict)
 
 
 @pytest.fixture()
@@ -692,10 +707,10 @@ def fake_db_storage_records(
         },
         {
             "device_id": fake_db_storage_device.id,
-            "is_charging": False,
+            "is_charging": True,
             "flow_start_datetime": "2024-01-01T01:00:00",
             "flow_end_datetime": "2024-01-01T02:00:00",
-            "flow_energy": -850.0,
+            "flow_energy": 850.0,
             "validator_id": 1,
             "is_deleted": False,
         },
@@ -710,10 +725,10 @@ def fake_db_storage_records(
         },
         {
             "device_id": fake_db_storage_device.id,
-            "is_charging": False,
+            "is_charging": True,
             "flow_start_datetime": "2024-01-01T03:00:00",
             "flow_end_datetime": "2024-01-01T04:00:00",
-            "flow_energy": -1044.0,
+            "flow_energy": 1044.0,
             "validator_id": 1,
             "is_deleted": False,
         },
