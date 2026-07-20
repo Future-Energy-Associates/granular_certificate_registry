@@ -137,3 +137,6 @@ db.seed.elexon:
 .PHONY: dev
 dev:
 	docker compose up
+
+.PHONY build_and_deploy:
+	docker compose -f compose.override.yml up --build
