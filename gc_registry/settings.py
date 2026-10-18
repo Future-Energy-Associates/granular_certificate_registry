@@ -41,6 +41,46 @@ def get_secret(secret_name: str) -> str | None:
         return None
 
 
+_DEFAULT_SIGNING_KEY = "secret_key"
+
+
+class ProductionConfigurationError(RuntimeError):
+    """Raised when AWS production is missing a real signing key."""
+
+
+def uses_gcp_secret_manager() -> bool:
+    """Return whether this process should load Google Secret Manager.
+
+    Cloud Run sets ``GOOGLE_CLOUD_PROJECT``. AWS tasks leave it unset and
+    supply configuration in the environment instead.
+
+    Returns:
+        True when the GCP project environment variable is non-empty.
+    """
+    return bool(os.getenv("GOOGLE_CLOUD_PROJECT", "").strip())
+
+
+def require_aws_signing_keys(jwt_secret: str | None, middleware_secret: str | None) -> None:
+    """Refuse to start AWS production with a missing or default signing key.
+
+    Args:
+        jwt_secret: Value that will sign access tokens.
+        middleware_secret: Value that will sign the session cookie.
+
+    Raises:
+        ProductionConfigurationError: Either key is missing or still the
+            built-in default.
+    """
+    if not jwt_secret or jwt_secret == _DEFAULT_SIGNING_KEY:
+        raise ProductionConfigurationError(
+            "JWT_SECRET_KEY must be set to a non-default value in production"
+        )
+    if not middleware_secret or middleware_secret == _DEFAULT_SIGNING_KEY:
+        raise ProductionConfigurationError(
+            "MIDDLEWARE_SECRET_KEY must be set to a non-default value in production"
+        )
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -55,9 +95,9 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str | None = None
     ESDB_CONNECTION_STRING: str | None = None
     FRONTEND_URL: str | None = "localhost:9000"
-    JWT_SECRET_KEY: str = "secret_key"
+    JWT_SECRET_KEY: str = _DEFAULT_SIGNING_KEY
     JWT_ALGORITHM: str = "HS256"
-    MIDDLEWARE_SECRET_KEY: str = "secret_key"
+    MIDDLEWARE_SECRET_KEY: str = _DEFAULT_SIGNING_KEY
 
     # Other configuration
     DATABASE_PORT: int = 5432
@@ -75,7 +115,7 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        if self.ENVIRONMENT == "PROD":
+        if self.ENVIRONMENT == "PROD" and uses_gcp_secret_manager():
             try:
                 self.DATABASE_HOST_READ = get_secret("DATABASE_HOST_READ")
                 self.DATABASE_HOST_WRITE = get_secret("DATABASE_HOST_WRITE")
@@ -90,6 +130,8 @@ class Settings(BaseSettings):
                 self.MIDDLEWARE_SECRET_KEY = get_secret("MIDDLEWARE_SECRET_KEY")
             except Exception as e:
                 logging.error(f"Error fetching secret: {e}")
+        elif self.ENVIRONMENT == "PROD":
+            require_aws_signing_keys(self.JWT_SECRET_KEY, self.MIDDLEWARE_SECRET_KEY)
 
 
 settings = Settings()

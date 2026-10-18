@@ -1,4 +1,5 @@
 from typing import Any, Generator
+from urllib.parse import quote
 
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -27,6 +28,52 @@ __all__ = [
 ]
 
 
+def _quote_userinfo(value: str | None) -> str:
+    """Percent-encode a URL user or password.
+
+    Args:
+        value: Raw credential. None is treated as empty.
+
+    Returns:
+        The encoded credential, safe to place in a PostgreSQL URL.
+    """
+    return quote(value or "", safe="")
+
+
+def build_postgres_connection_url(
+    username: str | None,
+    password: str | None,
+    host: str | None,
+    port: int | None,
+    database: str | None,
+    gcp_instance: str | None,
+) -> str:
+    """Build a PostgreSQL URL for either Cloud SQL or a TCP host.
+
+    A non-empty Cloud SQL instance name selects the unix socket URL. Any
+    other instance name, including an empty string, selects TCP.
+
+    Args:
+        username: Database user.
+        password: Database password.
+        host: TCP hostname.
+        port: TCP port.
+        database: Database name.
+        gcp_instance: Cloud SQL connection name, or empty when unused.
+
+    Returns:
+        A SQLAlchemy PostgreSQL connection URL.
+    """
+    user = _quote_userinfo(username)
+    secret = _quote_userinfo(password)
+    instance = (gcp_instance or "").strip()
+    if instance:
+        socket_path = f"/cloudsql/{instance}"
+        return f"postgresql://{user}:{secret}@/{database}?host={socket_path}"
+
+    return f"postgresql://{user}:{secret}@{host}:{port}/{database}"
+
+
 class DButils:
     def __init__(
         self,
@@ -50,11 +97,14 @@ class DButils:
         if test:
             self.connection_str = f"sqlite:///{self._db_test_fp}"
         else:
-            self.connection_str = f"postgresql://{self._db_username}:{self._db_password}@{self._db_host}:{self._db_port}/{self._db_name}"
-
-        if settings.ENVIRONMENT == "PROD":
-            socket_path = f"/cloudsql/{self._gcp_instance}"
-            self.connection_str = f"postgresql://{self._db_username}:{self._db_password}@/{self._db_name}?host={socket_path}"
+            self.connection_str = build_postgres_connection_url(
+                username=self._db_username,
+                password=self._db_password,
+                host=self._db_host,
+                port=self._db_port,
+                database=self._db_name,
+                gcp_instance=self._gcp_instance,
+            )
 
         self.engine = create_engine(
             self.connection_str,
