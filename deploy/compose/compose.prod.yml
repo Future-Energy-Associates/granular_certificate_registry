@@ -1,0 +1,125 @@
+# Production stack for one Docker host.
+#
+# Run it through deploy/compose/dc.sh, which supplies the project name and the
+# env files. Values come from three places and none are committed:
+#   /etc/gcos/instance.env  host settings written at first boot
+#   /etc/gcos/release.env   image references written by deploy.sh
+#   /etc/gcos/app.env       passwords and signing keys pulled from Secrets Manager
+#
+# Only Caddy (public address) and the API (private address) publish ports.
+# The databases and EventStore are reachable on the Compose network only.
+
+x-app-environment: &app-environment
+  ENVIRONMENT: PROD
+  DATABASE_HOST_READ: db_read
+  DATABASE_HOST_WRITE: db_write
+  DATABASE_PORT: "5432"
+  ESDB_CONNECTION_STRING: eventstore
+  JWT_ALGORITHM: HS256
+  LOG_LEVEL: INFO
+
+services:
+  caddy:
+    image: caddy:2
+    restart: always
+    ports:
+      - "${PUBLIC_BIND_IP:?}:80:80"
+      - "${PUBLIC_BIND_IP:?}:443:443"
+    environment:
+      SITE_HOSTNAME: ${SITE_HOSTNAME:?}
+      CADDY_TLS: ${CADDY_TLS:-internal}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/gcos/caddy/data:/data
+      - /srv/gcos/caddy/config:/config
+    depends_on:
+      - frontend
+      - gc_registry
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?}
+    restart: always
+
+  gc_registry:
+    image: ${API_IMAGE:?}
+    restart: always
+    env_file:
+      - /etc/gcos/app.env
+    environment:
+      <<: *app-environment
+    ports:
+      - "${PRIVATE_BIND_IP:?}:8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      db_read:
+        condition: service_healthy
+      db_write:
+        condition: service_healthy
+      eventstore:
+        condition: service_started
+
+  db_read:
+    image: postgres:16
+    restart: always
+    env_file:
+      - /etc/gcos/app.env
+    volumes:
+      - /srv/gcos/pg_read:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  db_write:
+    image: postgres:16
+    restart: always
+    env_file:
+      - /etc/gcos/app.env
+    volumes:
+      - /srv/gcos/pg_write:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  eventstore:
+    image: eventstore/eventstore:23.10.2-bookworm-slim
+    restart: always
+    hostname: eventstore
+    environment:
+      EVENTSTORE_CLUSTER_SIZE: "1"
+      EVENTSTORE_RUN_PROJECTIONS: All
+      EVENTSTORE_START_STANDARD_PROJECTIONS: "true"
+      EVENTSTORE_HTTP_PORT: "2113"
+      EVENTSTORE_EXT_TCP_PORT: "2113"
+      EVENTSTORE_INSECURE: "true"
+      EVENTSTORE_DISABLE_INTERNAL_TCP_TLS: "true"
+      EVENTSTORE_DISABLE_EXTERNAL_TCP_TLS: "true"
+      EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: "true"
+      EVENTSTORE_TELEMETRY_OPTOUT: "true"
+      DOTNET_EnableWriteXorExecute: "0"
+      EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS: eventstore
+      EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS: "2113"
+    volumes:
+      - /srv/gcos/es_data:/var/lib/eventstore
+      - /srv/gcos/es_logs:/var/log/eventstore
+
+  # Certificate issuance. Started by gcos-issuance.service, never by `up`.
+  issuance:
+    profiles: ["jobs"]
+    image: ${API_IMAGE:?}
+    env_file:
+      - /etc/gcos/app.env
+    environment:
+      <<: *app-environment
+      PYTHONUNBUFFERED: "1"
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - "chmod +x /code/gc_registry/tasks/issuance-task.sh && /code/gc_registry/tasks/issuance-task.sh"

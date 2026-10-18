@@ -1,0 +1,8 @@
+[Unit]
+Description=Dump both registry databases
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/gcos/deploy/compose/backup.sh

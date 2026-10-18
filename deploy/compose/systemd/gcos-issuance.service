@@ -1,0 +1,8 @@
+[Unit]
+Description=Issue certificates
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/gcos/deploy/compose/dc.sh run --rm --no-deps -T issuance

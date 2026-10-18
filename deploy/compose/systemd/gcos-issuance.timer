@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily certificate issuance
+
+[Timer]
+OnCalendar=*-*-* 06:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
