@@ -152,9 +152,53 @@ The CI workflow runs [`gitleaks`](https://github.com/gitleaks/gitleaks-action?ta
 
 ## Deployment
 
-The application is deployed to GCP using the `app.yml` file using gcloud cli. Once installed you can follow these commands:
+Production on AWS is one EC2 instance running Docker Compose, with images in ECR. Images build and deploy from GitHub Actions when `main` is updated. DNS stays on GCP until that host has been checked. `gcloud run deploy` is only the Cloud Run path, and only while that service still sets `GOOGLE_CLOUD_PROJECT`.
 
-1. Install gcloud cli tool 
+### AWS
+
+#### What runs where
+
+`deploy/compose/compose.prod.yml` runs seven services on one x86_64 instance: Caddy, the frontend, the API, two Postgres 16 containers (`db_read` and `db_write`), EventStore 23.10.2, and the issuance job. The job sits behind the `jobs` profile and only runs from a timer.
+
+- The instance has two network interfaces, each with its own security group. The public interface has an Elastic IP and accepts 80 and 443 from anywhere. The private interface sits in a subnet with no internet route and accepts 8080 only from the clients you list.
+- Compose binds Caddy to the public interface's address and the API to the private interface's address. The databases and EventStore publish no ports.
+- Caddy serves the frontend at `/` and forwards `/api/*` to the API with the prefix removed. The browser app and the API therefore share one origin, which keeps the `SameSite=strict` CSRF cookie working. The frontend image is built with `REACT_APP_API_URL=https://<site>/api`. The `/docs` page does not work behind that prefix. Use the private address for it.
+- AWS WAF cannot attach to an instance or Elastic IP. Putting the shared Web ACL in front of this host would need an ALB or CloudFront.
+
+#### Creating the resources
+
+`deploy/aws/create-resources.sh` uses the `fea` AWS CLI profile. It creates the VPC, security groups, network interfaces, Elastic IP, instance, encrypted data volume with daily snapshots, ECR repositories, an app settings secret, and the roles for the host and for GitHub.
+
+```bash
+CONFIRM=yes NAME_PREFIX=<private prefix> SITE_HOSTNAME=<public hostname> \
+  API_CLIENT_CIDRS=<comma-separated CIDRs> deploy/aws/create-resources.sh
+```
+
+`API_CLIENT_SG_IDS` accepts security groups in the same VPC. With neither variable the private interface accepts nothing. Set `ACME_EMAIL` to use Let's Encrypt straight away. Without it Caddy uses its own CA so you can smoke-test before DNS moves. Re-running the script reuses what exists, keeps the generated passwords, and adds missing rules. It never removes a rule, so delete retired client ranges by hand.
+
+The script writes the GitHub variable values to `deploy/aws/github-actions.local.env` and the prefix to `deploy/aws/name-prefix.local`. Both are gitignored. Paste each line of the env file into a repository variable of the same name.
+
+#### Deploying
+
+`.github/workflows/publish.yml` runs on pushes to `main` and only when `AWS_ROLE_ARN` is set. It builds both images, pushes them to ECR tagged with the commit, and runs `deploy/compose/deploy.sh` on the host through Systems Manager. That script pulls the settings secret, pulls the images, starts the data services, runs `alembic upgrade head`, restarts the application, and installs the systemd timers.
+
+Account ids, resource names, and addresses live only in the gitignored file and in GitHub repository variables, and the workflow masks them. The deploy step prints nothing from the host because that output names the registry and addresses. Actions logs on a public repository are public. Read a failed deploy with `aws ssm get-command-invocation` from your machine.
+
+On the host, `deploy/compose/dc.sh` wraps `docker compose` with the right files. Settings live in `/etc/gcos/instance.env` (host values) and `/etc/gcos/app.env` (secrets pulled from Secrets Manager). Edit the secret with `aws secretsmanager put-secret-value` and redeploy. AWS must not set `GOOGLE_CLOUD_PROJECT`.
+
+#### Timers, backups, and moving data
+
+- `gcos-backup.timer` is enabled by the first deploy. It dumps both databases to `/srv/gcos/backups` at 03:00 UTC and keeps seven days. DLM snapshots the data volume daily. Restore steps are in the header of `deploy/compose/backup.sh`.
+- `gcos-issuance.timer` is installed and left disabled. Enable it with `sudo systemctl enable --now gcos-issuance.timer` once the data is in place. It runs at 06:00 UTC.
+- To load GCP dumps before the first migration, run the first deploy by hand with `RUN_MIGRATIONS=0`. Start `db_read` and `db_write`, `pg_restore` each dump, then deploy again normally. Copy the EventStore data into `/srv/gcos/es_data` with the container stopped and the files owned by uid 1000.
+- To switch Caddy to Let's Encrypt after DNS points at the host, set `CADDY_TLS` to your email in `/etc/gcos/instance.env` and run `deploy/compose/deploy.sh` for the current commit again.
+- Smoke-test before cutover by pointing the site hostname at the Elastic IP in your hosts file, logging in, and calling the API from a client in a listed range. After that works, move the DNS record, then delete GCP.
+
+### Cloud Run, while GCP is still serving
+
+`gcloud run deploy` remains valid for the Cloud Run service that sets `GOOGLE_CLOUD_PROJECT`. That variable is what keeps Secret Manager and the Cloud SQL socket. Do not use these commands to ship the AWS account.
+
+1. Install gcloud cli tool
 
 ```
 (New-Object Net.WebClient).DownloadFile("https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe", "$env:Temp\GoogleCloudSDKInstaller.exe")
