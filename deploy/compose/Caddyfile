@@ -1,0 +1,22 @@
+# SITE_HOSTNAME and CADDY_TLS come from the Compose environment.
+#
+# CADDY_TLS=internal   Caddy's own CA. Use it to smoke-test before DNS points
+#                      at this host. Browsers will warn about the certificate.
+# CADDY_TLS=<email>    Let's Encrypt. Needs DNS for SITE_HOSTNAME to resolve to
+#                      this host and ports 80 and 443 open to the internet.
+#
+# The browser app and the API share one origin. /api/* is forwarded to the API
+# with the prefix removed, so build the frontend with
+# REACT_APP_API_URL=https://<SITE_HOSTNAME>/api
+{$SITE_HOSTNAME} {
+	tls {$CADDY_TLS}
+	encode gzip
+
+	handle_path /api/* {
+		reverse_proxy gc_registry:8080
+	}
+
+	handle {
+		reverse_proxy frontend:8080
+	}
+}

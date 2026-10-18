@@ -1,0 +1,146 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+# This repository is public and so are its Actions logs. Every account,
+# resource, and host identifier comes from a repository variable and is masked
+# before any step can print it. Nothing about the AWS account is written here.
+jobs:
+  publish:
+    if: vars.AWS_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mask deployment values
+        env:
+          AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+          ECR_API_REPOSITORY: ${{ vars.ECR_API_REPOSITORY }}
+          ECR_FRONTEND_REPOSITORY: ${{ vars.ECR_FRONTEND_REPOSITORY }}
+          REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL }}
+          DEPLOY_INSTANCE_ID: ${{ vars.DEPLOY_INSTANCE_ID }}
+        run: |
+          set -euo pipefail
+          mask() {
+            local value="${1:-}"
+            if [ -z "$value" ]; then
+              return 0
+            fi
+            value="${value//%/%25}"
+            value="${value//$'\n'/%0A}"
+            value="${value//$'\r'/%0D}"
+            printf '%s\n' "::add-mask::${value}"
+          }
+          mask "$AWS_ROLE_ARN"
+          mask "$ECR_API_REPOSITORY"
+          mask "$ECR_FRONTEND_REPOSITORY"
+          mask "$REACT_APP_API_URL"
+          mask "$DEPLOY_INSTANCE_ID"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push API image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPOSITORY: ${{ vars.ECR_API_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$REPOSITORY" ]; then
+            echo "ECR_API_REPOSITORY is unset."
+            exit 1
+          fi
+          printf '%s\n' "::add-mask::${REGISTRY}"
+          docker build -t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" .
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+
+      - name: Build and push frontend image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPOSITORY: ${{ vars.ECR_FRONTEND_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+          REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$REPOSITORY" ]; then
+            echo "ECR_FRONTEND_REPOSITORY is unset."
+            exit 1
+          fi
+          printf '%s\n' "::add-mask::${REGISTRY}"
+          docker build \
+            -f frontend/Dockerfile \
+            --build-arg "REACT_APP_API_URL=$REACT_APP_API_URL" \
+            -t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" \
+            frontend
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+
+      # Output from the host is not printed. It would carry the registry name
+      # and addresses. Read it locally with `aws ssm get-command-invocation`.
+      - name: Deploy to the host
+        if: vars.DEPLOY_INSTANCE_ID != ''
+        env:
+          DEPLOY_INSTANCE_ID: ${{ vars.DEPLOY_INSTANCE_ID }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Unexpected commit id."
+            exit 1
+          fi
+          python3 - <<'PY' > /tmp/ssm-parameters.json
+          import json, os
+          sha = os.environ["DEPLOY_SHA"]
+          command = (
+              "set -euo pipefail; cd /opt/gcos; "
+              "git fetch --depth 1 origin {0}; git checkout --detach FETCH_HEAD; "
+              "./deploy/compose/deploy.sh {0}"
+          ).format(sha)
+          print(json.dumps({"commands": [command], "executionTimeout": ["1800"]}))
+          PY
+          command_id="$(aws ssm send-command \
+            --instance-ids "$DEPLOY_INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy" \
+            --parameters file:///tmp/ssm-parameters.json \
+            --query Command.CommandId \
+            --output text)"
+          for _ in $(seq 1 180); do
+            status="$(aws ssm get-command-invocation \
+              --command-id "$command_id" \
+              --instance-id "$DEPLOY_INSTANCE_ID" \
+              --query Status \
+              --output text 2>/dev/null || true)"
+            case "$status" in
+              Success)
+                echo "Deployed."
+                exit 0
+                ;;
+              Failed|Cancelled|TimedOut|Undeliverable|Terminated)
+                echo "Deployment ended with status ${status}."
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          echo "Deployment did not finish in time."
+          exit 1

@@ -168,4 +168,6 @@ cache_all_tariffs.pkl
 .vscode/settings.json
 .aws/config
 .aws/credentials
+deploy/aws/*.local
+deploy/aws/*.local.env
 node_modules
