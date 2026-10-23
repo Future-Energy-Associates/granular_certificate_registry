@@ -4,9 +4,7 @@ import dayjs from "dayjs";
 import { Layout, Button, Card, Col, Space, Input, Select } from "antd";
 
 import {
-  AppstoreOutlined,
   SwapOutlined,
-  CloseCircleOutlined,
   LaptopOutlined,
   ThunderboltOutlined,
   PlusCircleOutlined,
