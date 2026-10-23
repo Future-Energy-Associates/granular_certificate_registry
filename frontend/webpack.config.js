@@ -111,7 +111,12 @@ module.exports = {
     historyApiFallback: true,
     compress: true,
     port: 8080,
-    host: '0.0.0.0',
+    host: "0.0.0.0",
+    // The ALB sends its own hostname. Webpack rejects that host unless it is allowed.
+    allowedHosts: "all",
+    client: {
+      webSocketURL: "auto://0.0.0.0:0/ws",
+    },
     open: true,
     hot: true,
   },
