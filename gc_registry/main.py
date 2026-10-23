@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import secrets
 from contextlib import asynccontextmanager
@@ -8,7 +9,7 @@ from typing import AsyncGenerator, Callable
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.docs import get_redoc_html
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPBearer
 from fastapi.templating import Jinja2Templates
@@ -124,11 +125,25 @@ app = FastAPI(
         "name": "Please direct feedback to",
         "email": "connor@futureenergy.associates",
     },
-    docs_url="/docs",
+    docs_url=None,
+    openapi_url="/openapi",
     redoc_url=None,
     dependencies=[Depends(get_db_name_to_client)],
     lifespan=lifespan,
 )
+
+
+@app.get("/docs", include_in_schema=False)
+async def swagger_html() -> HTMLResponse:
+    """Serve Swagger with the spec inlined.
+
+    The ALB rejects the separate ``/openapi`` fetch, so the docs page cannot
+    load it. ``/docs`` itself is forwarded to the API.
+    """
+    spec = json.dumps(app.openapi()).replace("<", "\\u003c")
+    page = get_swagger_ui_html(openapi_url="/openapi", title=f"{app.title} - Swagger UI")
+    html = page.body.decode().replace("url: '/openapi',", f"spec: {spec},", 1)
+    return HTMLResponse(html)
 
 
 @app.get("/redoc", include_in_schema=False)
@@ -150,7 +165,7 @@ class CSRFMiddleware:
         self.app = app
         self.allow_origins = set(allow_origins or [])
         self.exempt_paths = set(
-            exempt_paths or ["/csrf-token", "/docs", "/redoc", "/openapi.json"]
+            exempt_paths or ["/csrf-token", "/docs", "/redoc", "/openapi", "/openapi.json"]
         )
 
     async def __call__(self, scope, receive, send):
@@ -192,6 +207,8 @@ origins = [
     "https://frontend-ciatlb2uvq-ue.a.run.app",  # cloud run
     "https://api-ciatlb2uvq-ue.a.run.app",  # cloud run
     "https://demo-registry.energytag.org",
+    "http://gcos-alb-1723562033.eu-west-2.elb.amazonaws.com",  # alb
+    "https://gcos-alb-1723562033.eu-west-2.elb.amazonaws.com",  # alb
 ]
 
 app.add_middleware(
@@ -206,7 +223,7 @@ app.add_middleware(
 app.add_middleware(
     CSRFMiddleware,
     allow_origins=origins,
-    exempt_paths={"/csrf-token", "/docs", "/redoc", "/openapi.json"},
+    exempt_paths={"/csrf-token", "/docs", "/redoc", "/openapi", "/openapi.json"},
 )
 
 app.add_middleware(SessionMiddleware, secret_key=settings.MIDDLEWARE_SECRET_KEY)
